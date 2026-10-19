@@ -1,0 +1,10 @@
+# The factory builds each delivery path in its own git worktree here.
+.claude/worktrees/
+
+# Local environment and editor files
+.env*
+!.env.example
+.DS_Store
+node_modules/
+.venv/
+__pycache__/

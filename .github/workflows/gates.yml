@@ -1,0 +1,33 @@
+# The checks every pull request must pass before it can be merged.
+#
+# Starter file copied by generate-milestone when it creates a new build repository.
+# `make check` is a placeholder: replace the Makefile target with the repository's real
+# checks (tests, formatting, linting, type checks), and add any setup steps they need.
+# Each check must exit non-zero on failure.
+
+name: gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gates-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: make check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      # Add language setup here, for example actions/setup-python or actions/setup-node.
+
+      - name: Run the checks
+        run: make check
