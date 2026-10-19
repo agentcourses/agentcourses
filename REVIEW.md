@@ -2,9 +2,7 @@
 
 This page tells a reviewer what to check, how to tell a blocking problem from a nit, and how to write findings. The reviewer is never the author, and always starts from a fresh context. Every finding must cite evidence, so the author can act on it without guessing. The verdict goes on the first line of the review.
 
-<!-- Starter file copied by generate-milestone when it creates a new build repository.
-     Read by: the reviewer and cross-reviewer of every pull request.
-     Length budget: under 80 lines. Add repository-specific checks under "Also check here". -->
+
 
 ## What to check
 
@@ -48,4 +46,9 @@ Any blocking finding means `changes-needed`. Nits alone never block.
 
 ## Also check here
 
-*Add checks specific to this repository below, one line each, with the reason.*
+- Check stage regression, deletion and pending-row proofs, because later themes share cumulative source contracts.
+- Check the source-only canonical map and separate collections, because future pages must never become production mocks.
+- Check ExampleCode traversal and symlink bounds, because snippets must read only their named repository example.
+- Check the bad-input helper observes `missing-link` from ordinary `make check`, rather than accepting an unrelated failure.
+- Check runtime and lock pins match local and CI setup, and distinguish local proof from an actual Actions run.
+- Do not claim branch protection or public visibility: both are deferred by the owner until v1 is ready.

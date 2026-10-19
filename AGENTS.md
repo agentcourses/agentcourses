@@ -2,9 +2,7 @@
 
 This is the build repository for Agent Courses. Agents write the product's code here, one theme per pull request, sometimes on several delivery paths at once in separate worktrees. What to build, and why, is decided in a separate strategy repository, `tutr-dev/tutr-strategy`. This file says how work is done here: the checks, the conventions, the review rules and how to write.
 
-<!-- Starter file copied by generate-milestone when it creates a new build repository.
-     Read by: every agent and contributor working in this repository.
-     Length budget: under 100 lines. Keep it a map; put detail in the files it links to. -->
+
 
 User instructions in the conversation always override this file.
 
@@ -18,11 +16,15 @@ make check
 
 It must exit zero. Never pipe it through `tail` or `head`, because that hides a failure. If it fails after two repair rounds, stop and hand the work back with what you found.
 
+The gate uses the locked Python and Starlight environments documented in [README.md](README.md).
+Document stages and canonical source links are shared interfaces; preserve them when extending the gate.
+The stable Actions status name is `make check`.
+
 ## Conventions
 
 - **Branches:** `<milestone-slug>/<theme-slug>`. The first theme of each delivery path branches from the default branch. Each later theme in that path branches from the previous theme's branch, so its pull requests stack in order.
 - **Worktrees:** the factory builds each delivery path in its own worktree under `.claude/worktrees/`, which `.gitignore` leaves out.
-- **Commits:** one logical change per commit, with a message that says what changed and why.
+- **Commits:** the owner reviews the full diff before any commit. Drafters record proposed messages and files; the orchestrator commits.
 - **Pull requests:** one per theme. The title is the plain theme title. The body follows `.github/pull_request_template.md`.
 - **Scope:** build what the theme asks for. Note anything else you spot under "Follow-ups" in the pull request, rather than doing it.
 - **Tests:** a bug fix starts with a test that fails, then the fix that makes it pass.
@@ -33,6 +35,8 @@ It must exit zero. Never pipe it through `tail` or `head`, because that hides a 
 - **The author never approves its own work.** The reviewer must not be the agent or person that wrote the change, and starts from a fresh context. A second look by the author is not a review.
 - Reviewers follow [REVIEW.md](REVIEW.md). Every finding cites evidence, and is marked blocking or a nit.
 - Merging follows the autonomy level set in the strategy repository. When in doubt, do not merge.
+
+The owner merges each reviewed pull request. Branch protection and public visibility are deferred by the owner until v1 is ready.
 
 ## Writing rules for comments, commits and pull requests
 
