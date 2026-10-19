@@ -1,0 +1,172 @@
+[
+  {
+    "case": "genuine-isolated",
+    "host": "embedded",
+    "origin": "learner",
+    "mechanism": "isolated-confirmation",
+    "authority": {
+      "controller": "learner",
+      "tutor_access": []
+    },
+    "context": {
+      "snapshot": "snapshot-a",
+      "lesson": "lesson-a",
+      "call": "call-a",
+      "occurrence": "input-a",
+      "challenge": "challenge-a"
+    },
+    "confirmation": {
+      "snapshot": "snapshot-a",
+      "lesson": "lesson-a",
+      "call": "call-a",
+      "occurrence": "input-a",
+      "challenge": "challenge-a"
+    },
+    "used_occurrences": [],
+    "expected_outcome": "unverified",
+    "expected_binding_failures": [],
+    "expected_candidate_eligible": true
+  },
+  {
+    "case": "tutor-authored",
+    "host": "embedded",
+    "origin": "tutor",
+    "mechanism": "isolated-confirmation",
+    "authority": {
+      "controller": "learner",
+      "tutor_access": []
+    },
+    "context": {
+      "snapshot": "snapshot-a",
+      "lesson": "lesson-a",
+      "call": "call-a",
+      "occurrence": "input-a",
+      "challenge": "challenge-a"
+    },
+    "confirmation": {
+      "snapshot": "snapshot-a",
+      "lesson": "lesson-a",
+      "call": "call-a",
+      "occurrence": "input-a",
+      "challenge": "challenge-a"
+    },
+    "used_occurrences": [],
+    "expected_outcome": "rejected",
+    "expected_binding_failures": [],
+    "expected_candidate_eligible": false
+  },
+  {
+    "case": "missing",
+    "host": "embedded",
+    "origin": "missing",
+    "mechanism": "isolated-confirmation",
+    "authority": {
+      "controller": "learner",
+      "tutor_access": []
+    },
+    "context": {
+      "snapshot": "snapshot-a",
+      "lesson": "lesson-a",
+      "call": "call-a",
+      "occurrence": "input-a",
+      "challenge": "challenge-a"
+    },
+    "confirmation": null,
+    "used_occurrences": [],
+    "expected_outcome": "unverified",
+    "expected_binding_failures": [],
+    "expected_candidate_eligible": false
+  },
+  {
+    "case": "repeated",
+    "host": "embedded",
+    "origin": "learner",
+    "mechanism": "isolated-confirmation",
+    "authority": {
+      "controller": "learner",
+      "tutor_access": []
+    },
+    "context": {
+      "snapshot": "snapshot-a",
+      "lesson": "lesson-a",
+      "call": "call-a",
+      "occurrence": "input-a",
+      "challenge": "challenge-a"
+    },
+    "confirmation": {
+      "snapshot": "snapshot-a",
+      "lesson": "lesson-a",
+      "call": "call-a",
+      "occurrence": "input-a",
+      "challenge": "challenge-a"
+    },
+    "used_occurrences": [
+      "input-a"
+    ],
+    "expected_outcome": "rejected",
+    "expected_binding_failures": [
+      "replay"
+    ],
+    "expected_candidate_eligible": false
+  },
+  {
+    "case": "changed-snapshot",
+    "host": "embedded",
+    "origin": "learner",
+    "mechanism": "isolated-confirmation",
+    "authority": {
+      "controller": "learner",
+      "tutor_access": []
+    },
+    "context": {
+      "snapshot": "snapshot-a",
+      "lesson": "lesson-a",
+      "call": "call-a",
+      "occurrence": "input-a",
+      "challenge": "challenge-a"
+    },
+    "confirmation": {
+      "snapshot": "snapshot-b",
+      "lesson": "lesson-a",
+      "call": "call-a",
+      "occurrence": "input-a",
+      "challenge": "challenge-a"
+    },
+    "used_occurrences": [],
+    "expected_outcome": "rejected",
+    "expected_binding_failures": [
+      "snapshot"
+    ],
+    "expected_candidate_eligible": false
+  },
+  {
+    "case": "cross-lesson",
+    "host": "embedded",
+    "origin": "learner",
+    "mechanism": "isolated-confirmation",
+    "authority": {
+      "controller": "learner",
+      "tutor_access": []
+    },
+    "context": {
+      "snapshot": "snapshot-a",
+      "lesson": "lesson-a",
+      "call": "call-a",
+      "occurrence": "input-a",
+      "challenge": "challenge-a"
+    },
+    "confirmation": {
+      "snapshot": "snapshot-a",
+      "lesson": "lesson-b",
+      "call": "call-a",
+      "occurrence": "input-a",
+      "challenge": "challenge-a"
+    },
+    "used_occurrences": [],
+    "expected_outcome": "rejected",
+    "expected_binding_failures": [
+      "lesson"
+    ],
+    "expected_candidate_eligible": false
+  }
+]

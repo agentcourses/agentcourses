@@ -1,4 +1,4 @@
-.PHONY: check check-docs
+.PHONY: check check-docs check-receipts
 
 CHECK_ROOT ?= $(CURDIR)
 DOCS_BASE_REF ?= HEAD
@@ -23,3 +23,10 @@ check: check-docs
 	else \
 		echo "Foundation production proof complete; the design collection has no fixtures yet."; \
 	fi
+	$(MAKE) check-receipts CHECK_ROOT="$(CHECK_ROOT)"
+
+# The pending owner choice remains a visible failure after independent checks run.
+check-receipts:
+	uv run --locked python experiments/call-receipts/probe.py --cases "$(CHECK_ROOT)/experiments/call-receipts/cases"
+	uv run --locked python experiments/call-receipts/probe.py --audit-report "$(CHECK_ROOT)/docs/delivery/call-receipts.md"
+	uv run --locked python experiments/call-receipts/probe.py --require-decision "$(CHECK_ROOT)/docs/delivery/call-receipts.md"
