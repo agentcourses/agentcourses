@@ -134,6 +134,44 @@ for (const scheme of schemes) {
   });
 }
 
+// Starlight shows "⌘ K" on Apple platforms and "Ctrl K" elsewhere, so the search button is
+// audited under each platform the browser can report, not only the one running the tests.
+for (const platform of ['MacIntel', 'Win32', 'Linux x86_64']) {
+  test(`the search button passes axe when the platform reports ${platform}`, async ({ page }) => {
+    await page.addInitScript((value) => {
+      Object.defineProperty(Navigator.prototype, 'platform', { configurable: true, get: () => value });
+    }, platform);
+    await page.setViewportSize(desktop);
+    await open(page, '/', 'light');
+    const button = page.locator('site-search button[data-open-modal]');
+    await expect(button).toBeEnabled();
+    const keys = await button.locator('kbd kbd').allTextContents();
+    expect(keys).toEqual([platform === 'MacIntel' ? '⌘' : 'Ctrl', 'K']);
+    await expect(button).toHaveAccessibleName(`Search ${keys.join(' ')}`);
+    await audit(page, `/ (desktop, ${platform})`);
+  });
+}
+
+test('overflowing code and tables gain keyboard access even when the browser never goes idle', async ({ page }) => {
+  // A busy page may never reach an idle period, so keyboard access must not wait for one.
+  await page.addInitScript(() => {
+    window.requestIdleCallback = () => 0;
+    window.cancelIdleCallback = () => undefined;
+  });
+  for (const viewport of [desktop, phone]) {
+    await page.setViewportSize(viewport);
+    await open(page, article, 'light');
+    await scrollRegionsSettled(page);
+    const regions = page.locator('.expressive-code pre, .sl-markdown-content table');
+    for (let index = 0; index < await regions.count(); index += 1) {
+      const region = regions.nth(index);
+      if (!(await region.evaluate((el) => el.scrollWidth > el.clientWidth))) continue;
+      await region.focus();
+      await expect(region, `overflowing region ${index} at ${viewport.width} pixels takes keyboard focus`).toBeFocused();
+    }
+  }
+});
+
 test('axe finds no violations on a phone, with the drawer open and with search open', async ({ page }) => {
   await page.setViewportSize(phone);
   for (const destination of destinations) {

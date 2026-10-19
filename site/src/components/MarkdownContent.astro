@@ -1,8 +1,10 @@
 ---
 /**
- * Starlight's Markdown content wrapper, unchanged, plus keyboard access for wide tables.
- * A table wider than the reading column scrolls inside itself; while it overflows it joins
- * the tab order so keyboard users can scroll it, as Expressive Code does for long code.
+ * Starlight's Markdown content wrapper, unchanged, plus keyboard access for wide content.
+ * A table or code panel wider than the reading column scrolls inside itself; while it
+ * overflows it joins the tab order so keyboard users can scroll it. Expressive Code does the
+ * same for code, but only once the browser is idle, which a busy page may never reach; this
+ * check runs as soon as the page loads and whenever a region changes size.
  */
 import Default from '@astrojs/starlight/components/MarkdownContent.astro';
 ---
@@ -10,13 +12,22 @@ import Default from '@astrojs/starlight/components/MarkdownContent.astro';
 <Default><slot /></Default>
 
 <script>
-  const update = (table: HTMLElement) => {
-    if (table.scrollWidth > table.clientWidth) table.tabIndex = 0;
-    else table.removeAttribute('tabindex');
+  const update = (region: HTMLElement) => {
+    const code = region.tagName === 'PRE';
+    if (region.scrollWidth > region.clientWidth) {
+      region.tabIndex = 0;
+      // Matches Expressive Code, which names a scrollable code panel as a region.
+      if (code) region.setAttribute('role', 'region');
+    } else if (region.hasAttribute('tabindex')) {
+      region.removeAttribute('tabindex');
+      if (code) region.removeAttribute('role');
+    }
   };
   const observer = new ResizeObserver((entries) => entries.forEach((entry) => update(entry.target as HTMLElement)));
-  document.querySelectorAll<HTMLElement>('.sl-markdown-content table:not(:where(.not-content *))').forEach((table) => {
-    update(table);
-    observer.observe(table);
-  });
+  document
+    .querySelectorAll<HTMLElement>('.sl-markdown-content table:not(:where(.not-content *)), .sl-markdown-content .expressive-code pre')
+    .forEach((region) => {
+      update(region);
+      observer.observe(region);
+    });
 </script>

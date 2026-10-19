@@ -1,16 +1,46 @@
 import { test, expect, type BrowserContext, type Page } from '@playwright/test';
 import { article, desktop, open, phone } from './support';
 
-const origin = 'http://127.0.0.1:4321';
+/**
+ * The origin of the site under test, taken from the configured base address, so clipboard
+ * permissions follow whichever port the preview server uses.
+ */
+function siteOrigin(baseURL: string | undefined): string {
+  if (!baseURL) throw new Error('The Playwright configuration must set a base URL for the site under test');
+  return new URL(baseURL).origin;
+}
 
-async function allowClipboard(context: BrowserContext): Promise<void> {
+/** Fails unless the page under test is served from the origin that permissions were set for. */
+function expectSiteOrigin(page: Page, origin: string): void {
+  expect(new URL(page.url()).origin, 'clipboard permissions apply to the tested site only').toBe(origin);
+}
+
+async function allowClipboard(context: BrowserContext, origin: string): Promise<void> {
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin });
 }
 
-/** Denies clipboard writing at the browser level, as a viewer's site settings would. */
-async function denyClipboardWrite(page: Page): Promise<void> {
-  const session = await page.context().browser()!.newBrowserCDPSession();
-  await session.send('Browser.setPermission', { permission: { name: 'clipboard-write' }, setting: 'denied', origin });
+/**
+ * Denies clipboard writing at the browser level for the tested site, as a viewer's site
+ * settings would. The setting names the test's own browser context; without it Chromium
+ * applies the setting to its default context, which the test page does not use. The browser
+ * session stays open, because the setting lasts only as long as the session that made it.
+ */
+async function denyClipboardWrite(page: Page, origin: string): Promise<void> {
+  const target = await page.context().newCDPSession(page);
+  const { targetInfo } = await target.send('Target.getTargetInfo');
+  await target.detach();
+  const browser = await page.context().browser()!.newBrowserCDPSession();
+  await browser.send('Browser.setPermission', {
+    permission: { name: 'clipboard-write' },
+    setting: 'denied',
+    origin,
+    browserContextId: targetInfo.browserContextId,
+  });
+}
+
+/** The clipboard-write permission as the page under test sees it. */
+async function clipboardWriteState(page: Page): Promise<string> {
+  return page.evaluate(async () => (await navigator.permissions.query({ name: 'clipboard-write' as PermissionName })).state);
 }
 
 async function clipboard(page: Page): Promise<string> {
@@ -82,10 +112,13 @@ test.describe('search', () => {
 });
 
 test.describe('copy controls', () => {
-  test('Copy page copies the readable article and says so', async ({ page, context }) => {
-    await allowClipboard(context);
+  test('Copy page copies the readable article and says so', async ({ page, context, baseURL }) => {
+    const origin = siteOrigin(baseURL);
+    await allowClipboard(context, origin);
     await page.setViewportSize(desktop);
     await open(page, article, 'light');
+    expectSiteOrigin(page, origin);
+    expect(await clipboardWriteState(page)).toBe('granted');
     await page.evaluate(() => navigator.clipboard.writeText('before'));
     const button = page.getByRole('button', { name: 'Copy page' });
     await button.focus();
@@ -101,20 +134,26 @@ test.describe('copy controls', () => {
     }
   });
 
-  test('Copy page reports a refused clipboard honestly', async ({ page }) => {
+  test('Copy page reports a refused clipboard honestly', async ({ page, baseURL }) => {
+    const origin = siteOrigin(baseURL);
     await page.setViewportSize(desktop);
     await open(page, article, 'light');
-    await denyClipboardWrite(page);
+    expectSiteOrigin(page, origin);
+    await denyClipboardWrite(page, origin);
+    expect(await clipboardWriteState(page), 'the refusal applies to the tested site').toBe('denied');
     await page.getByRole('button', { name: 'Copy page' }).click();
     const status = page.locator('.ac-copy-page [role="status"]');
     await expect(status).toHaveText('Copy failed: the browser blocked clipboard access.');
     await expect(status).not.toContainText('copied to');
   });
 
-  test('Copy page reports an empty article instead of copying nothing', async ({ page, context }) => {
-    await allowClipboard(context);
+  test('Copy page reports an empty article instead of copying nothing', async ({ page, context, baseURL }) => {
+    const origin = siteOrigin(baseURL);
+    await allowClipboard(context, origin);
     await page.setViewportSize(desktop);
     await open(page, article, 'light');
+    expectSiteOrigin(page, origin);
+    expect(await clipboardWriteState(page)).toBe('granted');
     await page.evaluate(() => navigator.clipboard.writeText('unchanged'));
     await page.locator('.sl-markdown-content').evaluate((el) => el.replaceChildren());
     await page.getByRole('button', { name: 'Copy page' }).click();
@@ -122,10 +161,13 @@ test.describe('copy controls', () => {
     expect(await clipboard(page)).toBe('unchanged');
   });
 
-  test('a code block copies exactly its code and announces it', async ({ page, context }) => {
-    await allowClipboard(context);
+  test('a code block copies exactly its code and announces it', async ({ page, context, baseURL }) => {
+    const origin = siteOrigin(baseURL);
+    await allowClipboard(context, origin);
     await page.setViewportSize(phone);
     await open(page, article, 'dark');
+    expectSiteOrigin(page, origin);
+    expect(await clipboardWriteState(page)).toBe('granted');
     const block = page.getByRole('figure', { name: 'checks/sample-check.sh' });
     const copy = block.getByRole('button', { name: 'Copy to clipboard' });
     await expect(copy).toBeVisible();
@@ -137,12 +179,15 @@ test.describe('copy controls', () => {
     expect(text.endsWith('echo "Sample check passed"')).toBe(true);
   });
 
-  test('a refused code copy never claims success without copying', async ({ page, context }) => {
+  test('a refused code copy never claims success without copying', async ({ page, context, baseURL }) => {
+    const origin = siteOrigin(baseURL);
     await page.setViewportSize(desktop);
     await open(page, article, 'light');
+    expectSiteOrigin(page, origin);
     await context.grantPermissions(['clipboard-read'], { origin });
     await page.evaluate(() => navigator.clipboard.writeText('unchanged').catch(() => undefined));
-    await denyClipboardWrite(page);
+    await denyClipboardWrite(page, origin);
+    expect(await clipboardWriteState(page), 'the refusal applies to the tested site').toBe('denied');
     const block = page.getByRole('figure', { name: 'checks/sample-check.sh' });
     await block.getByRole('button', { name: 'Copy to clipboard' }).click();
     await page.waitForTimeout(300);

@@ -3,7 +3,11 @@
  * Starlight's built-in search, unchanged, with two accessibility corrections:
  * - the open button's accessible name also contains the shortcut hint it shows
  *   ("Search Ctrl K"). Visible label text must be part of the accessible name (WCAG 2.5.3,
- *   Label in Name), so speech-input users can activate the control by saying what they see;
+ *   Label in Name), so speech-input users can activate the control by saying what they see.
+ *   Starlight's compiled markup places the label and each key in adjacent elements with no
+ *   text between them, so the button's text reads "SearchCtrlK". Spaces between them make the
+ *   text match what is shown and named. The button lays them out with flex gaps, so the
+ *   spaces change nothing on screen;
  * - Pagefind's search input, labelled only by its `title`, takes the dialog's name.
  */
 import Default from '@astrojs/starlight/components/Search.astro';
@@ -16,9 +20,12 @@ import Default from '@astrojs/starlight/components/Search.astro';
   (() => {
     const button = document.querySelector('site-search button[data-open-modal]');
     if (!button) return;
-    const keys = [...button.querySelectorAll('kbd kbd')].map((key) => key.textContent.trim()).filter(Boolean);
+    const keys = [...button.querySelectorAll('kbd kbd')];
+    button.querySelector(':scope > kbd')?.before(' ');
+    keys.slice(1).forEach((key) => key.before(' '));
+    const captions = keys.map((key) => key.textContent.trim()).filter(Boolean);
     const label = button.getAttribute('aria-label');
-    if (label && keys.length > 0) button.setAttribute('aria-label', `${label} ${keys.join(' ')}`);
+    if (label && captions.length > 0) button.setAttribute('aria-label', `${label} ${captions.join(' ')}`);
   })();
 </script>
 
