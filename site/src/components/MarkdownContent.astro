@@ -1,0 +1,22 @@
+---
+/**
+ * Starlight's Markdown content wrapper, unchanged, plus keyboard access for wide tables.
+ * A table wider than the reading column scrolls inside itself; while it overflows it joins
+ * the tab order so keyboard users can scroll it, as Expressive Code does for long code.
+ */
+import Default from '@astrojs/starlight/components/MarkdownContent.astro';
+---
+
+<Default><slot /></Default>
+
+<script>
+  const update = (table: HTMLElement) => {
+    if (table.scrollWidth > table.clientWidth) table.tabIndex = 0;
+    else table.removeAttribute('tabindex');
+  };
+  const observer = new ResizeObserver((entries) => entries.forEach((entry) => update(entry.target as HTMLElement)));
+  document.querySelectorAll<HTMLElement>('.sl-markdown-content table:not(:where(.not-content *))').forEach((table) => {
+    update(table);
+    observer.observe(table);
+  });
+</script>

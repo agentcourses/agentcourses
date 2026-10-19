@@ -1,0 +1,154 @@
+---
+/**
+ * Starlight's page frame with the design's drawer breakpoint. Markup, the popover drawer,
+ * its focus trapping and the menu toggle are Starlight's own; only the width at which the
+ * sidebar docks and the drawer's presentation differ.
+ * Based on Starlight's PageFrame component, MIT licence, Copyright (c) 2023 Astro contributors.
+ */
+import MobileMenuToggle from '@astrojs/starlight/components/MobileMenuToggle.astro';
+
+const { hasSidebar } = Astro.locals.starlightRoute;
+---
+
+<div class="page sl-flex">
+  <header class="header"><slot name="header" /></header>
+  {
+    hasSidebar && (
+      <nav class="sidebar print:hidden" aria-label={Astro.locals.t('sidebarNav.accessibleLabel')}>
+        <MobileMenuToggle />
+        <script>
+          // The drawer uses the popover API, so it opens, closes on Escape and returns focus without
+          // custom key handling. The rest of the page is made inert while it is open. `beforetoggle`
+          // fires synchronously as the state changes; `toggle` is queued and can arrive after the
+          // next Tab press, which would let focus reach the page behind the drawer.
+          class StarlightSidebarPane extends HTMLElement {
+            constructor() {
+              super();
+              const dockedQuery = matchMedia('(min-width: 981px)');
+              const resetPopoverAttribute = () => {
+                this.popover = dockedQuery.matches ? null : 'auto';
+              };
+              resetPopoverAttribute();
+              dockedQuery.addEventListener('change', () => resetPopoverAttribute());
+              this.addEventListener('beforetoggle', ({ newState }) => this.trapFocus(newState === 'open'));
+            }
+            trapFocus(shouldTrap: boolean) {
+              document.querySelectorAll<HTMLElement>('.main-frame, .sl-skip-link').forEach((el) => {
+                el.toggleAttribute('inert', shouldTrap);
+              });
+            }
+          }
+          customElements.define('sl-sidebar-pane', StarlightSidebarPane);
+        </script>
+        <sl-sidebar-pane popover="" id="starlight__sidebar" class="sidebar-pane">
+          <div class="sidebar-content sl-flex">
+            <slot name="sidebar" />
+          </div>
+        </sl-sidebar-pane>
+      </nav>
+    )
+  }
+  <div class="main-frame"><slot /></div>
+</div>
+
+<style>
+  @layer starlight.core {
+    .page {
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .header {
+      z-index: var(--sl-z-index-navbar);
+      position: fixed;
+      inset-inline-start: 0;
+      inset-block-start: 0;
+      width: 100%;
+      height: var(--sl-nav-height);
+      border-bottom: 1px solid var(--sl-color-hairline-shade);
+      padding: var(--sl-nav-pad-y) var(--sl-nav-pad-x);
+      padding-inline-end: var(--sl-nav-pad-x);
+      background-color: var(--sl-color-bg-nav);
+    }
+
+    :global([data-has-sidebar]) .header {
+      padding-inline-end: calc(var(--sl-nav-gap) + var(--sl-nav-pad-x) + var(--sl-menu-button-size));
+    }
+
+    .sidebar-pane {
+      border: unset;
+      padding: unset;
+      height: unset;
+      color: unset;
+      position: fixed;
+      z-index: var(--sl-z-index-menu);
+      inset-block: var(--sl-nav-height) 0;
+      inset-inline-start: 0;
+      width: min(320px, 86vw);
+      background-color: var(--sl-color-bg-sidebar);
+      border-inline-end: 1px solid var(--sl-color-hairline-shade);
+      box-shadow: var(--shadow-drawer);
+      /* The open drawer sits in the top layer; keep its shadow off the top bar. */
+      clip-path: inset(0 -80px 0 0);
+      overflow-y: auto;
+      scrollbar-gutter: stable;
+      transform: translateX(-102%);
+      transition:
+        transform 0.2s ease,
+        overlay 0.2s ease allow-discrete,
+        display 0.2s ease allow-discrete;
+    }
+    .sidebar-pane:popover-open {
+      transform: none;
+    }
+    @starting-style {
+      .sidebar-pane:popover-open {
+        transform: translateX(-102%);
+      }
+    }
+    .sidebar-pane::backdrop {
+      inset-block-start: var(--sl-nav-height);
+      background-color: var(--sl-color-backdrop-overlay);
+    }
+
+    .sidebar-content {
+      height: 100%;
+      min-height: max-content;
+      padding: 20px 14px 40px var(--sl-sidebar-pad-x);
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .main-frame {
+      padding-top: calc(var(--sl-nav-height) + var(--sl-mobile-toc-height));
+      padding-inline-start: var(--sl-content-inline-start);
+    }
+
+    @media (min-width: 981px) {
+      :global([data-has-sidebar]) .header {
+        padding-inline-end: var(--sl-nav-pad-x);
+      }
+      .sidebar-pane {
+        display: block;
+        width: var(--sl-sidebar-width);
+        transform: none;
+        transition: none;
+        box-shadow: none;
+        clip-path: none;
+      }
+      .sidebar-content {
+        padding: 28px 8px 40px var(--sl-sidebar-pad-x);
+      }
+      .sidebar-content::after {
+        content: '';
+        padding-bottom: 1px;
+      }
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sidebar-pane {
+      transition: none;
+    }
+  }
+</style>

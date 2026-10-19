@@ -1,0 +1,33 @@
+---
+/**
+ * Starlight's built-in search, unchanged, with two accessibility corrections:
+ * - the open button's accessible name also contains the shortcut hint it shows
+ *   ("Search Ctrl K"). Visible label text must be part of the accessible name (WCAG 2.5.3,
+ *   Label in Name), so speech-input users can activate the control by saying what they see;
+ * - Pagefind's search input, labelled only by its `title`, takes the dialog's name.
+ */
+import Default from '@astrojs/starlight/components/Search.astro';
+---
+
+<Default {...Astro.props} />
+
+{/* Runs after Starlight's inline script, which swaps in the platform's modifier key. */}
+<script is:inline>
+  (() => {
+    const button = document.querySelector('site-search button[data-open-modal]');
+    if (!button) return;
+    const keys = [...button.querySelectorAll('kbd kbd')].map((key) => key.textContent.trim()).filter(Boolean);
+    const label = button.getAttribute('aria-label');
+    if (label && keys.length > 0) button.setAttribute('aria-label', `${label} ${keys.join(' ')}`);
+  })();
+</script>
+
+<script>
+  const results = document.getElementById('starlight__search');
+  const name = results?.closest('dialog')?.getAttribute('aria-label') ?? 'Search';
+  const label = () => results?.querySelector('input.pagefind-ui__search-input:not([aria-label])')?.setAttribute('aria-label', name);
+  if (results) {
+    label();
+    new MutationObserver(label).observe(results, { childList: true, subtree: true });
+  }
+</script>

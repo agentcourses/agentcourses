@@ -1,0 +1,26 @@
+---
+/**
+ * One runner in a showcase: a monogram square, a name, a description and capability chips.
+ * `invitation` draws the dashed tile that invites a new runner to be listed.
+ */
+interface Props {
+  name: string;
+  monogram: string;
+  href?: string;
+  chips?: string[];
+  invitation?: boolean;
+}
+const { name, monogram, href, chips = [], invitation = false } = Astro.props;
+---
+<article class:list={['ac-runner', 'not-content', { 'ac-runner--invitation': invitation }]}>
+  <span class="ac-runner__logo" aria-hidden="true">{monogram}</span>
+  <div class="ac-runner__body">
+    <h3>{href ? <a href={href}>{name}</a> : name}</h3>
+    <div class="ac-runner__text"><slot /></div>
+    {chips.length > 0 && (
+      <ul class="ac-runner__chips" aria-label={`${name} capabilities`}>
+        {chips.map((chip) => <li class="ac-chip">{chip}</li>)}
+      </ul>
+    )}
+  </div>
+</article>

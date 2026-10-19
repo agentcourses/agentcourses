@@ -1,0 +1,65 @@
+---
+title: Agent Courses
+description: Design fixture for the overview. Fixed sample text exercises the page frame; it is not specification content.
+banner:
+  content: 'This is the documentation design fixture. Its pages hold fixed sample text only. <a href="/specification/">Read the sample notice</a>.'
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+import Stages from '../../../src/components/Stages.astro';
+import RunnerTile from '../../../src/components/RunnerTile.astro';
+
+<p class="ac-thesis">A calm sample sentence stands where the overview's one-line thesis will go.</p>
+
+This overview fixture shows how a newcomer's first page is laid out. Its paragraphs, lists and tables are placeholders with realistic length, so the reading column, rhythm and wrapping can be judged before real content is connected.
+
+## What a course folder looks like
+
+A sample folder tree shows how long code lines behave inside a dark panel that scrolls on its own.
+
+```text title="sample-course/"
+sample-course/
+├── COURSE.md
+├── lessons/
+│   ├── 01-first-lesson.md
+│   └── 02-second-lesson-with-a-deliberately-long-file-name-to-exercise-horizontal-scrolling.md
+└── checks/
+    └── sample-check.sh
+```
+
+## Four sample stages
+
+<Stages
+  label="Sample stages"
+  stages={[
+    { name: 'first', text: 'Sample text for the first step of the staircase.' },
+    { name: 'second', text: 'Sample text that is a little longer, so the step wraps.' },
+    { name: 'third', text: 'Sample text for the third step.' },
+    { name: 'final', text: 'The last stage is outlined and filled.' },
+  ]}
+/>
+
+## Where the format runs
+
+<div class="ac-runners">
+  <RunnerTile name="Sample runner" monogram="SR" href="/runners/" chips={['host one', 'host two', 'run-checks']}>
+    A fixed sample tile with a short description and capability chips.
+  </RunnerTile>
+  <RunnerTile name="Your agent" monogram="+" href="/implementers/support/" invitation>
+    The dashed tile invites another runner to add support.
+  </RunnerTile>
+</div>
+
+## A short comparison
+
+| Aspect | Sample left column | Sample right column |
+|---|---|---|
+| Who reads it | The agent | The learner, through the agent |
+| Where it lives | A folder | A folder with checks |
+
+## Next steps
+
+<CardGrid>
+  <LinkCard title="Quickstart" description="Sample card that leads to the quickstart fixture." href="/authors/quickstart/" />
+  <LinkCard title="Specification" description="Sample card that leads to the specification fixture." href="/specification/" />
+</CardGrid>

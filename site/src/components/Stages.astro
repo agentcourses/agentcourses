@@ -1,0 +1,19 @@
+---
+/**
+ * A short ordered staircase of stages. The final stage is drawn outlined and filled.
+ * Names and descriptions are supplied by the page; this component chooses no wording.
+ */
+interface Props {
+  stages: Array<{ name: string; text: string }>;
+  label?: string;
+}
+const { stages, label = 'Stages' } = Astro.props;
+---
+<ol class="ac-stages not-content" aria-label={label}>
+  {stages.map((stage) => (
+    <li>
+      <span class="ac-stages__name">{stage.name}<span class="ac-stages__mark" aria-hidden="true"></span></span>
+      <p>{stage.text}</p>
+    </li>
+  ))}
+</ol>

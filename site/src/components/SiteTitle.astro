@@ -1,0 +1,12 @@
+---
+/**
+ * Replaces Starlight's site title with the open-book mark beside the wordmark.
+ * The mark is `/mark.svg` drawn as a mask, so one file serves the header and the favicon
+ * and the mark takes the current text colour in both modes.
+ */
+const { siteTitle, siteTitleHref } = Astro.locals.starlightRoute;
+---
+<a href={siteTitleHref} class="site-title sl-flex">
+  <span class="ac-mark" aria-hidden="true"></span>
+  <span class="ac-wordmark" translate="no">{siteTitle}</span>
+</a>
