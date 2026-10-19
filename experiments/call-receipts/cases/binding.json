@@ -1,0 +1,148 @@
+[
+  {
+    "case": "changed-call",
+    "host": "embedded",
+    "origin": "learner",
+    "mechanism": "isolated-confirmation",
+    "authority": {
+      "controller": "learner",
+      "tutor_access": []
+    },
+    "context": {
+      "snapshot": "snapshot-a",
+      "lesson": "lesson-a",
+      "call": "call-a",
+      "occurrence": "input-a",
+      "challenge": "challenge-a"
+    },
+    "confirmation": {
+      "snapshot": "snapshot-a",
+      "lesson": "lesson-a",
+      "call": "call-stale",
+      "occurrence": "input-a",
+      "challenge": "challenge-a"
+    },
+    "used_occurrences": [],
+    "expected_outcome": "rejected",
+    "expected_binding_failures": [
+      "call"
+    ],
+    "expected_candidate_eligible": false
+  },
+  {
+    "case": "changed-occurrence",
+    "host": "embedded",
+    "origin": "learner",
+    "mechanism": "isolated-confirmation",
+    "authority": {
+      "controller": "learner",
+      "tutor_access": []
+    },
+    "context": {
+      "snapshot": "snapshot-a",
+      "lesson": "lesson-a",
+      "call": "call-a",
+      "occurrence": "input-a",
+      "challenge": "challenge-a"
+    },
+    "confirmation": {
+      "snapshot": "snapshot-a",
+      "lesson": "lesson-a",
+      "call": "call-a",
+      "occurrence": "occurrence-stale",
+      "challenge": "challenge-a"
+    },
+    "used_occurrences": [],
+    "expected_outcome": "rejected",
+    "expected_binding_failures": [
+      "occurrence"
+    ],
+    "expected_candidate_eligible": false
+  },
+  {
+    "case": "changed-challenge",
+    "host": "embedded",
+    "origin": "learner",
+    "mechanism": "isolated-confirmation",
+    "authority": {
+      "controller": "learner",
+      "tutor_access": []
+    },
+    "context": {
+      "snapshot": "snapshot-a",
+      "lesson": "lesson-a",
+      "call": "call-a",
+      "occurrence": "input-a",
+      "challenge": "challenge-a"
+    },
+    "confirmation": {
+      "snapshot": "snapshot-a",
+      "lesson": "lesson-a",
+      "call": "call-a",
+      "occurrence": "input-a",
+      "challenge": "challenge-stale"
+    },
+    "used_occurrences": [],
+    "expected_outcome": "rejected",
+    "expected_binding_failures": [
+      "challenge"
+    ],
+    "expected_candidate_eligible": false
+  },
+  {
+    "case": "automated-hook",
+    "host": "claude-code",
+    "origin": "automated",
+    "mechanism": "isolated-confirmation",
+    "authority": {
+      "controller": "learner",
+      "tutor_access": []
+    },
+    "context": {
+      "snapshot": "snapshot-a",
+      "lesson": "lesson-a",
+      "call": "call-a",
+      "occurrence": "input-a",
+      "challenge": "challenge-a"
+    },
+    "confirmation": {
+      "snapshot": "snapshot-a",
+      "lesson": "lesson-a",
+      "call": "call-a",
+      "occurrence": "input-a",
+      "challenge": "challenge-a"
+    },
+    "used_occurrences": [],
+    "expected_outcome": "rejected",
+    "expected_binding_failures": [],
+    "expected_candidate_eligible": false
+  },
+  {
+    "case": "unknown-host",
+    "host": "unsupported",
+    "origin": "learner",
+    "mechanism": "isolated-confirmation",
+    "authority": {
+      "controller": "learner",
+      "tutor_access": []
+    },
+    "context": {
+      "snapshot": "snapshot-a",
+      "lesson": "lesson-a",
+      "call": "call-a",
+      "occurrence": "input-a",
+      "challenge": "challenge-a"
+    },
+    "confirmation": {
+      "snapshot": "snapshot-a",
+      "lesson": "lesson-a",
+      "call": "call-a",
+      "occurrence": "input-a",
+      "challenge": "challenge-a"
+    },
+    "used_occurrences": [],
+    "expected_outcome": "unverified",
+    "expected_binding_failures": [],
+    "expected_candidate_eligible": false
+  }
+]
