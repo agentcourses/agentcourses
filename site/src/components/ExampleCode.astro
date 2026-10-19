@@ -1,0 +1,28 @@
+---
+import { Code } from '@astrojs/starlight/components';
+import type { ComponentProps } from 'astro/types';
+import { readFileSync, realpathSync, statSync } from 'node:fs';
+import { isAbsolute, relative, resolve, sep } from 'node:path';
+
+interface Props { example: string; file: string; lang: string }
+const { example, file, lang } = Astro.props;
+const fail = (message: string): never => { throw new Error(`ExampleCode: ${message}`); };
+if (typeof example !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(example)) fail('unknown or unsafe example');
+if (typeof file !== 'string' || !file || isAbsolute(file) || file.includes('\\') || file.split('/').some((part) => !part || part === '.' || part === '..')) fail('unsafe file path');
+const examples = import.meta.env.AC_EXAMPLES_ROOT as string;
+const inside = (base: string, target: string) => {
+  const part = relative(base, target);
+  return part !== '' && !isAbsolute(part) && part !== '..' && !part.startsWith(`..${sep}`);
+};
+let code: string;
+try {
+  const base = realpathSync(examples);
+  const folder = realpathSync(resolve(base, example));
+  const target = realpathSync(resolve(folder, file));
+  if (!inside(base, folder) || !inside(folder, target) || !statSync(target).isFile()) fail('source leaves its example directory');
+  code = readFileSync(target, 'utf8');
+} catch (error) {
+  fail(`missing or unsafe source: ${example}/${file}: ${String(error)}`);
+}
+---
+<Code code={code!} lang={lang as ComponentProps<typeof Code>['lang']} />

@@ -8,3 +8,12 @@
 node_modules/
 .venv/
 __pycache__/
+
+# Internal tooling and generated proof output
+.runtime/
+.pytest_cache/
+site/.astro/
+site/dist/
+site/.browsers/
+site/test-results/
+site/playwright-report/

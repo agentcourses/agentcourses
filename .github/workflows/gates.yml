@@ -1,10 +1,3 @@
-# The checks every pull request must pass before it can be merged.
-#
-# Starter file copied by generate-milestone when it creates a new build repository.
-# `make check` is a placeholder: replace the Makefile target with the repository's real
-# checks (tests, formatting, linting, type checks), and add any setup steps they need.
-# Each check must exit non-zero on failure.
-
 name: gates
 
 on:
@@ -22,12 +15,51 @@ concurrency:
 jobs:
   check:
     name: make check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/site/.browsers
+      UV_PYTHON: 3.12.11
     steps:
-      - uses: actions/checkout@v4
-
-      # Add language setup here, for example actions/setup-python or actions/setup-node.
-
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+        with:
+          version: '0.9.9'
+          python-version: '3.12.11'
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+        with:
+          version: '10.27.0'
+          package_json_file: site/package.json
+      - name: Resolve reviewed document baseline
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          if [ "$EVENT_NAME" = pull_request ]; then
+            baseline=$(git merge-base "$BASE_SHA" "$HEAD_SHA")
+          elif [ -n "$BEFORE_SHA" ] && [ "$BEFORE_SHA" != 0000000000000000000000000000000000000000 ]; then
+            baseline=$BEFORE_SHA
+          else
+            baseline=$(git rev-parse HEAD)
+          fi
+          echo "DOCS_BASE_REF=$baseline" >> "$GITHUB_ENV"
+      - name: Install locked environments
+        run: |
+          uv lock --check
+          uv sync --locked --python 3.12.11
+          pnpm --dir site install --frozen-lockfile
+          pnpm --dir site exec playwright install --with-deps chromium
+      - name: Prove a broken input stops the ordinary gate
+        run: uv run --locked python tools/prove_gate_failure.py
       - name: Run the checks
         run: make check

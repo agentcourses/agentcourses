@@ -37,6 +37,5 @@
 
 [<theme title>](<link to the issue>)
 
-<!-- On the next line, "Closes #" and the issue number, on its own. GitHub needs that plain form to close
-     the issue; it is the one allowed exception to the rule that numbers sit inside titled links. -->
-Closes #
+<!-- Linear requires its closing keyword and issue identifier on a separate line. -->
+Fixes <Linear issue identifier>
