@@ -46,13 +46,13 @@ Explicit HTML IDs map source roots to `/specification/#format` and source fragme
 The other canonical stems are `execution`, `consent`, `records` and `identity`.
 Public guides may use these mapped targets before composition exists; other links require present routes.
 
-Course registers use Markdown tables with `Delivery owner` (`course`, `records`, `schemas`) and `State` (`resolved`, `pending`) columns.
-A pending course row needs `Question`, `Source` and `Why waits`; unresolved cells contain plain `pending`.
+The [requirement register](spec/requirements.md) uses Markdown tables with `Delivery owner` (`course`, `records`, `schemas`) and `State` (`resolved`, `pending`) columns.
+A pending requirement row needs `Question`, `Source` and `Why waits`; unresolved cells contain plain `pending`.
 Only records may own pending questions: receipts, call events, replay/recovery, settlement, followed-field, identity, schema addresses, naming or freeze qualification.
-Resolved contract rows require `Normative`, `Valid example`, `Invalid example`, `Reason` and `Owner review`.
 Resolved requirement rows require `Normative` and `Example` links.
 A later schema proof owner may be assigned without claiming an executed proof.
-Records activation permits no pending contract rows.
+Records activation permits no pending requirement rows.
+The documentation gate reads only this repository; no strategy checkout or resolution history is required.
 The receipt experiment report is allowed at foundation and mandatory at records.
 Identity vector manifests name source files with `input` or `input_path`, relative to their manifest.
 
