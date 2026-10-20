@@ -16,7 +16,7 @@ STAGES = ("foundation", "course", "records", "authors", "runners", "candidate")
 DOCS = "site/src/content/docs/"
 GROUPS = {
     "foundation": ["tools/document-stage.json", DOCS + "index.mdx"],
-    "course": [f"spec/{s}.md" for s in ("format", "execution", "consent", "requirements")] + ["docs/delivery/contracts.md"],
+    "course": [f"spec/{s}.md" for s in ("format", "execution", "consent", "requirements")],
     "records": ["spec/records.md", "spec/identity.md", "docs/delivery/call-receipts.md", "examples/identity-vectors/manifest.json"],
     "authors": [DOCS + f"authors/{s}.mdx" for s in ("quickstart", "best-practices", "checks", "explain-back")],
     "runners": [DOCS + f"{s}.mdx" for s in ("runners", "implementers/support", "implementers/conformance")],
@@ -158,31 +158,31 @@ def table_rows(text):
 def check_registers(root, stage, findings):
     if STAGES.index(stage) < STAGES.index("course"):
         return
-    for name in ("spec/requirements.md", "docs/delivery/contracts.md"):
-        path = root / name
-        if not path.is_file(): continue
-        for row in table_rows(path.read_text()):
-            if "state" not in row:
-                findings.append(finding("register-state", name, "Register rows require state and delivery owner"))
-                continue
-            owner = row.get("delivery owner", "").lower()
-            state = row["state"].lower()
-            if owner not in OWNERS or state not in ("resolved", "pending"):
-                findings.append(finding("register-owner-state", name, "Unknown delivery owner or state"))
-            if state == "pending":
-                question = row.get("question", "").lower()
-                if stage != "course" or owner != "records" or question not in PENDING or not row.get("source") or not row.get("why waits"):
-                    findings.append(finding("pending-contract", name, "Pending rows need a permitted records question, source and why waits; only course permits them"))
-                needed = ("normative", "valid example", "invalid example", "reason", "owner review") if name.endswith("contracts.md") else ("normative", "example")
-                if any(row.get(key) != "pending" for key in needed):
-                    findings.append(finding("pending-cell", name, "Every unresolved register cell must contain literal pending"))
-            elif state == "resolved":
-                needed = ("normative", "valid example", "invalid example", "reason", "owner review") if name.endswith("contracts.md") else ("normative", "example")
-                if any(not row.get(key) or row[key].lower() == "pending" for key in needed):
-                    findings.append(finding("unresolved-register", name, "Resolved row lacks reviewed resolution and targets"))
-                for key in ("normative", "valid example", "invalid example", "example"):
-                    if key in needed and not re.search(r"\[[^]]+\]\([^)]+\)", row.get(key, "")):
-                        findings.append(finding("register-target", name, f"{key} requires a source link"))
+    name = "spec/requirements.md"
+    path = root / name
+    if not path.is_file(): return
+    for row in table_rows(path.read_text()):
+        if "state" not in row:
+            findings.append(finding("register-state", name, "Register rows require state and delivery owner"))
+            continue
+        owner = row.get("delivery owner", "").lower()
+        state = row["state"].lower()
+        if owner not in OWNERS or state not in ("resolved", "pending"):
+            findings.append(finding("register-owner-state", name, "Unknown delivery owner or state"))
+        if state == "pending":
+            question = row.get("question", "").lower()
+            if stage != "course" or owner != "records" or question not in PENDING or not row.get("source") or not row.get("why waits"):
+                findings.append(finding("pending-contract", name, "Pending rows need a permitted records question, source and why waits; only course permits them"))
+            needed = ("normative", "example")
+            if any(row.get(key) != "pending" for key in needed):
+                findings.append(finding("pending-cell", name, "Every unresolved register cell must contain literal pending"))
+        elif state == "resolved":
+            needed = ("normative", "example")
+            if any(not row.get(key) or row[key].lower() == "pending" for key in needed):
+                findings.append(finding("unresolved-register", name, "Resolved requirement lacks normative and example targets"))
+            for key in needed:
+                if not re.search(r"\[[^]]+\]\([^)]+\)", row.get(key, "")):
+                    findings.append(finding("register-target", name, f"{key} requires a source link"))
 
 
 def check_tree(root: Path, minimum_stage: str, *, source_only=False) -> list[dict[str, str]]:
@@ -249,6 +249,9 @@ def check_tree(root: Path, minimum_stage: str, *, source_only=False) -> list[dic
                     findings.append(finding("public-route", rel, f"No active route: {href}"))
                 continue
             target = (path.parent / address).resolve() if address else path.resolve()
+            if str(rel).startswith(DOCS) and target.is_relative_to(root) and target.relative_to(root).as_posix() in ("spec/requirements.md", "docs/delivery/contracts.md"):
+                findings.append(finding("private-register-link", rel, "Public guides cannot link to internal registers"))
+                continue
             if not target.is_relative_to(root) or not target.is_file():
                 findings.append(finding("missing-link", rel, f"Missing or unsafe local target: {href}"))
                 continue
@@ -261,8 +264,6 @@ def check_tree(root: Path, minimum_stage: str, *, source_only=False) -> list[dic
                 implicit = {re.sub(r"[^\w -]", "", line.lstrip("# ").lower()).replace(" ", "-") for line in target_text.splitlines() if line.startswith("#")}
                 if fragment not in set(explicit) | implicit:
                     findings.append(finding("missing-anchor", rel, f"Missing target fragment: {href}"))
-            if str(rel).startswith(DOCS) and target_name in ("spec/requirements.md", "docs/delivery/contracts.md"):
-                findings.append(finding("private-register-link", rel, "Public guides cannot link to internal registers"))
     if not source_only:
         check_registers(root, stage, findings)
     return findings

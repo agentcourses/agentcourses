@@ -1,6 +1,6 @@
 # Agent Courses 1.0: course format
 
-This page defines what a course is: its folder, its entry file, its lessons and the project it runs in. It is the normative source for structure. Teaching behaviour, checks and evidence are in [the execution contract](execution.md). Learner feedback is in [the consent contract](consent.md). Every rule here is listed in [the requirement register](requirements.md), and each choice the candidate had to make is explained in [the resolution register](../docs/delivery/contracts.md). Record files, receipts and course identity are not defined here; a later contract owns them.
+This page defines what a course is: its folder, its entry file, its lessons and the project it runs in. It is the normative source for structure. Teaching behaviour, checks and evidence are in [the execution contract](execution.md). Learner feedback is in [the consent contract](consent.md). Every rule here is listed in [the requirement register](requirements.md). Record files, receipts and course identity are not defined here; a later contract owns them.
 
 This is a candidate. Wording marked **Proposed** is a drafting choice that waits for the owner's review on the pull request; a passing check or an independent review does not approve it.
 
@@ -144,8 +144,6 @@ The extended baseline has no objectives in `make.md`, no calls in it and no `sta
 
 This specification, its schemas and its examples are licensed under Apache-2.0. The first proposal for the format, dated 13 October 2026, was drafted under a different licence. Its structure is kept and its attribution is preserved here. Every example course in this specification uses `license: Apache-2.0`. A course author may choose any licence for their own course.
 
-Owner-decided: [Apache-2.0 for everything](https://github.com/tutr-dev/tutr-strategy/blob/milestones/agent-courses-specification/docs/decisions/2026-10-14-apache-2-for-everything.md). The attribution sentence above is this candidate's wording.
-
 #### Licence cases <a id="example-licence"></a>
 
 | Case | Baseline and change | Judged as | Outcome | Deciding rule |
@@ -167,7 +165,7 @@ Two groups of things are not in this candidate.
 
 **Part of 1.0, but not available or not defined in this candidate.** The accepted scope of version 1.0 also includes a reference library with a validator, a runner conformance suite and a stable release. This candidate defines none of them, so nobody may claim to be conformant or stable yet. The conformance classes and claim wording arrive with the conformance suite, and a stable release arrives with launch qualification. A runner may describe itself only as supporting named capabilities, as the cases show.
 
-**Outside the candidate.** Four matters are external and no rule here depends on them: whether package names are free on the registries (⚠️ unverified; a release-time check), whether another host agrees the agents folder layout, who the second independent runner is, and who besides the owner approves specification changes. [The resolution register](../docs/delivery/contracts.md) records each disposition. The specification's home is agentcourses.io, as the owner decided in [agentcourses.io is the home](https://github.com/tutr-dev/tutr-strategy/blob/milestones/agent-courses-specification/docs/decisions/2026-10-14-agentcourses-io-is-home.md).
+**Outside the candidate.** Four matters are external and no rule here depends on them: whether package names are free on the registries (⚠️ unverified; a release-time check), whether another host agrees the agents folder layout, who the second independent runner is, and who besides the owner approves specification changes. The specification's home is agentcourses.io.
 
 #### Scope and exclusion cases <a id="example-exclusions"></a>
 

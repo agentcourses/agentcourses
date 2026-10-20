@@ -22,6 +22,7 @@ def test_missing_local_link(tmp_path):
 import json
 import subprocess
 import sys
+import shutil
 import pytest
 
 
@@ -57,7 +58,7 @@ def test_document_stages(tmp_path):
     write(tmp_path, "docs/delivery/call-receipts.md", "# Experiment\n")
     assert c.check_tree(tmp_path, "foundation") == []
     c = fixture(tmp_path, "course")
-    pending_register(tmp_path, "docs/delivery/contracts.md")
+    pending_register(tmp_path, "spec/requirements.md")
     assert c.check_tree(tmp_path, "foundation") == []
     c = fixture(tmp_path, "records")
     (tmp_path / "spec/identity.md").unlink()
@@ -65,6 +66,26 @@ def test_document_stages(tmp_path):
     c = fixture(tmp_path, "authors")
     for path in (tmp_path / "site/src/content/docs/authors").glob("*.mdx"): path.unlink()
     assert "required-file" in rules(c, tmp_path)
+
+
+@pytest.mark.parametrize("scope", ["course", "present"])
+def test_course_snapshot_needs_only_public_sources(tmp_path, scope):
+    source = Path(__file__).parents[1]
+    snapshot = tmp_path / "standalone"
+    tracked = subprocess.check_output(["git", "ls-files", "-z"], cwd=source).decode().split("\0")
+    for name in filter(None, tracked):
+        path = source / name
+        if name == "docs/delivery/contracts.md" or not path.is_file(): continue
+        destination = snapshot / name
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, destination)
+    assert not (snapshot / "docs/delivery/contracts.md").exists()
+    assert not (snapshot / ".git").exists()
+    result = subprocess.run(
+        [sys.executable, "tools/check_docs.py", "--scope", scope],
+        cwd=snapshot, capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
 
 
 def test_missing_regressed_and_premature_stages(tmp_path):
@@ -78,24 +99,32 @@ def test_missing_regressed_and_premature_stages(tmp_path):
     assert "invalid-stage" in rules(c, tmp_path)
 
 
-@pytest.mark.parametrize("change", ["owner", "state", "question", "missing", "plain"])
-def test_reject_pending_rows(tmp_path, change):
+@pytest.mark.parametrize("change,expected", [
+    ({"delivery owner": "unknown"}, "register-owner-state"),
+    ({"state": "probably"}, "register-owner-state"),
+    ({"question": "course layout"}, "pending-contract"),
+    ({"why waits": ""}, "pending-contract"),
+    ({"normative": "pending later"}, "pending-cell"),
+])
+def test_reject_pending_rows(tmp_path, change, expected):
     c = fixture(tmp_path, "course")
-    cells = ["identity", "records", "pending", "[Source](../../spec/format.md)", "Needs identity choice", "pending"]
-    if change == "owner": cells[1] = "unknown"
-    if change == "state": cells[2] = "probably"
-    if change == "question": cells[0] = "course layout"
-    if change == "missing": cells[4] = ""
-    if change == "plain": cells[5] = "pending later"
-    write(tmp_path, "docs/delivery/contracts.md", "| Question | Delivery owner | State | Source | Why waits | Normative |\n|---|---|---|---|---|---|\n|" + "|".join(cells) + "|\n")
-    assert rules(c, tmp_path)
+    pending_register(tmp_path, "spec/requirements.md", change)
+    assert expected in rules(c, tmp_path)
 
 
 def test_records_reject_pending_and_missing_vectors(tmp_path):
     c = fixture(tmp_path, "records")
-    write(tmp_path, "docs/delivery/contracts.md", "| Question | Delivery owner | State | Source | Why waits |\n|---|---|---|---|---|\n| identity | records | pending | source | waits |\n")
+    pending_register(tmp_path, "spec/requirements.md")
     (tmp_path / "examples/identity-vectors/sample.txt").unlink()
     assert {"pending-contract", "vector-input"} <= rules(c, tmp_path)
+
+
+@pytest.mark.parametrize("name", ["spec/format.md", "spec/requirements.md"])
+def test_course_stage_still_requires_public_sources(tmp_path, name):
+    c = fixture(tmp_path, "course")
+    (tmp_path / name).unlink()
+    assert any(item["rule"] == "required-file" and item["path"] == name
+               for item in c.check_tree(tmp_path, "course"))
 
 
 def test_spec_links(tmp_path):
@@ -164,13 +193,12 @@ def test_cli_missing_link_and_invalid_use(tmp_path):
 
 
 REGISTER_CELLS = {
-    "docs/delivery/contracts.md": ("normative", "valid example", "invalid example", "reason", "owner review"),
     "spec/requirements.md": ("normative", "example"),
 }
 
 
 def pending_register(root, name, changes=None, omit=None):
-    source = "../../spec/format.md" if name.startswith("docs/") else "format.md"
+    source = "format.md"
     row = {"question": "identity", "delivery owner": "records", "state": "pending", "source": f"[Source]({source})", "why waits": "Needs the records decision"}
     row.update({cell: "pending" for cell in REGISTER_CELLS[name]})
     row.update(changes or {})
@@ -192,6 +220,22 @@ def test_complete_literal_pending_register_passes(tmp_path, name):
     c = fixture(tmp_path, "course")
     pending_register(tmp_path, name)
     assert c.check_tree(tmp_path, "foundation") == []
+
+
+@pytest.mark.parametrize("cell", ["normative", "example"])
+@pytest.mark.parametrize("value,expected", [("pending", "unresolved-register"), ("", "unresolved-register"), ("Complete", "register-target")])
+def test_resolved_requirements_need_source_targets(tmp_path, cell, value, expected):
+    c = fixture(tmp_path, "course")
+    pending_register(tmp_path, "spec/requirements.md", {
+        "delivery owner": "course", "state": "resolved",
+        "normative": "[Rule](format.md)", "example": "[Case](format.md)",
+    })
+    assert c.check_tree(tmp_path, "course") == []
+    pending_register(tmp_path, "spec/requirements.md", {
+        "delivery owner": "course", "state": "resolved",
+        "normative": "[Rule](format.md)", "example": "[Case](format.md)", cell: value,
+    })
+    assert expected in rules(c, tmp_path)
 
 
 def test_html_data_id_is_not_a_source_anchor(tmp_path):

@@ -1,6 +1,6 @@
 # Requirement register
 
-This register lists every rule that a schema builder, validator builder or runner builder must implement. Each row names where the rule came from, links its normative text, one or more concrete accepted cases and the rejected or warning cases that break it, and says who enforces it and who will prove it. A schema builder should start with rows whose enforcer is `schema`, and leave rows marked `markdown validator` or `runner` to other proofs. A *proof owner* named here is an assignment, not a claim that a proof has run: no schema, validator or runner proof exists yet. The questions behind these rules are in [the resolution register](../docs/delivery/contracts.md). The normative pages are [format](format.md), [execution](execution.md) and [consent](consent.md).
+This register lists every rule that a schema builder, validator builder or runner builder must implement. Each row names where the rule came from, links its normative text, one or more concrete accepted cases and the rejected or warning cases that break it, and says who enforces it and who will prove it. A schema builder should start with rows whose enforcer is `schema`, and leave rows marked `markdown validator` or `runner` to other proofs. A *proof owner* named here is an assignment, not a claim that a proof has run: no schema, validator or runner proof exists yet. The normative pages are [format](format.md), [execution](execution.md) and [consent](consent.md).
 
 **State words:** `resolved` rows have complete proposed text and linked cases. It does not mean the owner approved them. `pending` rows wait for the record contract, which owns them, and carry plain `pending` instead of targets.
 
@@ -8,7 +8,7 @@ This register lists every rule that a schema builder, validator builder or runne
 
 ## The nine adopted amendments <a id="amendment-matrix"></a>
 
-The source is the exact nine-row table in the [golden course draft read](https://github.com/tutr-dev/tutr-strategy/blob/milestones/agent-courses-specification/bench/artifacts/golden-course-draft/read-2026-10-19.md#L809), adopted by [the learner owns the calls](https://github.com/tutr-dev/tutr-strategy/blob/milestones/agent-courses-specification/docs/decisions/2026-10-14-the-learner-owns-the-calls.md). Each row quotes the change and links its normative text. Amendments with several duties have a case for each duty.
+The table below lists all nine adopted amendments. Each row states the change and links its normative text. Amendments with several duties have a case for each duty.
 
 | Requirement | Source | Normative | Example | Invalid example | Enforced by | Proof owner | Delivery owner | State |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
