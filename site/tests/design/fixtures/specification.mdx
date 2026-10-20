@@ -1,0 +1,36 @@
+---
+title: Specification
+description: Design fixture for the single reference page. Its sections are sample text and carry no requirements.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside title="Sample notice">
+This fixture stands in for the reference page. Requirement keywords appear here only to show their typography: MUST, SHOULD and MAY.
+</Aside>
+
+## Sample section one
+
+A sample paragraph of reference length. It runs long enough to show the reading measure and line height, and it carries no normative meaning.
+
+### A sample subsection
+
+A sample paragraph under a subsection heading, used to exercise the on-this-page list.
+
+## Sample section two
+
+A second sample paragraph. Reference pages are long, so the contents column and the mobile contents control both need several entries.
+
+```yaml title="sample.yaml"
+sample: value
+nested:
+  key: another sample value
+```
+
+## Sample section three
+
+A third sample paragraph with a [link to the overview fixture](/) and an inline `sample-code` span.
+
+## Sample section four
+
+A fourth sample paragraph closes the fixture.

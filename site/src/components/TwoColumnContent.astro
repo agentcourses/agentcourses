@@ -1,0 +1,61 @@
+---
+/**
+ * Starlight's two-column content layout with the design's contents breakpoint: above 1240
+ * pixels the "On this page" column is the last column of the shell, 220 pixels wide and
+ * sticky beneath the top bar.
+ * Based on Starlight's TwoColumnContent component, MIT licence, Copyright (c) 2023 Astro contributors.
+ */
+---
+
+<div class="two-column">
+  {
+    Astro.locals.starlightRoute.toc && (
+      <aside class="right-sidebar-container print:hidden">
+        <div class="right-sidebar">
+          <slot name="right-sidebar" />
+        </div>
+      </aside>
+    )
+  }
+  <div class="main-pane"><slot /></div>
+</div>
+
+<style>
+  @layer starlight.core {
+    .main-pane {
+      isolation: isolate;
+      min-width: 0;
+    }
+
+    @media (min-width: 1241px) {
+      :global([data-has-toc]) .two-column {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) var(--toc-w);
+        column-gap: var(--col-gap);
+      }
+
+      .main-pane {
+        grid-column: 1;
+        grid-row: 1;
+      }
+
+      /*
+       * The column scrolls on its own, which clips anything drawn outside it. Four pixels of
+       * inline room, taken back by the negative margin, keep each link's focus ring (two
+       * pixels wide, offset by two) inside the visible area without moving the column.
+       */
+      .right-sidebar-container {
+        grid-column: 2;
+        grid-row: 1;
+        position: sticky;
+        top: var(--sl-nav-height);
+        align-self: start;
+        max-height: calc(100vh - var(--sl-nav-height));
+        margin-inline: -4px;
+        padding-inline: 4px;
+        overflow-y: auto;
+        scrollbar-width: none;
+      }
+    }
+  }
+</style>

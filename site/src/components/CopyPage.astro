@@ -1,0 +1,88 @@
+---
+/**
+ * Copies the current article as readable text: its title, its description and the rendered
+ * Markdown content. Navigation, contents lists, heading anchors, code-copy buttons and other
+ * control labels are left out. The status line reports success only after the clipboard
+ * accepted the text, and says plainly when there was nothing to copy or the browser refused.
+ */
+---
+
+<ac-copy-page class="ac-copy-page">
+  <button type="button" class="ac-copy-page__button">
+    <svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="8" y="8" width="12" height="12" rx="2"></rect>
+      <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>
+    </svg>
+    <span>Copy page</span>
+  </button>
+  <p class="ac-copy-page__status" role="status"></p>
+</ac-copy-page>
+
+<script>
+  const messages = {
+    copied: 'Page copied to the clipboard.',
+    empty: 'Nothing to copy: this page has no article text.',
+    denied: 'Copy failed: the browser blocked clipboard access.',
+    unavailable: 'Copy failed: this browser offers no clipboard access here.',
+    failed: 'Copy failed: the clipboard did not accept the text.',
+  } as const;
+
+  /** Elements inside the article that are controls or screen-reader helpers, not reading text. */
+  const excluded = [
+    'button',
+    'script',
+    'style',
+    'template',
+    'svg',
+    '.sl-anchor-link',
+    '.sr-only',
+    '.expressive-code .copy',
+    '[data-copy-page-exclude]',
+  ].join(', ');
+
+  function readable(element: Element | null): string {
+    if (!element) return '';
+    const clone = element.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll(excluded).forEach((node) => node.remove());
+    // innerText follows the rendered layout, so lines, list items and table cells stay separated.
+    const holder = document.createElement('div');
+    holder.setAttribute('aria-hidden', 'true');
+    holder.inert = true;
+    holder.style.cssText = 'position:fixed;inset-inline-start:-10000px;top:0;width:760px;';
+    holder.append(clone);
+    document.body.append(holder);
+    const text = clone.innerText.replace(/\n{3,}/g, '\n\n').trim();
+    holder.remove();
+    return text;
+  }
+
+  class CopyPage extends HTMLElement {
+    connectedCallback() {
+      const button = this.querySelector('button');
+      const status = this.querySelector<HTMLElement>('[role="status"]');
+      if (!button || !status) return;
+      const say = (key: keyof typeof messages) => {
+        status.textContent = '';
+        status.dataset.state = key;
+        requestAnimationFrame(() => {
+          status.textContent = messages[key];
+        });
+      };
+      button.addEventListener('click', async () => {
+        const body = readable(document.querySelector('main .sl-markdown-content'));
+        if (!body) return say('empty');
+        const title = document.querySelector('main h1')?.textContent?.trim();
+        const description = document.querySelector('main .ac-page-description')?.textContent?.trim();
+        const text = [title, description, body].filter(Boolean).join('\n\n');
+        if (!navigator.clipboard?.writeText) return say('unavailable');
+        try {
+          await navigator.clipboard.writeText(text);
+          say('copied');
+        } catch (error) {
+          say(error instanceof DOMException && error.name === 'NotAllowedError' ? 'denied' : 'failed');
+        }
+      });
+    }
+  }
+  customElements.define('ac-copy-page', CopyPage);
+</script>

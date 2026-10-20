@@ -1,0 +1,19 @@
+---
+title: Runner showcase
+description: Design fixture for the showcase. Its tiles are fixed samples, not a list of real runners.
+---
+
+import RunnerTile from '../../../src/components/RunnerTile.astro';
+
+The tiles below show the showcase layout with fixed samples. A dashed tile invites a new runner.
+
+## Sample tiles
+
+<div class="ac-runners">
+  <RunnerTile name="Sample runner" monogram="SR" chips={['host one', 'host two', 'run-checks', 'observe']}>
+    A fixed sample description of a runner with a longer sentence, so the tile shows how its text wraps beside the monogram.
+  </RunnerTile>
+  <RunnerTile name="Your agent" monogram="+" href="/implementers/support/" invitation>
+    Sample invitation text that links to the support guide fixture.
+  </RunnerTile>
+</div>

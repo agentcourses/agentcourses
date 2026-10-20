@@ -1,0 +1,22 @@
+---
+/**
+ * Wraps Starlight's page title with the page head of the design: the sidebar group as a
+ * small label above the serif title, the Copy page control beside it, and the page
+ * description beneath it.
+ */
+import Default from '@astrojs/starlight/components/PageTitle.astro';
+import CopyPage from './CopyPage.astro';
+
+const { entry, sidebar } = Astro.locals.starlightRoute;
+const group = sidebar.find(
+  (item) => item.type === 'group' && item.entries.some((child) => child.type === 'link' && child.isCurrent),
+);
+---
+<div class="ac-page-head">
+  {group && <p class="ac-page-crumb">{group.label}</p>}
+  <div class="ac-page-title-row">
+    <Default />
+    <CopyPage />
+  </div>
+  {entry.data.description && <p class="ac-page-description">{entry.data.description}</p>}
+</div>
