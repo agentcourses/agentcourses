@@ -4,9 +4,6 @@
  */
 
 /* Base */
-html {
-  scroll-padding-top: calc(var(--nav-h) + 24px);
-}
 body {
   background: var(--bg);
   color: var(--fg-2);
@@ -567,6 +564,11 @@ h1#_top {
 :root:has(.ac-banner:not([hidden])) {
   --ac-banner-h: 38px;
 }
+@media (max-width: 640px) {
+  :root:has(.ac-banner:not([hidden])) {
+    --ac-banner-h: 50px;
+  }
+}
 .ac-banner {
   position: fixed;
   inset-block-start: 0;
@@ -715,7 +717,11 @@ h1#_top {
     --sl-mobile-toc-height: 0rem;
   }
 }
-html {
+/*
+ * In-page links land 24 pixels below everything fixed at the top. `:root` outranks Starlight's
+ * own `html` rules, which the build would otherwise merge this into and override.
+ */
+:root {
   scroll-padding-top: calc(var(--ac-top) + var(--sl-mobile-toc-height) + 24px);
 }
 mobile-starlight-toc nav {

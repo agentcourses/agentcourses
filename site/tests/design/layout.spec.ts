@@ -132,11 +132,28 @@ for (const [name, viewport] of [['phone', phone], ['desktop', desktop]] as const
       expect(menu.y + menu.height, 'the menu button sits inside the top bar').toBeLessThanOrEqual(below);
       await page.getByRole('button', { name: 'Menu' }).click();
       expect((await box(page, '#starlight__sidebar')).y, 'the drawer opens below the top bar').toBeCloseTo(below, 0);
+      const shade = await page.locator('#starlight__sidebar').evaluate((el) => parseFloat(getComputedStyle(el, '::backdrop').top));
+      expect(shade, 'the shade behind the drawer starts below the top bar').toBeCloseTo(below, 0);
       expect((await box(page, 'mobile-starlight-toc nav')).y, 'the folded contents bar sits below the top bar').toBeCloseTo(below - 1, 0);
     } else {
       expect((await box(page, '.sidebar-pane')).y, 'the sidebar starts below the top bar').toBeCloseTo(below, 0);
       expect((await box(page, '.right-sidebar-container')).y, 'the contents column starts below the top bar').toBeCloseTo(below, 0);
     }
+  });
+}
+
+for (const [name, viewport] of [['phone', phone], ['desktop', desktop]] as const) {
+  test(`an in-page link lands below everything fixed at the top, banner included, on a ${name}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await open(page, '/', 'light');
+    await expect(page.locator('.ac-banner')).toBeVisible();
+    // On a phone the folded contents bar is the lowest fixed element; on a desktop it is the top bar.
+    const fixed = name === 'phone' ? await box(page, 'mobile-starlight-toc nav') : await box(page, 'header.header');
+    if (name === 'phone') await page.evaluate(() => { location.hash = '#four-sample-stages'; });
+    else await page.locator('.right-sidebar-panel a', { hasText: 'Four sample stages' }).click();
+    const heading = page.locator('#four-sample-stages');
+    await expect.poll(async () => (await heading.boundingBox())!.y, { message: 'the heading clears the fixed bars by 24 pixels' })
+      .toBeCloseTo(fixed.y + fixed.height + 24, 0);
   });
 }
 

@@ -112,7 +112,7 @@ test.describe('search', () => {
 });
 
 test.describe('banner and theme', () => {
-  test('dismissing the banner closes it on later pages and moves focus to the site title', async ({ page }) => {
+  test('dismissing the banner moves focus to the site title, and the banner stays closed after a reload', async ({ page }) => {
     await page.setViewportSize(desktop);
     await open(page, '/', 'light');
     const banner = page.locator('.ac-banner');
