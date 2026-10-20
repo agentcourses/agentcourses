@@ -1,0 +1,813 @@
+{
+  "identity": "agent-courses-identity-1",
+  "algorithm": "sha256",
+  "roots": {
+    "baseline": {
+      "path": "courses/baseline",
+      "input_path": "courses/baseline/COURSE.md"
+    }
+  },
+  "vectors": [
+    {
+      "case": "baseline",
+      "root": "baseline",
+      "changes": [],
+      "requires": [],
+      "expected_digest": "sha256:06a878ce653b177f2a55681bc59b3d1b5dcf4baac5e2f7f0e4b561bb04f75e4e",
+      "rule": "identity-digest",
+      "explanation": "The unchanged baseline tree: three files, no links and nothing excluded. Every other vector is judged against this digest."
+    },
+    {
+      "case": "empty-directory-counts",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "mkdir",
+          "path": "checks/fixtures/final-check/fail"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:6637304fd5de22437b6a956ad55f2e6da6503abb64e6aec17a80a5b8c7f05684",
+      "rule": "identity-entries",
+      "explanation": "An empty directory is an entry of its own, because an empty failing fixture folder is a valid course shape. Adding one changes the digest."
+    },
+    {
+      "case": "ignored-file-leaves-directory-empty",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "mkdir",
+          "path": "checks/fixtures/final-check/fail"
+        },
+        {
+          "op": "write",
+          "path": "checks/fixtures/final-check/fail/.DS_Store",
+          "text": "x"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:6637304fd5de22437b6a956ad55f2e6da6503abb64e6aec17a80a5b8c7f05684",
+      "rule": "identity-exclusions",
+      "explanation": "A directory that holds only an excluded file is still empty after exclusions, so it has the same digest as the plain empty directory."
+    },
+    {
+      "case": "byte-change",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "lessons/intro.md",
+          "text": "---\ntitle: Meet the agent\nstage: understand\n---\n\n## Goal\n\nYou can say what an agent tool is!\n"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:8ad551a52de2732238834b186eabf1d213b147f5e8dd5ce6211671a1b146343c",
+      "rule": "identity-text",
+      "explanation": "One character of one lesson changes, so the digest changes."
+    },
+    {
+      "case": "rename-changes-digest",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "remove",
+          "path": "references/notes.md"
+        },
+        {
+          "op": "write",
+          "path": "references/note.md",
+          "text": "Notes for the tutor to load on request.\n"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:54b0c2c1ef306974cce65efbf21966927a1e8b6494f6afc92c62531e9b974eda",
+      "rule": "identity-paths",
+      "explanation": "The same bytes under a different path are a different course, because the path is part of each entry."
+    },
+    {
+      "case": "ordering-bytewise",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "B.md",
+          "text": "b\n"
+        },
+        {
+          "op": "write",
+          "path": "a.md",
+          "text": "a\n"
+        },
+        {
+          "op": "write",
+          "path": "a-b.md",
+          "text": "ab\n"
+        },
+        {
+          "op": "write",
+          "path": "a/x.md",
+          "text": "ax\n"
+        },
+        {
+          "op": "write",
+          "path": "z.md",
+          "text": "z\n"
+        },
+        {
+          "op": "write",
+          "path": "\u00e9.md",
+          "text": "e\n"
+        },
+        {
+          "op": "mkdir",
+          "path": "b-empty"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:4ee949f07601b4818d36fb494e9577bf481df9797380f723d09ee6a56f5b2374",
+      "rule": "identity-ordering",
+      "explanation": "Six files and one empty directory are added. Entries sort by the unsigned UTF-8 bytes of the whole relative path: B.md, a-b.md, a.md, a/x.md, b-empty, z.md, then the two-byte name. Case-insensitive, directory-first and segment-by-segment orders give other digests."
+    },
+    {
+      "case": "ordering-code-point-not-utf16",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "\uff46.md",
+          "text": "f\n"
+        },
+        {
+          "op": "write",
+          "path": "\ud83d\ude00.md",
+          "text": "smile\n"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:583ac22213378a7a12ff41fc58cd4b809356cd7d87a04200f7014ef449ae1989",
+      "rule": "identity-ordering",
+      "explanation": "A fullwidth letter (three UTF-8 bytes, starting EF) sorts before an emoji (four bytes, starting F0). Sorting by UTF-16 code units would reverse them."
+    },
+    {
+      "case": "framing-boundary-a",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "ab",
+          "text": "c"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:92f39e55a2ade2cb9fdbf12d7b32126ad1cba02d6dd34630eca712a360322b74",
+      "rule": "identity-digest",
+      "explanation": "File ab holds c. Joining the path and content bytes gives abc."
+    },
+    {
+      "case": "framing-boundary-b",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "a",
+          "text": "bc"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:b9adb4f21d5dc2e9ec5ea8eb5fed9593b7abec8cad52382d26acfd253a54eeea",
+      "rule": "identity-digest",
+      "explanation": "File a holds bc. Joining the path and content bytes gives abc again, yet the digest differs, because every path and payload carries its length."
+    },
+    {
+      "case": "content-split-a",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "x.md",
+          "text": "ab"
+        },
+        {
+          "op": "write",
+          "path": "y.md",
+          "text": "c"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:86de312e96930b45e150c17a6168492775d9b8f6aa39695bc29323e3c0295998",
+      "rule": "identity-digest",
+      "explanation": "Two files hold ab and c. Joining all contents gives abc."
+    },
+    {
+      "case": "content-split-b",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "x.md",
+          "text": "a"
+        },
+        {
+          "op": "write",
+          "path": "y.md",
+          "text": "bc"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:d79befaacd4e23b45a5c3722b00c98474bb0d895e97e8d08e8bde0b55f2d6ec1",
+      "rule": "identity-digest",
+      "explanation": "Two files hold a and bc. Joining all contents gives abc again, yet the digest differs."
+    },
+    {
+      "case": "line-endings-crlf",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "lessons/intro.md",
+          "text": "---\r\ntitle: Meet the agent\r\nstage: understand\r\n---\r\n\r\n## Goal\r\n\r\nYou can say what an agent tool is.\r\n"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:06a878ce653b177f2a55681bc59b3d1b5dcf4baac5e2f7f0e4b561bb04f75e4e",
+      "rule": "identity-text",
+      "explanation": "The lesson is rewritten with CRLF line endings. Text files are hashed with CRLF read as LF, so the digest equals the baseline."
+    },
+    {
+      "case": "line-endings-lone-cr",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "lessons/intro.md",
+          "text": "---\ntitle: Meet the agent\nstage: understand\n---\n\n## Goal\n\nYou can say what an agent tool is.\r"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:b3a151be241ef44f39dd84acc1f6e33e5802dbf74908ca671b8ea644def0d47c",
+      "rule": "identity-text",
+      "explanation": "The final LF becomes a lone CR. Only the two-byte CRLF pair is rewritten, so this is a content change."
+    },
+    {
+      "case": "line-endings-double-cr",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "lessons/intro.md",
+          "text": "---\r\r\ntitle: Meet the agent\r\r\nstage: understand\r\r\n---\r\r\n\r\r\n## Goal\r\r\n\r\r\nYou can say what an agent tool is.\r\r\n"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:9a71f6a286a8e4425875f50773781e0f95b5bd1a0c6538a5ca6a236df7055c12",
+      "rule": "identity-text",
+      "explanation": "CR CR LF becomes CR LF: one left-to-right pass, no repeat. The digest differs from the baseline."
+    },
+    {
+      "case": "binary-keeps-crlf",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "assets/data.bin",
+          "bytes_hex": "000d0a"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:666b5d7f9b0ade084e175db153646b3f2c43f698b8874b824b13521d6c3a0cbe",
+      "rule": "identity-text",
+      "explanation": "A file with a zero byte is binary. Its CRLF is hashed as written."
+    },
+    {
+      "case": "binary-lf",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "assets/data.bin",
+          "bytes_hex": "000a"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:0c05eddff052d8fa3635dacb5b2fae9a3129b08c4cc2c678da7d4f78576696bf",
+      "rule": "identity-text",
+      "explanation": "The same binary file written with LF. It has a different digest from the CRLF vector, so binary line endings are never rewritten."
+    },
+    {
+      "case": "invalid-utf8-is-binary",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "assets/raw.txt",
+          "bytes_hex": "ff0d0a"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:f89d6a83a21a1c5766223c3b001a4a606dbf65746cd9fa07505265651bffc85a",
+      "rule": "identity-text",
+      "explanation": "Bytes that are not valid UTF-8 are binary, so the CRLF after them is kept."
+    },
+    {
+      "case": "bom-is-content",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "references/notes.md",
+          "text": "\ufeffNotes for the tutor to load on request.\n"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:6e0f756ebf763a56428fabb4611d050ad8ce12e10704230e33b7f43a3d6a4daf",
+      "rule": "identity-text",
+      "explanation": "A byte order mark is content. Adding one to a text file changes the digest."
+    },
+    {
+      "case": "content-nfc",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "references/word.md",
+          "text": "caf\u00e9\n"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:546ecf391c66974dd0e6054d5f6299464819197f98f703eff317c1dcb3e16531",
+      "rule": "identity-text",
+      "explanation": "The word cafe with an accented e written as one code point. Contents are not Unicode-normalised."
+    },
+    {
+      "case": "content-nfd",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "references/word.md",
+          "text": "cafe\u0301\n"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:9af9328e185c57dbb0299e4983f795b7aca18a0ff9649b9f9045a48169f06ee7",
+      "rule": "identity-text",
+      "explanation": "The same word written as e plus a combining accent. It differs from the NFC vector, because only line endings are normalised."
+    },
+    {
+      "case": "path-nfc-accepted",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "caf\u00e9.md",
+          "text": "x\n"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:63326c813333fd70f423fad67fb8adea95271174c2afc78a764cb4b4704635b3",
+      "rule": "identity-paths",
+      "explanation": "A file name in Unicode normal form C is accepted."
+    },
+    {
+      "case": "path-nfd-rejected",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "cafe\u0301.md",
+          "text": "x\n"
+        }
+      ],
+      "requires": [
+        "listing"
+      ],
+      "expected_error": "invalid-path",
+      "rule": "identity-paths",
+      "explanation": "A file name in decomposed form is refused, because file systems disagree about normalisation."
+    },
+    {
+      "case": "path-case-collision",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "references/Readme.md",
+          "text": "a\n"
+        },
+        {
+          "op": "write",
+          "path": "references/README.md",
+          "text": "b\n"
+        }
+      ],
+      "requires": [
+        "listing"
+      ],
+      "expected_error": "case-collision",
+      "rule": "identity-paths",
+      "explanation": "Two names that differ only by case are refused, because a case-insensitive file system cannot hold both."
+    },
+    {
+      "case": "path-case-collision-directory",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "Docs/a.md",
+          "text": "a\n"
+        },
+        {
+          "op": "write",
+          "path": "docs/b.md",
+          "text": "b\n"
+        }
+      ],
+      "requires": [
+        "listing"
+      ],
+      "expected_error": "case-collision",
+      "rule": "identity-paths",
+      "explanation": "Two folders that differ only by case are refused even though neither is an entry, because a case-insensitive file system would merge them."
+    },
+    {
+      "case": "path-case-collision-file-and-directory",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "README",
+          "text": "r\n"
+        },
+        {
+          "op": "write",
+          "path": "readme/x.md",
+          "text": "x\n"
+        }
+      ],
+      "requires": [
+        "listing"
+      ],
+      "expected_error": "case-collision",
+      "rule": "identity-paths",
+      "explanation": "A file and a folder that differ only by case are refused, because a case-insensitive file system cannot hold both."
+    },
+    {
+      "case": "path-case-distinct-directories",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "Docs/a.md",
+          "text": "a\n"
+        },
+        {
+          "op": "write",
+          "path": "notes/b.md",
+          "text": "b\n"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:6d863d51465dad14b8933451214145855760ada4bbb24ff1ad5e31c2b05cdfb2",
+      "rule": "identity-paths",
+      "explanation": "Two different folder names that do not fold together are accepted."
+    },
+    {
+      "case": "path-control-character",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "a\u0001b.md",
+          "text": "x\n"
+        }
+      ],
+      "requires": [
+        "listing"
+      ],
+      "expected_error": "invalid-path",
+      "rule": "identity-paths",
+      "explanation": "A control character in a name is refused."
+    },
+    {
+      "case": "path-backslash",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "a\\b.md",
+          "text": "x\n"
+        }
+      ],
+      "requires": [
+        "listing"
+      ],
+      "expected_error": "invalid-path",
+      "rule": "identity-paths",
+      "explanation": "A backslash in a name is refused, because it is a separator on some systems."
+    },
+    {
+      "case": "path-dot-dot-component",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "../escape.md",
+          "text": "x\n"
+        }
+      ],
+      "requires": [
+        "listing"
+      ],
+      "expected_error": "invalid-path",
+      "rule": "identity-paths",
+      "explanation": "A listing that offers a parent-directory component, such as one read from an archive, is refused and nothing outside the root is read."
+    },
+    {
+      "case": "path-component-255-bytes",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "text": "x\n"
+        }
+      ],
+      "requires": [
+        "listing"
+      ],
+      "expected_digest": "sha256:d1ca6ea6d00c172f43c2eb8c26d928b1e430bacc6326e7ee1cc640cf1e5d52b6",
+      "rule": "identity-paths",
+      "explanation": "A name of exactly 255 bytes is accepted."
+    },
+    {
+      "case": "path-component-256-bytes",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "text": "x\n"
+        }
+      ],
+      "requires": [
+        "listing"
+      ],
+      "expected_error": "invalid-path",
+      "rule": "identity-paths",
+      "explanation": "A name of 256 bytes is refused."
+    },
+    {
+      "case": "symlink-inside",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "symlink",
+          "path": "references/alias.md",
+          "target": "notes.md"
+        }
+      ],
+      "requires": [
+        "symlinks"
+      ],
+      "expected_digest": "sha256:6c4b09aa1be3606a4571280078e6bd447e1967a28ecf2d1122181a4b08da430e",
+      "rule": "identity-links",
+      "explanation": "A link to a file inside the course is an entry holding its target text. It is never followed."
+    },
+    {
+      "case": "symlink-escape",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "symlink",
+          "path": "references/outside",
+          "target": "../../../outside.txt"
+        }
+      ],
+      "requires": [
+        "symlinks"
+      ],
+      "expected_digest": "sha256:971b406460ed54b4f0982cc72698043cb3598a8668423f0bf135a5a1a1e32496",
+      "rule": "identity-links",
+      "explanation": "A link whose target is outside the course is hashed as text. The target is never read, so changing or removing the outside file cannot change the digest."
+    },
+    {
+      "case": "symlink-dangling",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "symlink",
+          "path": "references/missing",
+          "target": "nowhere.md"
+        }
+      ],
+      "requires": [
+        "symlinks"
+      ],
+      "expected_digest": "sha256:fa1ed916f1848899f19b9bd1835097a960aeb93142018a39d06995de93af8d17",
+      "rule": "identity-links",
+      "explanation": "A link to nothing is accepted and hashed as text."
+    },
+    {
+      "case": "symlink-loop",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "symlink",
+          "path": "lessons/loop",
+          "target": ".."
+        }
+      ],
+      "requires": [
+        "symlinks"
+      ],
+      "expected_digest": "sha256:114e757b991332a8cacc99ccda054e2fce607e06c316d5e46a445d663a396fc5",
+      "rule": "identity-links",
+      "explanation": "A link to its own parent folder would loop if followed. It is not followed, so the digest exists."
+    },
+    {
+      "case": "symlink-invalid-target",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "symlink",
+          "path": "references/odd",
+          "target_hex": "ff"
+        }
+      ],
+      "requires": [
+        "listing"
+      ],
+      "expected_error": "invalid-link",
+      "rule": "identity-links",
+      "explanation": "A link target that is not valid UTF-8 cannot be written down exactly and is refused."
+    },
+    {
+      "case": "special-file-refused",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "fifo",
+          "path": "references/feed"
+        }
+      ],
+      "requires": [
+        "fifo"
+      ],
+      "expected_error": "special-file",
+      "rule": "identity-entries",
+      "explanation": "A named pipe is neither file, folder nor link and is refused."
+    },
+    {
+      "case": "unreadable-file-refused",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "chmod",
+          "path": "references/notes.md",
+          "mode": "000"
+        }
+      ],
+      "requires": [
+        "unprivileged-reads"
+      ],
+      "expected_error": "unreadable",
+      "rule": "identity-entries",
+      "explanation": "A file that cannot be read is refused rather than skipped."
+    },
+    {
+      "case": "git-metadata-excluded",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": ".git/config",
+          "text": "[core]\n"
+        },
+        {
+          "op": "write",
+          "path": ".git/HEAD",
+          "text": "ref: refs/heads/main\n"
+        },
+        {
+          "op": "write",
+          "path": "references/.git",
+          "text": "gitdir: ../elsewhere\n"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:06a878ce653b177f2a55681bc59b3d1b5dcf4baac5e2f7f0e4b561bb04f75e4e",
+      "rule": "identity-exclusions",
+      "explanation": "Git metadata is not course content, at the root or deeper, as a folder or as a file."
+    },
+    {
+      "case": "platform-file-excluded",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": ".DS_Store",
+          "text": "x"
+        },
+        {
+          "op": "write",
+          "path": "lessons/.DS_Store",
+          "text": "y"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:06a878ce653b177f2a55681bc59b3d1b5dcf4baac5e2f7f0e4b561bb04f75e4e",
+      "rule": "identity-exclusions",
+      "explanation": "A .DS_Store file is excluded wherever it appears."
+    },
+    {
+      "case": "runner-state-excluded",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": ".agents/records/sample-course/events.jsonl",
+          "text": "{}\n"
+        },
+        {
+          "op": "write",
+          "path": ".agents/courses.lock",
+          "text": "{}\n"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:06a878ce653b177f2a55681bc59b3d1b5dcf4baac5e2f7f0e4b561bb04f75e4e",
+      "rule": "identity-exclusions",
+      "explanation": "The .agents folder at the course root holds runner state such as learner records and the course lock. It is excluded with everything under it."
+    },
+    {
+      "case": "generated-site-excluded",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "_site/index.html",
+          "text": "<p>x</p>\n"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:06a878ce653b177f2a55681bc59b3d1b5dcf4baac5e2f7f0e4b561bb04f75e4e",
+      "rule": "identity-exclusions",
+      "explanation": "A _site folder at the course root is excluded."
+    },
+    {
+      "case": "exclusions-apply-only-at-root",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "write",
+          "path": "references/.agents/state.json",
+          "text": "{}\n"
+        },
+        {
+          "op": "write",
+          "path": "lessons/_site/index.html",
+          "text": "<p>x</p>\n"
+        }
+      ],
+      "requires": [],
+      "expected_digest": "sha256:148d3536625c8585403a5df17fd13a4f83cbd49ee44dfdb17c58c56b956cb8fb",
+      "rule": "identity-exclusions",
+      "explanation": "The same runner-state and site folders one level down are course content and change the digest."
+    },
+    {
+      "case": "missing-entry-file",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "remove",
+          "path": "COURSE.md"
+        }
+      ],
+      "requires": [],
+      "expected_error": "not-a-course",
+      "rule": "identity-entries",
+      "explanation": "A folder without COURSE.md is not a course and has no identity."
+    },
+    {
+      "case": "entry-file-is-link",
+      "root": "baseline",
+      "changes": [
+        {
+          "op": "remove",
+          "path": "COURSE.md"
+        },
+        {
+          "op": "symlink",
+          "path": "COURSE.md",
+          "target": "lessons/intro.md"
+        }
+      ],
+      "requires": [
+        "symlinks"
+      ],
+      "expected_error": "not-a-course",
+      "rule": "identity-entries",
+      "explanation": "COURSE.md must be a regular file. A link with that name does not count."
+    }
+  ]
+}
