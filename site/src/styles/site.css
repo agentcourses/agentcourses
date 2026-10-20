@@ -4,9 +4,6 @@
  */
 
 /* Base */
-html {
-  scroll-padding-top: calc(var(--nav-h) + 24px);
-}
 body {
   background: var(--bg);
   color: var(--fg-2);
@@ -43,6 +40,8 @@ pre {
   font-family: var(--f-mono);
 }
 .sl-skip-link {
+  /* Shown over the top bar, below any banner, where its ring contrasts with the bar. */
+  top: calc(var(--ac-banner-h) + 0.75rem);
   color: var(--on-fg);
   background-color: var(--fg);
   border-radius: var(--radius-m);
@@ -97,11 +96,29 @@ header.header > .header {
 .header .social-icons:not(:has(a))::after {
   display: none;
 }
-starlight-theme-select label {
+/* Icon buttons in the top bar: the theme toggle. */
+.ac-icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-m);
+  background: none;
   color: var(--fg-2);
+  cursor: pointer;
 }
-starlight-theme-select label:hover {
+.ac-icon-button:hover {
+  background: var(--hl);
   color: var(--fg);
+}
+.ac-icon-button svg {
+  width: 18px;
+  height: 18px;
+}
+:root[data-theme='light'] .ac-theme-toggle__dark,
+:root[data-theme='dark'] .ac-theme-toggle__light {
+  display: none;
 }
 @media (max-width: 640px) {
   .site-title .ac-wordmark {
@@ -505,11 +522,17 @@ h1#_top {
   font: 12px var(--f-mono);
 }
 
-/* Previous and next */
+/* Previous and next: 56 pixels below the page, as in the design. The footer's row for edit links is empty here. */
+.content-panel .sl-container > footer {
+  margin-top: 56px;
+}
+.content-panel footer .meta:not(:has(*)) {
+  display: none;
+}
 .pagination-links {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
-  margin-top: 56px;
+  margin-top: 0;
 }
 .pagination-links a {
   padding: 14px 16px;
@@ -534,20 +557,66 @@ h1#_top {
   color: var(--fg-3);
 }
 
-/* Draft banner, inside the page: a strip as wide as the reading column. */
-.sl-banner {
-  max-width: var(--page-w);
-  margin-top: 24px;
-  border-radius: var(--radius-m);
+/*
+ * Banner: a strip across the window above the top bar, with a dismiss button. Its height is
+ * measured into --ac-banner-h before the first paint; the fallback covers a page without scripts.
+ */
+:root:has(.ac-banner:not([hidden])) {
+  --ac-banner-h: 38px;
+}
+@media (max-width: 640px) {
+  :root:has(.ac-banner:not([hidden])) {
+    --ac-banner-h: 50px;
+  }
+}
+.ac-banner {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline: 0;
+  z-index: var(--sl-z-index-navbar);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding-block: 6px;
+  padding-inline: var(--gutter) max(48px, env(safe-area-inset-right, 0px));
   background: var(--fg);
-  box-shadow: none;
   color: var(--on-fg);
   font-size: 13.5px;
+  line-height: 1.4;
   text-align: center;
+  text-wrap: balance;
 }
-.sl-banner a {
+.ac-banner[hidden] {
+  display: none;
+}
+.ac-banner a {
   color: var(--on-fg);
+  font-weight: 500;
   text-underline-offset: 3px;
+}
+/* Thirty pixels, so its focus ring stays inside the strip at its smallest height. */
+.ac-banner__close {
+  position: absolute;
+  inset-inline-end: max(8px, env(safe-area-inset-right, 0px));
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--on-fg);
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+.ac-banner__close:hover {
+  background: color-mix(in srgb, var(--on-fg) 16%, transparent);
+}
+.ac-banner__close svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* On this page: a hairline beside the list, and a darker mark beside the current section. */
@@ -588,7 +657,7 @@ h1#_top {
  * widths, and these rules align Starlight's remaining shared values inside the two bands.
  */
 .sl-menu-button {
-  top: calc((var(--sl-nav-height) - var(--sl-menu-button-size)) / 2);
+  top: calc(var(--ac-banner-h) + (var(--sl-nav-height) - var(--sl-menu-button-size)) / 2);
   inset-inline-end: var(--sl-nav-pad-x);
   place-items: center;
   border: 1px solid transparent;
@@ -631,13 +700,16 @@ h1#_top {
     --sl-mobile-toc-height: 3rem;
   }
 }
-/* Beside the docked sidebar, the folded contents control starts where the page column starts. */
+/* Beside the docked sidebar, the folded contents control spans the page column, gutter to gutter. */
 @media (min-width: 981px) and (max-width: 1240px) {
   :root[data-has-sidebar] {
     --sl-content-inline-start: calc(var(--gutter) + var(--side-w) + var(--col-gap));
   }
+  :root[data-has-sidebar] mobile-starlight-toc nav {
+    inset-inline-end: var(--gutter);
+  }
   :root[data-has-sidebar] mobile-starlight-toc summary {
-    padding-inline: 0 var(--gutter);
+    padding-inline: 0;
   }
 }
 @media (min-width: 1241px) {
@@ -645,10 +717,15 @@ h1#_top {
     --sl-mobile-toc-height: 0rem;
   }
 }
-html {
-  scroll-padding-top: calc(var(--nav-h) + var(--sl-mobile-toc-height) + 24px);
+/*
+ * In-page links land 24 pixels below everything fixed at the top. `:root` outranks Starlight's
+ * own `html` rules, which the build would otherwise merge this into and override.
+ */
+:root {
+  scroll-padding-top: calc(var(--ac-top) + var(--sl-mobile-toc-height) + 24px);
 }
 mobile-starlight-toc nav {
+  top: calc(var(--ac-top) - 1px);
   border-top-color: var(--line);
   background-color: var(--sl-color-bg-nav);
   -webkit-backdrop-filter: blur(10px);

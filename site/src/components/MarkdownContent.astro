@@ -1,38 +1,55 @@
 ---
 /**
- * Starlight's Markdown content wrapper, plus a scrolling frame around each table and
- * keyboard access for wide content. The frame lets a table fill the reading column, and a
- * table wider than the column scrolls inside its frame. A frame or code panel that overflows
- * joins the tab order so keyboard users can scroll it. Expressive Code does the same for
- * code, but only once the browser is idle, which a busy page may never reach; this check
- * runs as soon as the page loads and whenever a region changes size.
+ * Starlight's Markdown content wrapper, unchanged, plus keyboard access for wide content.
+ * A table frame or code panel wider than the reading column scrolls inside itself; while it
+ * overflows it joins the tab order as a named region, so keyboard users can scroll it and
+ * hear what it holds. Expressive Code does the same for code, but only once the browser is
+ * idle, which a busy page may never reach; this check runs as soon as the page loads and
+ * whenever a region changes size.
  */
 import Default from '@astrojs/starlight/components/MarkdownContent.astro';
-
-const html = (await Astro.slots.render('default'))
-  .replace(/<table(?=[\s>])/g, '<div class="ac-table"><table')
-  .replace(/<\/table>/g, '</table></div>');
 ---
 
-<Default><Fragment set:html={html} /></Default>
+<Default><slot /></Default>
 
 <script>
+  /** A table frame is named by its caption, or else by the heading of its section. */
+  const tableName = (frame: HTMLElement): string => {
+    const caption = frame.querySelector('caption')?.textContent?.trim();
+    if (caption) return caption;
+    for (let el = frame.previousElementSibling; el; el = el.previousElementSibling) {
+      const heading = el.matches('h2, h3, h4, h5, h6') ? el : el.querySelector('h2, h3, h4, h5, h6');
+      if (heading?.textContent?.trim()) return `Table: ${heading.textContent.trim()}`;
+    }
+    return 'Table';
+  };
+  const frames = [...document.querySelectorAll<HTMLElement>('.sl-markdown-content .ac-table:not(:where(.not-content *))')];
+  // Named regions are landmarks, and landmarks on one page need different names.
+  const names = new Map<HTMLElement, string>();
+  const seen = new Map<string, number>();
+  for (const frame of frames) {
+    const base = tableName(frame);
+    const count = (seen.get(base) ?? 0) + 1;
+    seen.set(base, count);
+    names.set(frame, count > 1 ? `${base} (${count})` : base);
+  }
+
   const update = (region: HTMLElement) => {
     const code = region.tagName === 'PRE';
     if (region.scrollWidth > region.clientWidth) {
       region.tabIndex = 0;
       // Matches Expressive Code, which names a scrollable code panel as a region.
-      if (code) region.setAttribute('role', 'region');
+      region.setAttribute('role', 'region');
+      if (!code) region.setAttribute('aria-label', names.get(region) ?? 'Table');
     } else if (region.hasAttribute('tabindex')) {
       region.removeAttribute('tabindex');
-      if (code) region.removeAttribute('role');
+      region.removeAttribute('role');
+      if (!code) region.removeAttribute('aria-label');
     }
   };
   const observer = new ResizeObserver((entries) => entries.forEach((entry) => update(entry.target as HTMLElement)));
-  document
-    .querySelectorAll<HTMLElement>('.sl-markdown-content .ac-table:not(:where(.not-content *)), .sl-markdown-content .expressive-code pre')
-    .forEach((region) => {
-      update(region);
-      observer.observe(region);
-    });
+  [...frames, ...document.querySelectorAll<HTMLElement>('.sl-markdown-content .expressive-code pre')].forEach((region) => {
+    update(region);
+    observer.observe(region);
+  });
 </script>

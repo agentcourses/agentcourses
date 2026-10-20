@@ -1,5 +1,6 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import { satteri } from '@astrojs/markdown-satteri';
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -61,7 +62,20 @@ const codeTheme = {
   ],
 };
 
+// Each Markdown table sits in a frame that scrolls, so the table itself can fill the reading
+// column. Only tables written in Markdown are wrapped; components render their own markup.
+const tableFrame = {
+  name: 'table-frame',
+  element: {
+    filter: ['table'],
+    visit(node, ctx) {
+      ctx.wrapNode(node, { type: 'element', tagName: 'div', properties: { className: ['ac-table'] }, children: [] });
+    },
+  },
+};
+
 export default defineConfig({
+  markdown: { processor: satteri({ hastPlugins: [tableFrame] }) },
   vite: { define: { 'import.meta.env.AC_EXAMPLES_ROOT': JSON.stringify(fileURLToPath(new URL('../examples/', import.meta.url))) } },
   integrations: [starlight({
     title: 'Agent Courses',
@@ -69,7 +83,9 @@ export default defineConfig({
     favicon: '/mark.svg',
     customCss: ['./src/styles/tokens.css', './src/styles/site.css'],
     components: {
+      Banner: './src/components/Banner.astro',
       SiteTitle: './src/components/SiteTitle.astro',
+      ThemeSelect: './src/components/ThemeSelect.astro',
       PageTitle: './src/components/PageTitle.astro',
       PageFrame: './src/components/PageFrame.astro',
       TwoColumnContent: './src/components/TwoColumnContent.astro',

@@ -2,15 +2,56 @@
 /**
  * Starlight's page frame inside the design's centred shell, with its drawer breakpoint. The
  * popover drawer, its focus trapping and the menu toggle are Starlight's own. Above 980 pixels
- * the sidebar docks as the first column of a 1480-pixel grid, beside the page.
+ * the sidebar docks as the first column of a 1480-pixel grid, beside the page. A page's banner
+ * is a strip across the window above the top bar; everything fixed below it starts at
+ * `--ac-top`, the banner's measured height plus the bar's.
  * Based on Starlight's PageFrame component, MIT licence, Copyright (c) 2023 Astro contributors.
  */
+import { Icon } from '@astrojs/starlight/components';
 import MobileMenuToggle from '@astrojs/starlight/components/MobileMenuToggle.astro';
 
-const { hasSidebar } = Astro.locals.starlightRoute;
+const { hasSidebar, entry } = Astro.locals.starlightRoute;
+const banner = entry.data.banner;
 ---
 
 <div class="page sl-flex">
+  {
+    banner && (
+      <section class="sl-banner ac-banner print:hidden" aria-label="Announcement" data-pagefind-ignore data-banner={banner.content}>
+        <div class="ac-banner__text" set:html={banner.content} />
+        <button type="button" class="ac-banner__close" aria-label="Dismiss announcement">
+          <Icon name="close" />
+        </button>
+      </section>
+    )
+  }
+  {
+    banner && (
+      <script is:inline>
+        // Runs before the first paint: hides a banner the reader has dismissed and publishes its
+        // height, so the top bar and everything fixed beneath it start below the strip.
+        (() => {
+          const banner = document.currentScript.previousElementSibling;
+          const key = 'ac-banner-dismissed';
+          const root = document.documentElement;
+          const measure = () => root.style.setProperty('--ac-banner-h', banner.hidden ? '0px' : `${banner.offsetHeight}px`);
+          try {
+            if (localStorage.getItem(key) === banner.dataset.banner) banner.hidden = true;
+          } catch {}
+          measure();
+          new ResizeObserver(measure).observe(banner);
+          banner.querySelector('button').addEventListener('click', () => {
+            banner.hidden = true;
+            try {
+              localStorage.setItem(key, banner.dataset.banner);
+            } catch {}
+            measure();
+            document.querySelector('header.header a')?.focus();
+          });
+        })();
+      </script>
+    )
+  }
   <header class="header"><slot name="header" /></header>
   <div class="shell">
     {
@@ -34,7 +75,7 @@ const { hasSidebar } = Astro.locals.starlightRoute;
                 this.addEventListener('beforetoggle', ({ newState }) => this.trapFocus(newState === 'open'));
               }
               trapFocus(shouldTrap: boolean) {
-                document.querySelectorAll<HTMLElement>('.main-frame, .sl-skip-link').forEach((el) => {
+                document.querySelectorAll<HTMLElement>('.main-frame, .sl-skip-link, .ac-banner').forEach((el) => {
                   el.toggleAttribute('inert', shouldTrap);
                 });
               }
@@ -64,7 +105,7 @@ const { hasSidebar } = Astro.locals.starlightRoute;
       z-index: var(--sl-z-index-navbar);
       position: fixed;
       inset-inline-start: 0;
-      inset-block-start: 0;
+      inset-block-start: var(--ac-banner-h);
       width: 100%;
       height: var(--sl-nav-height);
       border-bottom: 1px solid var(--sl-color-hairline-shade);
@@ -84,7 +125,7 @@ const { hasSidebar } = Astro.locals.starlightRoute;
       color: unset;
       position: fixed;
       z-index: var(--sl-z-index-menu);
-      inset-block: var(--sl-nav-height) 0;
+      inset-block: var(--ac-top) 0;
       inset-inline-start: 0;
       width: min(320px, 86vw);
       background-color: var(--sl-color-bg-sidebar);
@@ -109,7 +150,7 @@ const { hasSidebar } = Astro.locals.starlightRoute;
       }
     }
     .sidebar-pane::backdrop {
-      inset-block-start: var(--sl-nav-height);
+      inset-block-start: var(--ac-top, var(--sl-nav-height));
       background-color: var(--sl-color-backdrop-overlay);
     }
 
@@ -126,7 +167,7 @@ const { hasSidebar } = Astro.locals.starlightRoute;
       width: 100%;
       max-width: var(--shell-w);
       margin-inline: auto;
-      padding-top: var(--sl-nav-height);
+      padding-top: var(--ac-top);
       padding-inline: var(--gutter);
     }
 
@@ -146,9 +187,9 @@ const { hasSidebar } = Astro.locals.starlightRoute;
       }
       .sidebar {
         position: sticky;
-        top: var(--sl-nav-height);
+        top: var(--ac-top);
         align-self: start;
-        height: calc(100vh - var(--sl-nav-height));
+        height: calc(100vh - var(--ac-top));
       }
       .sidebar-pane {
         display: block;

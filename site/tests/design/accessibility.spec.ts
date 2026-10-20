@@ -172,6 +172,20 @@ test('overflowing code and tables gain keyboard access even when the browser nev
   }
 });
 
+test('an overflowing table frame is a region named after its section, and a fitting one is not', async ({ page }) => {
+  await page.setViewportSize(phone);
+  await open(page, article, 'light');
+  await scrollRegionsSettled(page);
+  const frame = page.locator('.sl-markdown-content .ac-table');
+  await expect(frame).toHaveAttribute('role', 'region');
+  await expect(frame).toHaveAccessibleName('Table: A sample exit-code table');
+  await page.setViewportSize(desktop);
+  await open(page, '/', 'light');
+  const fitting = page.locator('.sl-markdown-content .ac-table');
+  await expect(fitting).not.toHaveAttribute('role', 'region');
+  await expect(fitting).not.toHaveAttribute('tabindex', '0');
+});
+
 test('axe finds no violations on a phone, with the drawer open and with search open', async ({ page }) => {
   await page.setViewportSize(phone);
   for (const destination of destinations) {
