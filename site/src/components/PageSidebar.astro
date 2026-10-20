@@ -27,10 +27,7 @@ import TableOfContents from '@astrojs/starlight/components/TableOfContents.astro
   @layer starlight.core {
     .right-sidebar-panel {
       display: none;
-      padding: 44px var(--sl-sidebar-pad-x) 40px;
-    }
-    .sl-container {
-      width: calc(var(--sl-sidebar-width) - 2 * var(--sl-sidebar-pad-x));
+      padding: 44px 0 40px;
     }
     .right-sidebar-panel :global(h2) {
       color: var(--sl-color-white);
@@ -55,11 +52,6 @@ import TableOfContents from '@astrojs/starlight/components/TableOfContents.astro
       }
       .right-sidebar-panel {
         display: block;
-      }
-      .sl-container {
-        max-width: calc(
-          (100vw - var(--sl-sidebar-width) - 2 * var(--sl-content-pad-x) - 2 * var(--sl-sidebar-pad-x)) * 0.25
-        );
       }
     }
   }

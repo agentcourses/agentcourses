@@ -78,6 +78,8 @@
   --side-w: 264px;
   --toc-w: 220px;
   --page-w: 760px;
+  --shell-w: 1480px;
+  --col-gap: 48px;
   --gutter: max(16px, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
   --radius-l: 12px;
   --radius-m: 8px;

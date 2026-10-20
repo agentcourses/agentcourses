@@ -9,7 +9,7 @@ const codeInk = 'rgb(236, 236, 234)';
 /** Waits until every overflowing code panel and table has joined the tab order. */
 async function scrollRegionsSettled(page: Page): Promise<void> {
   await expect.poll(() => page.evaluate(() =>
-    [...document.querySelectorAll<HTMLElement>('.expressive-code pre, .sl-markdown-content table')]
+    [...document.querySelectorAll<HTMLElement>('.expressive-code pre, .sl-markdown-content .ac-table')]
       .filter((el) => el.scrollWidth > el.clientWidth && !el.hasAttribute('tabindex'))
       .map((el) => el.tagName.toLowerCase())), { message: 'overflowing regions without keyboard access' }).toEqual([]);
 }
@@ -162,7 +162,7 @@ test('overflowing code and tables gain keyboard access even when the browser nev
     await page.setViewportSize(viewport);
     await open(page, article, 'light');
     await scrollRegionsSettled(page);
-    const regions = page.locator('.expressive-code pre, .sl-markdown-content table');
+    const regions = page.locator('.expressive-code pre, .sl-markdown-content .ac-table');
     for (let index = 0; index < await regions.count(); index += 1) {
       const region = regions.nth(index);
       if (!(await region.evaluate((el) => el.scrollWidth > el.clientWidth))) continue;
@@ -291,7 +291,7 @@ test('wide tables and long code scroll locally and can be reached by keyboard on
   await page.setViewportSize(phone);
   await open(page, article, 'light');
   await scrollRegionsSettled(page);
-  for (const selector of ['.sl-markdown-content table', '.expressive-code pre']) {
+  for (const selector of ['.sl-markdown-content .ac-table', '.expressive-code pre']) {
     const region = page.locator(selector).first();
     const box = await region.evaluate((el) => ({ scroll: el.scrollWidth, client: el.clientWidth, overflow: getComputedStyle(el).overflowX }));
     expect(box.scroll, `${selector} is wider than its frame`).toBeGreaterThan(box.client);

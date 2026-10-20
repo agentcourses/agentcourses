@@ -55,6 +55,19 @@ header.header {
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
 }
+/* The bar's contents sit on the shell's edges; search is centred between title and controls. */
+header.header > .header {
+  max-width: calc(var(--shell-w) - 2 * var(--gutter));
+  margin-inline: auto;
+}
+@media (min-width: 50rem) {
+  header.header > .header {
+    grid-template-columns: minmax(max-content, 1fr) minmax(0, 420px) minmax(max-content, 1fr);
+  }
+  header.header > .header > .right-group {
+    justify-self: end;
+  }
+}
 .site-title {
   align-items: center;
   min-width: 0;
@@ -176,8 +189,19 @@ h1#_top {
 .content-panel .ac-page-head > * + * {
   margin-top: 0;
 }
+.content-panel .ac-page-head > .ac-page-description {
+  margin-top: 12px;
+}
+/* The shell supplies the side gutters. The head panel opens the page; prose follows 32 pixels below. */
+.content-panel {
+  padding: 40px 0 0;
+}
 .content-panel + .content-panel {
+  padding: 32px 0 64px;
   border-top: 0;
+}
+:root[data-has-sidebar] .content-panel > .sl-container {
+  margin-inline: 0;
 }
 
 /* Prose */
@@ -276,11 +300,18 @@ h1#_top {
   font-size: 15px;
 }
 
-/* Tables scroll inside their own rounded frame; the first column never wraps. */
-.sl-markdown-content table:not(:where(.not-content *)) {
+/* Tables fill the reading column and scroll inside their own rounded frame; the first column never wraps. */
+.sl-markdown-content .ac-table:not(:where(.not-content *)) {
+  overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: var(--radius-l);
+}
+.sl-markdown-content .ac-table > table:not(:where(.not-content *)) {
+  display: table;
+  width: 100%;
+  overflow: visible;
   border-collapse: separate;
+  border-spacing: 0;
   font-size: 14px;
   line-height: 1.55;
 }
@@ -302,7 +333,7 @@ h1#_top {
 .sl-markdown-content td:not(:where(.not-content *)) {
   color: var(--fg-2);
 }
-.sl-markdown-content td:first-child:not(:where(.not-content *)),
+.sl-markdown-content :is(th, td):first-child:not(:where(.not-content *)),
 .sl-markdown-content td code:not(:where(.not-content *)) {
   color: var(--fg);
   white-space: nowrap;
@@ -359,26 +390,32 @@ h1#_top {
   background-color: var(--line);
 }
 
-/* Stages: a rising staircase; the final stage is outlined and filled. */
+/*
+ * Stages: a rising staircase; the final stage is outlined and filled. Every step is the same
+ * height, whatever its text, and each sits 18 pixels above the last: the top and bottom margins
+ * of each step add up to the same 54 pixels.
+ */
 .ac-stages {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
-  align-items: end;
+  align-items: stretch;
   margin: 24px 0 0;
   padding: 0;
   list-style: none;
 }
 .ac-stages > li {
   display: grid;
+  align-content: start;
   gap: 6px;
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 10px;
 }
-.ac-stages > li:nth-child(2) { margin-bottom: 18px; }
-.ac-stages > li:nth-child(3) { margin-bottom: 36px; }
-.ac-stages > li:nth-child(4) { margin-bottom: 54px; border-color: var(--fg); }
+.ac-stages > li:nth-child(1) { margin-block: 54px 0; }
+.ac-stages > li:nth-child(2) { margin-block: 36px 18px; }
+.ac-stages > li:nth-child(3) { margin-block: 18px 36px; }
+.ac-stages > li:nth-child(4) { margin-block: 0 54px; border-color: var(--fg); }
 .ac-stages__name {
   display: flex;
   align-items: center;
@@ -405,7 +442,7 @@ h1#_top {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .ac-stages > li {
-    margin-bottom: 0 !important;
+    margin-block: 0 !important;
   }
 }
 
@@ -497,9 +534,13 @@ h1#_top {
   color: var(--fg-3);
 }
 
-/* Draft banner, inside the page */
+/* Draft banner, inside the page: a strip as wide as the reading column. */
 .sl-banner {
+  max-width: var(--page-w);
+  margin-top: 24px;
+  border-radius: var(--radius-m);
   background: var(--fg);
+  box-shadow: none;
   color: var(--on-fg);
   font-size: 13.5px;
   text-align: center;
@@ -509,18 +550,36 @@ h1#_top {
   text-underline-offset: 3px;
 }
 
-/* On this page */
+/* On this page: a hairline beside the list, and a darker mark beside the current section. */
 .right-sidebar-panel h2 {
+  margin: 0 0 10px;
   color: var(--fg);
   font-size: 13.5px;
+}
+.right-sidebar-panel ul {
+  display: grid;
+  gap: 2px;
+}
+.right-sidebar-panel nav > ul {
+  border-inline-start: 1px solid var(--line);
 }
 .right-sidebar-panel a {
+  margin-inline-start: -1px;
+  padding-block: 4px;
+  padding-inline: calc(14px + 12px * var(--depth, 0)) 0;
+  border-inline-start: 1px solid transparent;
+  border-radius: 0;
   color: var(--fg-3);
   font-size: 13.5px;
+  line-height: 1.45;
 }
-.right-sidebar-panel a:hover,
-.right-sidebar-panel a[aria-current='true'] {
+.right-sidebar-panel a:hover {
   color: var(--fg);
+}
+.right-sidebar-panel a[aria-current='true'] {
+  border-inline-start-color: var(--fg);
+  color: var(--fg);
+  font-weight: 500;
 }
 
 /*
@@ -571,8 +630,14 @@ h1#_top {
   :root[data-has-toc] {
     --sl-mobile-toc-height: 3rem;
   }
-  .content-panel > .sl-container {
-    margin-inline: 0;
+}
+/* Beside the docked sidebar, the folded contents control starts where the page column starts. */
+@media (min-width: 981px) and (max-width: 1240px) {
+  :root[data-has-sidebar] {
+    --sl-content-inline-start: calc(var(--gutter) + var(--side-w) + var(--col-gap));
+  }
+  :root[data-has-sidebar] mobile-starlight-toc summary {
+    padding-inline: 0 var(--gutter);
   }
 }
 @media (min-width: 1241px) {

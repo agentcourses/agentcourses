@@ -1,15 +1,20 @@
 ---
 /**
- * Starlight's Markdown content wrapper, unchanged, plus keyboard access for wide content.
- * A table or code panel wider than the reading column scrolls inside itself; while it
- * overflows it joins the tab order so keyboard users can scroll it. Expressive Code does the
- * same for code, but only once the browser is idle, which a busy page may never reach; this
- * check runs as soon as the page loads and whenever a region changes size.
+ * Starlight's Markdown content wrapper, plus a scrolling frame around each table and
+ * keyboard access for wide content. The frame lets a table fill the reading column, and a
+ * table wider than the column scrolls inside its frame. A frame or code panel that overflows
+ * joins the tab order so keyboard users can scroll it. Expressive Code does the same for
+ * code, but only once the browser is idle, which a busy page may never reach; this check
+ * runs as soon as the page loads and whenever a region changes size.
  */
 import Default from '@astrojs/starlight/components/MarkdownContent.astro';
+
+const html = (await Astro.slots.render('default'))
+  .replace(/<table(?=[\s>])/g, '<div class="ac-table"><table')
+  .replace(/<\/table>/g, '</table></div>');
 ---
 
-<Default><slot /></Default>
+<Default><Fragment set:html={html} /></Default>
 
 <script>
   const update = (region: HTMLElement) => {
@@ -25,7 +30,7 @@ import Default from '@astrojs/starlight/components/MarkdownContent.astro';
   };
   const observer = new ResizeObserver((entries) => entries.forEach((entry) => update(entry.target as HTMLElement)));
   document
-    .querySelectorAll<HTMLElement>('.sl-markdown-content table:not(:where(.not-content *)), .sl-markdown-content .expressive-code pre')
+    .querySelectorAll<HTMLElement>('.sl-markdown-content .ac-table:not(:where(.not-content *)), .sl-markdown-content .expressive-code pre')
     .forEach((region) => {
       update(region);
       observer.observe(region);

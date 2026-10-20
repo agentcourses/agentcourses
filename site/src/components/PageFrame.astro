@@ -1,8 +1,8 @@
 ---
 /**
- * Starlight's page frame with the design's drawer breakpoint. Markup, the popover drawer,
- * its focus trapping and the menu toggle are Starlight's own; only the width at which the
- * sidebar docks and the drawer's presentation differ.
+ * Starlight's page frame inside the design's centred shell, with its drawer breakpoint. The
+ * popover drawer, its focus trapping and the menu toggle are Starlight's own. Above 980 pixels
+ * the sidebar docks as the first column of a 1480-pixel grid, beside the page.
  * Based on Starlight's PageFrame component, MIT licence, Copyright (c) 2023 Astro contributors.
  */
 import MobileMenuToggle from '@astrojs/starlight/components/MobileMenuToggle.astro';
@@ -12,43 +12,45 @@ const { hasSidebar } = Astro.locals.starlightRoute;
 
 <div class="page sl-flex">
   <header class="header"><slot name="header" /></header>
-  {
-    hasSidebar && (
-      <nav class="sidebar print:hidden" aria-label={Astro.locals.t('sidebarNav.accessibleLabel')}>
-        <MobileMenuToggle />
-        <script>
-          // The drawer uses the popover API, so it opens, closes on Escape and returns focus without
-          // custom key handling. The rest of the page is made inert while it is open. `beforetoggle`
-          // fires synchronously as the state changes; `toggle` is queued and can arrive after the
-          // next Tab press, which would let focus reach the page behind the drawer.
-          class StarlightSidebarPane extends HTMLElement {
-            constructor() {
-              super();
-              const dockedQuery = matchMedia('(min-width: 981px)');
-              const resetPopoverAttribute = () => {
-                this.popover = dockedQuery.matches ? null : 'auto';
-              };
-              resetPopoverAttribute();
-              dockedQuery.addEventListener('change', () => resetPopoverAttribute());
-              this.addEventListener('beforetoggle', ({ newState }) => this.trapFocus(newState === 'open'));
+  <div class="shell">
+    {
+      hasSidebar && (
+        <nav class="sidebar print:hidden" aria-label={Astro.locals.t('sidebarNav.accessibleLabel')}>
+          <MobileMenuToggle />
+          <script>
+            // The drawer uses the popover API, so it opens, closes on Escape and returns focus without
+            // custom key handling. The rest of the page is made inert while it is open. `beforetoggle`
+            // fires synchronously as the state changes; `toggle` is queued and can arrive after the
+            // next Tab press, which would let focus reach the page behind the drawer.
+            class StarlightSidebarPane extends HTMLElement {
+              constructor() {
+                super();
+                const dockedQuery = matchMedia('(min-width: 981px)');
+                const resetPopoverAttribute = () => {
+                  this.popover = dockedQuery.matches ? null : 'auto';
+                };
+                resetPopoverAttribute();
+                dockedQuery.addEventListener('change', () => resetPopoverAttribute());
+                this.addEventListener('beforetoggle', ({ newState }) => this.trapFocus(newState === 'open'));
+              }
+              trapFocus(shouldTrap: boolean) {
+                document.querySelectorAll<HTMLElement>('.main-frame, .sl-skip-link').forEach((el) => {
+                  el.toggleAttribute('inert', shouldTrap);
+                });
+              }
             }
-            trapFocus(shouldTrap: boolean) {
-              document.querySelectorAll<HTMLElement>('.main-frame, .sl-skip-link').forEach((el) => {
-                el.toggleAttribute('inert', shouldTrap);
-              });
-            }
-          }
-          customElements.define('sl-sidebar-pane', StarlightSidebarPane);
-        </script>
-        <sl-sidebar-pane popover="" id="starlight__sidebar" class="sidebar-pane">
-          <div class="sidebar-content sl-flex">
-            <slot name="sidebar" />
-          </div>
-        </sl-sidebar-pane>
-      </nav>
-    )
-  }
-  <div class="main-frame"><slot /></div>
+            customElements.define('sl-sidebar-pane', StarlightSidebarPane);
+          </script>
+          <sl-sidebar-pane popover="" id="starlight__sidebar" class="sidebar-pane">
+            <div class="sidebar-content sl-flex">
+              <slot name="sidebar" />
+            </div>
+          </sl-sidebar-pane>
+        </nav>
+      )
+    }
+    <div class="main-frame"><slot /></div>
+  </div>
 </div>
 
 <style>
@@ -119,25 +121,49 @@ const { hasSidebar } = Astro.locals.starlightRoute;
       gap: 1rem;
     }
 
+    /* The shell holds the columns below the fixed top bar, centred at every width. */
+    .shell {
+      width: 100%;
+      max-width: var(--shell-w);
+      margin-inline: auto;
+      padding-top: var(--sl-nav-height);
+      padding-inline: var(--gutter);
+    }
+
     .main-frame {
-      padding-top: calc(var(--sl-nav-height) + var(--sl-mobile-toc-height));
-      padding-inline-start: var(--sl-content-inline-start);
+      min-width: 0;
+      padding-top: var(--sl-mobile-toc-height);
     }
 
     @media (min-width: 981px) {
       :global([data-has-sidebar]) .header {
         padding-inline-end: var(--sl-nav-pad-x);
       }
+      :global([data-has-sidebar]) .shell {
+        display: grid;
+        grid-template-columns: var(--side-w) minmax(0, 1fr);
+        column-gap: var(--col-gap);
+      }
+      .sidebar {
+        position: sticky;
+        top: var(--sl-nav-height);
+        align-self: start;
+        height: calc(100vh - var(--sl-nav-height));
+      }
       .sidebar-pane {
         display: block;
-        width: var(--sl-sidebar-width);
+        position: static;
+        width: auto;
+        height: 100%;
+        border-inline-end: 0;
+        background-color: transparent;
         transform: none;
         transition: none;
         box-shadow: none;
         clip-path: none;
       }
       .sidebar-content {
-        padding: 28px 8px 40px var(--sl-sidebar-pad-x);
+        padding: 28px 8px 40px 0;
       }
       .sidebar-content::after {
         content: '';
