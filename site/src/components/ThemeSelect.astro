@@ -1,0 +1,67 @@
+---
+/**
+ * The design's theme toggle: one icon button that switches between light and dark, showing
+ * the theme in use. The viewer's system setting applies until the button is used. The choice
+ * is then kept under Starlight's own storage key, which its theme provider reads before the
+ * page paints, so a chosen theme never flashes the other one.
+ */
+import { Icon } from '@astrojs/starlight/components';
+---
+
+<ac-theme-toggle>
+  <button type="button" class="ac-icon-button" aria-label="Switch to dark theme">
+    <Icon name="sun" class="ac-theme-toggle__light" />
+    <Icon name="moon" class="ac-theme-toggle__dark" />
+  </button>
+</ac-theme-toggle>
+
+<script>
+  type Theme = 'light' | 'dark';
+
+  /** The key Starlight's theme provider reads before the first paint. */
+  const storageKey = 'starlight-theme';
+
+  const shown = (): Theme => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
+
+  const stored = (): Theme | null => {
+    try {
+      const value = localStorage.getItem(storageKey);
+      return value === 'light' || value === 'dark' ? value : null;
+    } catch {
+      return null;
+    }
+  };
+
+  /** Every toggle on the page names the theme it switches to. */
+  const label = () => {
+    const next = shown() === 'light' ? 'dark' : 'light';
+    document.querySelectorAll('ac-theme-toggle button').forEach((button) => {
+      button.setAttribute('aria-label', `Switch to ${next} theme`);
+    });
+  };
+
+  const apply = (theme: Theme) => {
+    document.documentElement.dataset.theme = theme;
+    label();
+  };
+
+  // Follow the system setting until the reader picks a theme.
+  matchMedia('(prefers-color-scheme: light)').addEventListener('change', (event) => {
+    if (!stored()) apply(event.matches ? 'light' : 'dark');
+  });
+
+  class ThemeToggle extends HTMLElement {
+    constructor() {
+      super();
+      label();
+      this.querySelector('button')?.addEventListener('click', () => {
+        const next = shown() === 'light' ? 'dark' : 'light';
+        try {
+          localStorage.setItem(storageKey, next);
+        } catch {}
+        apply(next);
+      });
+    }
+  }
+  customElements.define('ac-theme-toggle', ThemeToggle);
+</script>

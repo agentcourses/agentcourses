@@ -69,7 +69,7 @@ for (const width of [2000, 1440]) {
     const contents = await box(page, '.right-sidebar-panel');
     const title = await box(page, '.site-title');
     const search = await box(page, 'site-search button[data-open-modal]');
-    const theme = await box(page, 'starlight-theme-select');
+    const theme = await box(page, 'header ac-theme-toggle button');
 
     expect(sidebar.x, 'the sidebar starts at the shell edge').toBeCloseTo(inset, 0);
     expect(title.x, 'the site title lines up with the sidebar').toBeCloseTo(sidebar.x, 0);
@@ -98,6 +98,47 @@ test('a narrow table fills the reading column, header shading included', async (
   expect(frame.width, 'the table frame spans the reading column').toBeCloseTo(content.width, 0);
   expect(header.width, 'the header row spans its frame, less the two border pixels').toBeCloseTo(frame.width - 2, 0);
 });
+
+test('the pager sits 56 pixels below the page', async ({ page }) => {
+  await page.setViewportSize(desktop);
+  await open(page, article, 'light');
+  const content = await box(page, '.sl-markdown-content');
+  const pager = await box(page, '.pagination-links');
+  expect(pager.y - (content.y + content.height), 'the gap above the previous and next links').toBeCloseTo(56, 0);
+});
+
+test('between 981 and 1240 pixels the folded contents bar spans the page column, gutter to gutter', async ({ page }) => {
+  await page.setViewportSize({ width: 1100, height: 900 });
+  await open(page, article, 'light');
+  const content = await box(page, '.sl-markdown-content');
+  const bar = await box(page, 'mobile-starlight-toc nav');
+  expect(bar.x, 'the bar starts where the page column starts').toBeCloseTo(content.x, 0);
+  expect(bar.x + bar.width, 'the bar stops at the right gutter').toBeCloseTo(1100 - 16, 0);
+});
+
+for (const [name, viewport] of [['phone', phone], ['desktop', desktop]] as const) {
+  test(`the banner spans the window above the top bar on a ${name}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await open(page, '/', 'light');
+    const banner = await box(page, '.ac-banner');
+    const header = await box(page, 'header.header');
+    expect(banner.x, 'the banner starts at the window edge').toBe(0);
+    expect(banner.width, 'the banner spans the window').toBe(viewport.width);
+    expect(header.y, 'the top bar starts where the banner ends').toBeCloseTo(banner.y + banner.height, 0);
+    const below = header.y + header.height;
+    if (name === 'phone') {
+      const menu = await box(page, '.sl-menu-button');
+      expect(menu.y, 'the menu button sits inside the top bar').toBeGreaterThanOrEqual(header.y);
+      expect(menu.y + menu.height, 'the menu button sits inside the top bar').toBeLessThanOrEqual(below);
+      await page.getByRole('button', { name: 'Menu' }).click();
+      expect((await box(page, '#starlight__sidebar')).y, 'the drawer opens below the top bar').toBeCloseTo(below, 0);
+      expect((await box(page, 'mobile-starlight-toc nav')).y, 'the folded contents bar sits below the top bar').toBeCloseTo(below - 1, 0);
+    } else {
+      expect((await box(page, '.sidebar-pane')).y, 'the sidebar starts below the top bar').toBeCloseTo(below, 0);
+      expect((await box(page, '.right-sidebar-container')).y, 'the contents column starts below the top bar').toBeCloseTo(below, 0);
+    }
+  });
+}
 
 test('the overview fixture renders stages, runner tiles, cards and a thesis', async ({ page }) => {
   await page.setViewportSize(desktop);

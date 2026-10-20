@@ -111,6 +111,38 @@ test.describe('search', () => {
   });
 });
 
+test.describe('banner and theme', () => {
+  test('dismissing the banner closes it on later pages and moves focus to the site title', async ({ page }) => {
+    await page.setViewportSize(desktop);
+    await open(page, '/', 'light');
+    const banner = page.locator('.ac-banner');
+    await expect(banner).toBeVisible();
+    await page.getByRole('button', { name: 'Dismiss announcement' }).click();
+    await expect(banner).toBeHidden();
+    await expect(page.locator('header.header .site-title'), 'focus moves to the site title').toBeFocused();
+    expect((await page.locator('header.header').boundingBox())!.y, 'the top bar moves up to the window edge').toBe(0);
+    await page.reload();
+    await expect(banner, 'the banner stays dismissed').toBeHidden();
+    expect((await page.locator('header.header').boundingBox())!.y).toBe(0);
+  });
+
+  test('the theme toggle switches theme with the keyboard, names the next theme and keeps the choice', async ({ page }) => {
+    await page.setViewportSize(desktop);
+    await open(page, '/', 'light');
+    const toggle = page.locator('header ac-theme-toggle button');
+    await expect(toggle).toHaveAccessibleName('Switch to dark theme');
+    await toggle.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await expect(toggle).toHaveAccessibleName('Switch to light theme');
+    await page.goto(article);
+    await expect(page.locator('html'), 'the chosen theme carries to the next page').toHaveAttribute('data-theme', 'dark');
+    await page.locator('header ac-theme-toggle button').click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+    expect(await page.evaluate(() => localStorage.getItem('starlight-theme'))).toBe('light');
+  });
+});
+
 test.describe('copy controls', () => {
   test('Copy page copies the readable article and says so', async ({ page, context, baseURL }) => {
     const origin = siteOrigin(baseURL);

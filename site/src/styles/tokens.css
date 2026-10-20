@@ -80,6 +80,9 @@
   --page-w: 760px;
   --shell-w: 1480px;
   --col-gap: 48px;
+  /* The banner's height, measured by the page frame; 0 when there is none or it is dismissed. */
+  --ac-banner-h: 0px;
+  --ac-top: calc(var(--ac-banner-h) + var(--nav-h));
   --gutter: max(16px, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
   --radius-l: 12px;
   --radius-m: 8px;
