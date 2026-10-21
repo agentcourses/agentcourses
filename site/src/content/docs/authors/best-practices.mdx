@@ -1,0 +1,56 @@
+---
+title: Best practices
+description: Write lessons as instructions to the tutor, keep the learner's decisions theirs and know which advice is a rule.
+---
+
+A lesson is written to the tutor, the agent that teaches the course, not to the learner. This page shows how to write that way. It separates what the specification requires from what is only advice, so you can tell a rule from a habit.
+
+Rules carry a link to the [specification](/specification/#format--rules-and-advice). Anything labelled **Advice** is guidance only: it never makes a course invalid. Course size and lesson length are advice here, never requirements.
+
+## Address the tutor
+
+Write each lesson body as instructions to the tutor, in the imperative. "Ask the learner which option they prefer, then draft the section" works. "You will now learn about options" does not, because the tutor is not the audience.
+
+Only the `## Goal` section is addressed to the learner, and the runner says it as written ([lesson headings](/specification/#format--lesson-headings)). Every other section is teaching material the tutor uses in its own words ([build duties](/specification/#execution--build-duties)). Use these five headings exactly. A heading spelled `## Task` is ordinary text and does not count as `## Build`.
+
+## Write the Goal verbatim-ready
+
+Because the runner says `## Goal` word for word, write it as a sentence a learner can hear: "You can show the agent works and say why." Keep tutor notes, answers and rubric hints out of it. A rubric or any `tutor/` file must never be linked from the Goal ([folder layout](/specification/#format--folder-layout)).
+
+Counts are derived, not written. **Advice:** avoid a lesson count, a total duration or "lesson 3" in learner-facing text, because reordering makes them wrong ([authored counts](/specification/#format--authored-counts)). A planned lint command, **not available yet**, will warn about them, and the course stays valid.
+
+## Use Build to work together
+
+`## Build` says what the tutor and learner make together ([lesson headings](/specification/#format--lesson-headings)). The tutor may type the code while the learner makes the decisions. Do not write a Build section that requires the learner to type everything.
+
+The tutor shows each change and why, rereads a file before changing it, and never invents a fact about the learner's project ([building together](/specification/#execution--build-duties)). Write steps that let it do these things, such as "read the project's entry file, then ask how the learner wants to start it".
+
+## Keep calls for the learner
+
+A call is a decision only the learner may make ([calls](/specification/#format--calls)). Declare one when the lesson has a real choice, such as which tool the agent calls first. Write its `ask` as the question to put to the learner.
+
+- The tutor may recommend an option and say what it costs.
+- The tutor must not decide the call, and must wait for the answer before the change that depends on it ([call duties](/specification/#execution--calls-duties)).
+- A tutor decision, a call never put to the learner or a recommendation the learner did not confirm never counts as the learner's call. A call also counts only when the runner can show it was the learner's. That needs a host whose confirmation boundary was qualified separately. This specification qualifies no host, so on every other host the call stays unverified ([settlement](/specification/#execution--settlement)).
+
+Do not write lessons that make the tutor choose silently and move on. An objective stays unsettled when a call in its lesson was not the learner's, or cannot be shown to be.
+
+## Offer hints in steps
+
+`## Hints` is a numbered list the tutor reveals one item per request ([help](/specification/#execution--help-ladder)). Order them from a small nudge to a more direct pointer. A worked example is shown only if the learner asks. Help is never counted as an attempt.
+
+## Observe the project, not the conversation
+
+Use an observe check when no program can decide, such as "agent.py exists and defines an agent". It judges the project only: files, Git state and the output of commands the runner ran and showed ([observe checks](/specification/#execution--observe-checks)). It must not use anything the learner or the tutor said. Understanding shown in conversation belongs to the [explain-back](/authors/explain-back/).
+
+## Advice on size and shape
+
+These are habits, not rules. The specification sets no course length, lesson count or host restriction, and neither does this page.
+
+- **Advice:** keep one idea in each lesson, so a learner can stop and resume cleanly.
+- **Advice:** pick the stage that matches the work. A grasping lesson is `understand`; a real part of the outcome is `build` ([stages](/specification/#format--stages)).
+- **Advice:** write the explain-back criteria about decisions, not definitions.
+
+## Check your lessons
+
+After each change, run the current checks from a checkout of the agentcourses/agentcourses repository, as [the quickstart](/authors/quickstart/) shows. Then read each lesson as the tutor: does every section tell it what to do, and does only the Goal speak to the learner?

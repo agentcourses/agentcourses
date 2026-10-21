@@ -1,0 +1,66 @@
+---
+title: Explain-back and rubrics
+description: Write the final lesson's explain-back and rubric, and see how passes, retries and unavailable judges are handled.
+---
+
+import ExampleCode from '../../../components/ExampleCode.astro';
+
+Every course ends with one explain-back in its `demonstrate` lesson. The learner says in their own words what they built and why, and the runner judges it against a rubric you write. This page covers the prompt, the rubric, the pass mark and what happens when the judge is unavailable or the learner needs another try.
+
+## Write the prompt
+
+The prompt sits under `## Explain back` in the final lesson ([explain-back](/specification/#execution--explain-back)). Ask about decisions, not definitions. The tutor asks open questions and never leads the learner to the answer. This is the tested lesson:
+
+<ExampleCode example="quickstart" file="lessons/finish.md" lang="markdown" />
+
+`## Explain back` is required once in the final lesson and not allowed in any other ([lesson headings](/specification/#format--lesson-headings)).
+
+## Write the rubric
+
+The rubric is `tutor/<lesson-id>.rubric.md` for the final lesson. It is tutor-only, so the learner never sees it verbatim ([folder layout](/specification/#format--folder-layout)). This is the tested rubric:
+
+<ExampleCode example="quickstart" file="tutor/finish.rubric.md" lang="markdown" />
+
+The rules ([rubric grammar](/specification/#execution--rubric-grammar)):
+
+- The frontmatter key `pass` is `K of N`, such as `2 of 3`, with positive whole numbers and `K` at most `N`.
+- Each top-level list item is one criterion. Nested items belong to their parent. Paragraph text is a note to the judge and is not counted.
+- `N` must equal the number of criteria.
+- A criterion is met or not met. There is no partial credit or weighting.
+- The explain-back passes exactly when at least `K` criteria are met. One short of `K` is a fail, however close.
+
+Write each criterion so a judge can decide from what the learner said. Make criteria about the learner's own decisions, such as "describes the tool call: what triggers it and what it returns".
+
+## Judging needs a capable runner
+
+Judging needs the `judge` capability. A runner without it records the attempt and leaves the objective unsettled ([explain-back](/specification/#execution--explain-back)). An unavailable judge is not a fail, and it is not a pass. Nothing settles on it.
+
+Only a passing explain-back is recorded as `explained` evidence. An objective settles only when [all three settlement conditions hold](/specification/#execution--settlement):
+
+1. Its evidence passed, and the runner had the capability that evidence needs.
+2. Every call in its lesson was the learner's decision, and the runner can show that it was.
+3. The lesson was not skipped.
+
+A call whose provenance is unverified leaves the objective unsettled. A call is verified only on a host whose confirmation boundary was qualified separately. This specification qualifies no host, so on every other host the call stays unverified. Skipping is always allowed and always recorded as skipped, never as passed.
+
+## Retries and help
+
+A learner who does not meet the bar gets targeted help and may try again. Help stays spoken. The tutor reveals hints one at a time and never counts help as an attempt ([help](/specification/#execution--help-ladder)). Write criteria that stay fair on a second try.
+
+## The tutor stays silent on the project
+
+From the moment the prompt is put until the attempt is judged or the learner leaves the step, the tutor must not create, edit, move or delete any project file ([silence during explain-back](/specification/#execution--explain-back-silence)). This includes retries. A learner who wants to change the project leaves the explain-back, returns to build and review, and starts a new explain-back later. Do not write a prompt or a hint that asks the tutor to fix the project while judging it.
+
+## Quizzes are practice, not evidence
+
+A `## Quiz` is a short list of questions that catches a misconception early. A wrong answer never blocks progress, and a quiz never settles an objective ([quizzes](/specification/#execution--quizzes)). Use a quiz to teach and an explain-back to settle. The overview of [evidence kinds](/specification/#execution--evidence) shows the difference.
+
+## What you can run today
+
+From the checkout root of the [agentcourses/agentcourses repository](https://github.com/agentcourses/agentcourses), set up as [the quickstart](/authors/quickstart/) describes, the internal harness checks a course folder, including that its rubric exists for the final lesson and its criteria count equals its pass denominator:
+
+```sh
+uv run --locked python tools/check_contracts.py --example /path/to/your-course
+```
+
+It does not judge an explain-back. No public `validate` command is available yet, and judging belongs to a runner that has the `judge` capability.
