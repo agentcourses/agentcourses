@@ -24,5 +24,7 @@ try {
 } catch (error) {
   fail(`missing or unsafe source: ${example}/${file}: ${String(error)}`);
 }
+// A blank source would otherwise reach Code, whose error does not name the example file.
+if (!code!.trim()) fail(`empty source: ${example}/${file}`);
 ---
 <Code code={code!} lang={lang as ComponentProps<typeof Code>['lang']} />

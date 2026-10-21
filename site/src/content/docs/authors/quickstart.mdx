@@ -1,0 +1,133 @@
+---
+title: Quickstart
+description: Copy a small tested course, check it and see what a pass and a fail look like.
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+import ExampleCode from '../../../components/ExampleCode.astro';
+
+A course is a folder of Markdown files, a few check programs and one rubric. This guide builds the smallest complete one, a course named `quickstart` that teaches a learner to build a one-file agent and explain it. Every file below is rendered from the example course that the agentcourses/agentcourses repository tests, so what you copy is what was proven.
+
+The course you write is addressed to the tutor, the agent that teaches it. Only each lesson's `## Goal` is read to the learner as written. The [course format](/specification/#format--lesson-headings) lists the headings a runner looks for.
+
+<Aside type="caution" title="What you can run today">
+The commands in this guide run from a checkout of the [agentcourses/agentcourses repository](https://github.com/agentcourses/agentcourses), using its locked Python tools. They are an internal proof harness, not a public validator or a qualified runner. There is no installable package yet, and the `/learn` command is not released.
+</Aside>
+
+## Before you start
+
+Clone the [agentcourses/agentcourses repository](https://github.com/agentcourses/agentcourses) and install the Python and uv versions named in [its README](https://github.com/agentcourses/agentcourses#install-and-check). The top of that clone is the **checkout root**. Run every command marked **checkout root** from there. Choose any empty directory for the course itself. It is your course folder, and it is separate from the project a learner works in. Where this guide says "the course folder", use that directory.
+
+Folder names matter: the folder name must equal the course's `name`, so the folder here is called `quickstart` ([course shape](/specification/#format--course-shape)).
+
+<Steps>
+
+1. ### Create the folders
+
+   Run this in your chosen empty directory, which will hold the course folder.
+
+   ```sh
+   mkdir -p quickstart/lessons quickstart/tutor quickstart/checks/fixtures/final-check/pass quickstart/checks/fixtures/final-check/fail
+   ```
+
+   The layout is described in [the course layout](/specification/#format--folder-layout).
+
+2. ### Write the course page
+
+   Save this as `quickstart/COURSE.md` in the course folder. Its frontmatter names the course; its body is the page a learner reads first.
+
+   <ExampleCode example="quickstart" file="COURSE.md" lang="markdown" />
+
+   The `project: [own]` line means the learner works in the project they already have open. See [the project field](/specification/#format--project-field) for the other options.
+
+3. ### Write the three lessons
+
+   Save each file in `quickstart/lessons/` in the course folder. The file name is the lesson id, and the order of lessons is the order listed in `COURSE.md`.
+
+   First, `quickstart/lessons/intro.md`:
+
+   <ExampleCode example="quickstart" file="lessons/intro.md" lang="markdown" />
+
+   Then `quickstart/lessons/make.md`:
+
+   <ExampleCode example="quickstart" file="lessons/make.md" lang="markdown" />
+
+   Last, `quickstart/lessons/finish.md`. The last lesson is the only one with the `demonstrate` stage ([stages](/specification/#format--stages)).
+
+   <ExampleCode example="quickstart" file="lessons/finish.md" lang="markdown" />
+
+   Together the lessons show two habits worth copying. The `choose-tool` call in `intro.md` and the `choose-check` call in `finish.md` are decisions only the learner makes ([calls](/specification/#format--calls)). The `make` lesson's `## Build` section is an instruction to the tutor, not to the learner.
+
+4. ### Declare the check
+
+   Save this as `quickstart/checks/checks.yaml` in the course folder. It declares one command check and one observe check ([check declarations](/specification/#execution--check-declarations)).
+
+   <ExampleCode example="quickstart" file="checks/checks.yaml" lang="yaml" />
+
+5. ### Write the check program
+
+   Save this as `quickstart/checks/final_check.py` in the course folder. A check runs with the learner's project as its working directory, so it reads `agent.py` by a relative path. It reads the file without running it.
+
+   <ExampleCode example="quickstart" file="checks/final_check.py" lang="python" />
+
+6. ### Add the fixtures
+
+   Every command check needs a project that passes and a project that fails ([rules every check follows](/specification/#execution--check-rules)). Save this as `quickstart/checks/fixtures/final-check/pass/agent.py` in the course folder:
+
+   <ExampleCode example="quickstart" file="checks/fixtures/final-check/pass/agent.py" lang="python" />
+
+   Save this as `quickstart/checks/fixtures/final-check/fail/agent.py` in the course folder:
+
+   <ExampleCode example="quickstart" file="checks/fixtures/final-check/fail/agent.py" lang="python" />
+
+7. ### Write the rubric
+
+   Save this as `quickstart/tutor/finish.rubric.md` in the course folder. The rubric belongs to the final lesson and is never shown to the learner ([rubric grammar](/specification/#execution--rubric-grammar)). The [explain-back guide](/authors/explain-back/) explains how it is used.
+
+   <ExampleCode example="quickstart" file="tutor/finish.rubric.md" lang="markdown" />
+
+8. ### Add the optional feedback file
+
+   Save this as `quickstart/feedback.yaml` in the course folder. It is optional, and it declares the only feedback the course may ask for ([declared only](/specification/#consent--declared-only)).
+
+   <ExampleCode example="quickstart" file="feedback.yaml" lang="yaml" />
+
+9. ### Check the whole course
+
+   Run this at the **checkout root**, replacing the path with where your course folder is.
+
+   ```sh
+   uv run --locked python tools/check_contracts.py --example /path/to/quickstart
+   ```
+
+   A correct copy prints `contracts: 0 errors, 0 warnings` and exits zero.
+
+10. ### Try the check against both fixtures
+
+    This runs the program the way a runner would, with the project as the working directory. Run it from inside the course folder's parent directory, using a plain `python3`. It changes nothing.
+
+    ```sh
+    COURSE="$PWD/quickstart"
+    cd "$COURSE/checks/fixtures/final-check/pass"
+    AGENT_COURSE_DIR="$COURSE" AGENT_COURSE_PROJECT="$PWD" python3 "$COURSE/checks/final_check.py"; echo "exit $?"
+    cd "$COURSE/checks/fixtures/final-check/fail"
+    AGENT_COURSE_DIR="$COURSE" AGENT_COURSE_PROJECT="$PWD" python3 "$COURSE/checks/final_check.py"; echo "exit $?"
+    ```
+
+    The first project exits `0` and reports `pass`. The second exits `1` and reports `fail` with a path and a fix. The [checks guide](/authors/checks/) explains what each exit code means.
+
+</Steps>
+
+## How a runner will teach this course
+
+When a learner takes the course, each lesson follows the same loop: the tutor says the Goal, builds with the learner, puts each call to the learner, runs the lesson's checks, reviews the results and, in the last lesson only, asks for the explain-back ([the teaching loop](/specification/#execution--teaching-loop)). While building, the tutor shows each change and says why, and rereads a file just before editing it so a hand edit by the learner is never overwritten ([building together](/specification/#execution--build-duties)). Write your lessons so the tutor can do all of this. The tutor may type the code, while the learner owns the decisions.
+
+## What is not available yet
+
+A public `validate`, `test` or `lint` command and a released `/learn` command are planned. They are **not available**, so nothing in this guide depends on them. Until they exist, the checkout commands above are the only tooling, and they run only from a clone of the agentcourses/agentcourses repository.
+
+## Next steps
+
+- [Best practices](/authors/best-practices/) shows how to write lessons the tutor can teach from.
+- [Writing checks](/authors/checks/) covers the check program, its fixtures and its failure states.
+- [Explain-back and rubrics](/authors/explain-back/) covers the last lesson's judgement.

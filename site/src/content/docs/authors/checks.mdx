@@ -1,0 +1,83 @@
+---
+title: Writing checks
+description: Declare command and observe checks, ship fixtures, and tell a pass from a failure from a broken check.
+---
+
+import ExampleCode from '../../../components/ExampleCode.astro';
+
+A check is a small program, or an inspection, that looks at the learner's project and says pass or fail. This page shows how to declare one, where it runs, what its exit code means and how to prove it with fixtures. The exit code is the whole contract.
+
+## Declare checks
+
+Checks live in `checks/checks.yaml` in the course folder, as a list ([check declarations](/specification/#execution--check-declarations)). This is the tested example:
+
+<ExampleCode example="quickstart" file="checks/checks.yaml" lang="yaml" />
+
+A command check has an `id`, a `run` command and a `verify` sentence. An observe check has `kind: observe` and a `verify` sentence only, with no `run`. The timeout is a whole number of seconds from 1 to 300 and defaults to 60. `network` defaults to `false`. A lesson lists the check ids it uses, and each must exist here.
+
+## Where a command runs
+
+A command check runs with the learner's project root as its working directory ([where a command runs](/specification/#execution--check-paths)). The runner sets two variables:
+
+- `AGENT_COURSE_DIR`: the read-only course folder;
+- `AGENT_COURSE_PROJECT`: the learner's project root.
+
+A relative path in `run` therefore means the learner's project. Name any course file through `AGENT_COURSE_DIR`, in double quotes, as the example does. This is the tested program:
+
+<ExampleCode example="quickstart" file="checks/final_check.py" lang="python" />
+
+## Exit codes
+
+| Exit code | Result | Meaning | Counts against the learner |
+| --- | --- | --- | --- |
+| 0 | `pass` | The requirement is met | No |
+| 1 | `fail` | The requirement is not met and the learner can fix it | Yes |
+| Anything else | `error` | The check itself is broken | Never |
+
+Anything else includes a timeout, a signal, a missing program and a refused write ([check results](/specification/#execution--check-results)). A check that returns `error` is not evidence that the learner failed. The runner apologises and settles nothing on it, so fix the check, not the learner's work.
+
+A check may also print one JSON line with `check`, `status`, `path`, `line`, `message` and `fix`. If the line contradicts the exit code, the exit code wins. The example prints a path and fix on failure so a beginner knows what to change.
+
+## Rules every command check follows
+
+Each is a rule in [the check rules](/specification/#execution--check-rules):
+
+- **Read-only.** Never change the learner's project. Use a temporary directory for scratch work.
+- **Deterministic.** The same project gives the same result. Compare meaning, not exact text.
+- **Helpful on failure.** Every `fail` names a path and a fix.
+- **Quiet.** No secrets, environment dumps or file contents in the output.
+- **Proven.** Ship fixtures, as below.
+
+## Fixtures
+
+Each command check has `checks/fixtures/<id>/pass/` and `checks/fixtures/<id>/fail/`. Each is one project root, the directory the check runs in. These are the tested fixtures:
+
+<ExampleCode example="quickstart" file="checks/fixtures/final-check/pass/agent.py" lang="python" />
+
+<ExampleCode example="quickstart" file="checks/fixtures/final-check/fail/agent.py" lang="python" />
+
+You may add further cases as sibling directories named `pass-<kebab id>` or `fail-<kebab id>`. An observe check has no program and needs no fixtures.
+
+## Host permission, time and network
+
+Any executable the host permits may be used, in any language ([permission, time and network](/specification/#execution--host-permission)). The runner uses the host's own permission model and never works around a refusal. A refused command is recorded as not run.
+
+- The runner stops a command at its timeout, and a timeout counts as a broken check.
+- A runner should run checks with the project read-only, a scratch directory, the declared timeout and no network.
+- A check that sets `network: true` may be refused, and is then recorded as not run.
+
+The runner also shows the learner the command exactly as written, the working directory and both variables before its first run, and lets the learner decline ([showing the command](/specification/#execution--command-display)). A declined check is not run, not passed and not failed. Write commands that are safe to show and safe to copy.
+
+## Checked and observed evidence
+
+A passing command check is recorded as `checked`. A passing observe check is recorded as `observed`, at lower trust, because the runner inspected state with no program ([evidence](/specification/#execution--evidence)). A runner without the `observe` capability records an observe check as not run.
+
+## What you can run today
+
+From the checkout root of the [agentcourses/agentcourses repository](https://github.com/agentcourses/agentcourses), set up as [the quickstart](/authors/quickstart/) describes, the internal harness checks a whole course folder:
+
+```sh
+uv run --locked python tools/check_contracts.py --example /path/to/your-course
+```
+
+This does not run your check programs on your behalf. To try a program, run it in a fixture directory yourself, as [the quickstart](/authors/quickstart/) shows. A public `validate`, `test` or `lint` command is planned and **not available yet**.

@@ -79,6 +79,8 @@ def test_course_snapshot_needs_only_public_sources(tmp_path, scope):
         destination = snapshot / name
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(path, destination)
+    # Share installed tooling, as this subprocess already shares the Python environment.
+    (snapshot / "site/node_modules").symlink_to(source / "site/node_modules", target_is_directory=True)
     assert not (snapshot / "docs/delivery/contracts.md").exists()
     assert not (snapshot / ".git").exists()
     result = subprocess.run(
