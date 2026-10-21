@@ -93,7 +93,7 @@ def test_schema_registry_checks_root_payload_and_refs(tmp_path):
     c=contracts()
     for directory in ['schemas','fixtures','examples']:
         shutil.copytree(ROOT/directory,tmp_path/directory)
-    path=tmp_path/'schemas/1.0.0-rc.1/course.schema.json'
+    path=tmp_path/'schemas/course.schema.json'
     schema=json.loads(path.read_text())
     schema['properties']['description']['minLength']=1000
     path.write_text(json.dumps(schema)+'\n')
