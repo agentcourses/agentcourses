@@ -1,0 +1,51 @@
+{
+  "candidate": "1.0.0-rc.1",
+  "dialect": "https://json-schema.org/draft/2020-12/schema",
+  "releases": [
+    {
+      "candidate": "1.0.0-rc.1",
+      "schemas": [
+        {
+          "id": "https://agentcourses.io/schemas/1.0.0-rc.1/course.schema.json",
+          "path": "schemas/course.schema.json",
+          "sha256": "a125b195673ed922b3485503047210822b4a7a4a75dc58180276e8c532305750"
+        },
+        {
+          "id": "https://agentcourses.io/schemas/1.0.0-rc.1/lesson.schema.json",
+          "path": "schemas/lesson.schema.json",
+          "sha256": "3cbc63f39b432a1aa140a12b13e788370788568460d937160946a85cb43d75cf"
+        },
+        {
+          "id": "https://agentcourses.io/schemas/1.0.0-rc.1/checks.schema.json",
+          "path": "schemas/checks.schema.json",
+          "sha256": "4e2275e9dcbcc1019f2e510ab388bab99d9aa223d653d958f1f1d3b86a5fd380"
+        },
+        {
+          "id": "https://agentcourses.io/schemas/1.0.0-rc.1/feedback.schema.json",
+          "path": "schemas/feedback.schema.json",
+          "sha256": "682665aa91613baa85abb4a33d817a0b030433e59fc0462f0296c53145ef46ab"
+        },
+        {
+          "id": "https://agentcourses.io/schemas/1.0.0-rc.1/lock.schema.json",
+          "path": "schemas/lock.schema.json",
+          "sha256": "d113718d3a98a35fc5be0a7558361f8eb1d2d025f5b50cd0edcd0500540de378"
+        },
+        {
+          "id": "https://agentcourses.io/schemas/1.0.0-rc.1/record.schema.json",
+          "path": "schemas/record.schema.json",
+          "sha256": "670617d6c58a2457d7ec98a26c52a227f9621d0f43e7660fba4ca63513b09b1f"
+        },
+        {
+          "id": "https://agentcourses.io/schemas/1.0.0-rc.1/event.schema.json",
+          "path": "schemas/event.schema.json",
+          "sha256": "b41698122f5be8c6f202c8f481471aeccefffd2c4a7751e9bd6dbd2520665bde"
+        },
+        {
+          "id": "https://agentcourses.io/schemas/1.0.0-rc.1/rubric.schema.json",
+          "path": "schemas/rubric.schema.json",
+          "sha256": "79814a230fb245dedb3af91a258f0d518754fc1df3e2be6d5c1d1b952f028838"
+        }
+      ]
+    }
+  ]
+}

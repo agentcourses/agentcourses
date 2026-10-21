@@ -1,0 +1,53 @@
+{
+  "spec": "1.0",
+  "course": "sample-course",
+  "version": "1.0.0",
+  "snapshot": "sha256:c35480cb14f89d9e89719faa2452a5b494d58ba2f80cb3fe26abd2d0346f4ca4",
+  "generation": 1,
+  "history": [],
+  "project": {
+    "kind": "own",
+    "path": "."
+  },
+  "position": {
+    "lesson": "make",
+    "step": "goal"
+  },
+  "lessons": {
+    "intro": {
+      "status": "passed",
+      "at": "2026-10-21T09:04:00Z"
+    },
+    "make": {
+      "status": "passed",
+      "checks": {
+        "agent-runs": {
+          "last": "pass",
+          "runs": 2
+        }
+      },
+      "at": "2026-10-21T09:09:00Z"
+    }
+  },
+  "calls": [
+    {
+      "id": "choose-tool",
+      "lesson": "intro",
+      "state": "decided",
+      "by": "learner",
+      "provenance": "verified"
+    }
+  ],
+  "objectives": [
+    {
+      "id": "agent-runs-ok",
+      "lesson": "make",
+      "evidence": "observed",
+      "by": "agent-runs",
+      "at": "2026-10-21T09:09:00Z",
+      "snapshot": "sha256:c35480cb14f89d9e89719faa2452a5b494d58ba2f80cb3fe26abd2d0346f4ca4"
+    }
+  ],
+  "consent": [],
+  "declined": []
+}

@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentcourses.io/schemas/1.0.0-rc.1/checks.schema.json",
+  "title": "Agent Courses checks",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "allOf": [
+          {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          {
+            "not": {
+              "const": "explain-back"
+            }
+          }
+        ]
+      },
+      "kind": {
+        "enum": [
+          "command",
+          "observe"
+        ]
+      },
+      "run": {
+        "type": "string",
+        "minLength": 1
+      },
+      "verify": {
+        "type": "string",
+        "minLength": 1
+      },
+      "timeout": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 300
+      },
+      "network": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "id",
+      "verify"
+    ],
+    "additionalProperties": true,
+    "allOf": [
+      {
+        "if": {
+          "properties": {
+            "kind": {
+              "const": "observe"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        "then": {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "run"
+                ]
+              }
+            ]
+          }
+        },
+        "else": {
+          "required": [
+            "run"
+          ]
+        }
+      }
+    ]
+  }
+}
