@@ -1,6 +1,7 @@
 """Internal source checks and canonical public-link map. No build or writes are needed."""
 import argparse
 import json
+from functools import lru_cache
 from html.parser import HTMLParser
 from pathlib import Path
 import re
@@ -95,6 +96,70 @@ def body_text(path, findings, root):
         except (yaml.YAMLError, ValueError) as exc:
             findings.append(finding("frontmatter", path.relative_to(root), str(exc)))
     return text
+
+
+EXAMPLE_NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
+
+
+@lru_cache(maxsize=128)
+def includes(text):
+    """Parse real MDX elements with the site's locked parser, without evaluating JavaScript."""
+    result = subprocess.run(["node", str(ROOT / "tools/example_includes.mjs")], input=text,
+                            capture_output=True, text=True, timeout=30)
+    if result.returncode:
+        raise ValueError(result.stderr.strip() or "MDX parser failed")
+    parsed = json.loads(result.stdout)
+    if parsed.get("error"):
+        raise ValueError(parsed["error"])
+    return parsed["includes"]
+
+
+def include_problem(examples, example, file):
+    """Mirror ExampleCode's containment rules and add the non-empty source rule."""
+    if not EXAMPLE_NAME.fullmatch(example):
+        return "unknown or unsafe example"
+    if not file or file.startswith("/") or "\\" in file or any(part in ("", ".", "..") for part in file.split("/")):
+        return "unsafe file path"
+    # Resolution raises on a looping link; it becomes this include's finding, not an aborted inspection.
+    try:
+        base = examples.resolve()
+        folder = (examples / example).resolve()
+        if folder == base or not folder.is_relative_to(base) or not folder.is_dir():
+            return "unknown example or one outside the examples directory"
+    except (OSError, RuntimeError):
+        return "example directory link cannot be resolved"
+    try:
+        target = (folder / file).resolve()
+        if target == folder or not target.is_relative_to(folder) or not target.is_file():
+            return "missing source or one outside its example"
+    except (OSError, RuntimeError):
+        return "source link cannot be resolved"
+    try:
+        if not target.read_text(encoding="utf-8").strip():
+            return "empty source"
+    except (OSError, UnicodeError) as exc:
+        return f"unreadable source: {exc}"
+    return None
+
+
+def check_example_includes(root, rel, text, findings):
+    """Report each real include whose effective sources are not literal, safe and non-blank."""
+    if "<ExampleCode" not in text:
+        return
+    try:
+        parsed = includes(text)
+    except (OSError, ValueError, subprocess.TimeoutExpired) as exc:
+        findings.append(finding("example-source", rel, f"/: unreadable MDX source: {exc}"))
+        return
+    for properties in parsed:
+        example, file = properties.get("example"), properties.get("file")
+        source = "/".join("" if value is None else value[1] for value in (example, file))
+        if any(value is None or value[0] != "literal" for value in (example, file)):
+            problem = "effective example and file must be literal quoted strings"
+        else:
+            problem = include_problem(root / "examples", example[1], file[1])
+        if problem:
+            findings.append(finding("example-source", rel, f"{source}: {problem}"))
 
 
 def tokens_and_ids(text):
@@ -243,6 +308,8 @@ def check_tree(root: Path, minimum_stage: str, *, source_only=False) -> list[dic
             continue
         rel = path.relative_to(root)
         text = body_text(path, findings, root)
+        if not source_only and path.suffix == ".mdx" and rel.as_posix().startswith(DOCS):
+            check_example_includes(root, rel, text, findings)
         tokens, _ = tokens_and_ids(text)
         links = []
         for token in tokens:
