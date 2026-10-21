@@ -300,3 +300,30 @@ def test_html_code_examples_are_not_active_links(tmp_path, kind):
     index = tmp_path / "site/src/content/docs/index.mdx"
     index.write_text(index.read_text() + "\n" + example + "\n")
     assert c.check_tree(tmp_path, "foundation") == []
+
+
+@pytest.mark.parametrize('name', [
+    'examples/course/COURSE.md',
+    'examples/course/lessons/finish.md',
+    'examples/course/tutor/finish.rubric.md',
+])
+def test_authored_example_course_data_needs_no_page_title(tmp_path, name):
+    c = fixture(tmp_path)
+    write(tmp_path, 'examples/course/COURSE.md', '---\nname: course\n---\n# Course\n')
+    write(tmp_path, name, '---\ndescription: Course data\n---\n# Authored data\n')
+    assert c.check_tree(tmp_path, 'foundation') == []
+
+
+@pytest.mark.parametrize('name', [
+    'docs/page.md', 'site/src/content/docs/page.mdx',
+    'examples/page.md', 'examples/course/README.md',
+    'examples/course/tutor/notes.md', 'examples/course/lessons/page.mdx',
+    'examples/other/lessons/finish.md', 'examples/other/tutor/finish.rubric.md',
+    'docs/course/COURSE.md', 'docs/course/lessons/finish.md',
+])
+def test_ordinary_pages_still_need_frontmatter_titles(tmp_path, name):
+    c = fixture(tmp_path)
+    write(tmp_path, 'examples/course/COURSE.md', '---\ntitle: Course\n---\n# Course\n')
+    write(tmp_path, name, '---\ndescription: A page\n---\n# Page\n')
+    findings = c.check_tree(tmp_path, 'foundation')
+    assert {(f['rule'], f['path']) for f in findings} == {('frontmatter', name)}

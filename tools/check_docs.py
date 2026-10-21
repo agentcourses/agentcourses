@@ -65,6 +65,20 @@ def document_paths(root):
     return sorted(set(paths))
 
 
+def authored_course_data(path, root):
+    """Course metadata under examples is data rather than a titled site page."""
+    if path.name == "COURSE.md":
+        course = path.parent
+    elif path.parent.name == "lessons" and path.suffix == ".md":
+        course = path.parent.parent
+    elif path.parent.name == "tutor" and path.name.endswith(".rubric.md"):
+        course = path.parent.parent
+    else:
+        return False
+    examples = root / "examples"
+    return course != examples and course.is_relative_to(examples) and (course / "COURSE.md").is_file()
+
+
 def body_text(path, findings, root):
     text = path.read_text()
     if path.suffix == ".mdx" or text.startswith("---\n"):
@@ -73,7 +87,9 @@ def body_text(path, findings, root):
             if not text.startswith("---\n") or len(parts) != 3:
                 raise ValueError("Expected delimited YAML frontmatter")
             meta = yaml.safe_load(parts[1])
-            if not isinstance(meta, dict) or not isinstance(meta.get("title"), str) or not meta["title"].strip():
+            if not isinstance(meta, dict):
+                raise ValueError("Frontmatter needs a mapping")
+            if not authored_course_data(path, root) and (not isinstance(meta.get("title"), str) or not meta["title"].strip()):
                 raise ValueError("Frontmatter needs a nonempty title")
             text = parts[2]
         except (yaml.YAMLError, ValueError) as exc:

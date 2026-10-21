@@ -1,0 +1,920 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentcourses.io/schemas/1.0.0-rc.1/record.schema.json",
+  "title": "Agent Courses record",
+  "type": "object",
+  "properties": {
+    "version": {
+      "anyOf": [
+        {
+          "$ref": "https://agentcourses.io/schemas/1.0.0-rc.1/course.schema.json#/$defs/version"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "snapshot": {
+      "anyOf": [
+        {
+          "$ref": "https://agentcourses.io/schemas/1.0.0-rc.1/course.schema.json#/$defs/identity"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "generation": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "position": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "lesson": {
+              "allOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$(?![\\s\\S])",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                {
+                  "not": {
+                    "const": "explain-back"
+                  }
+                }
+              ]
+            },
+            "step": {
+              "$ref": "https://agentcourses.io/schemas/1.0.0-rc.1/course.schema.json#/$defs/step"
+            }
+          },
+          "required": [
+            "lesson",
+            "step"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "lessons": {
+      "type": "object",
+      "propertyNames": {
+        "allOf": [
+          {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          {
+            "not": {
+              "const": "explain-back"
+            }
+          }
+        ]
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "started",
+              "passed",
+              "skipped"
+            ]
+          },
+          "at": {
+            "$ref": "https://agentcourses.io/schemas/1.0.0-rc.1/course.schema.json#/$defs/time"
+          },
+          "checks": {
+            "type": "object",
+            "propertyNames": {
+              "allOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$(?![\\s\\S])",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                {
+                  "not": {
+                    "const": "explain-back"
+                  }
+                }
+              ]
+            },
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "last": {
+                  "enum": [
+                    "pass",
+                    "fail",
+                    "error",
+                    "not-run"
+                  ]
+                },
+                "runs": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "last",
+                "runs"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "explain": {
+            "type": "object",
+            "properties": {
+              "met": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "of": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "passed": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "met",
+              "of",
+              "passed"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "started"
+                }
+              },
+              "required": [
+                "status"
+              ]
+            },
+            "then": {
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "at"
+                    ]
+                  }
+                ]
+              }
+            },
+            "else": {
+              "required": [
+                "at"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "calls": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "allOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$(?![\\s\\S])",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              {
+                "not": {
+                  "const": "explain-back"
+                }
+              }
+            ]
+          },
+          "lesson": {
+            "allOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$(?![\\s\\S])",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              {
+                "not": {
+                  "const": "explain-back"
+                }
+              }
+            ]
+          },
+          "state": {
+            "enum": [
+              "open",
+              "decided"
+            ]
+          },
+          "by": {
+            "enum": [
+              "learner",
+              "tutor"
+            ]
+          },
+          "provenance": {
+            "enum": [
+              "verified",
+              "unverified"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "lesson",
+          "state"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "const": "open"
+                }
+              },
+              "required": [
+                "state"
+              ]
+            },
+            "then": {
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "by"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "provenance"
+                    ]
+                  }
+                ]
+              }
+            },
+            "else": {
+              "required": [
+                "by"
+              ],
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "by": {
+                        "const": "learner"
+                      }
+                    },
+                    "required": [
+                      "by"
+                    ]
+                  },
+                  "then": {
+                    "required": [
+                      "provenance"
+                    ]
+                  },
+                  "else": {
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "provenance"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "objectives": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "allOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$(?![\\s\\S])",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              {
+                "not": {
+                  "const": "explain-back"
+                }
+              }
+            ]
+          },
+          "lesson": {
+            "allOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$(?![\\s\\S])",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              {
+                "not": {
+                  "const": "explain-back"
+                }
+              }
+            ]
+          },
+          "evidence": {
+            "enum": [
+              "checked",
+              "observed",
+              "explained"
+            ]
+          },
+          "by": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "at": {
+            "$ref": "https://agentcourses.io/schemas/1.0.0-rc.1/course.schema.json#/$defs/time"
+          },
+          "snapshot": {
+            "$ref": "https://agentcourses.io/schemas/1.0.0-rc.1/course.schema.json#/$defs/identity"
+          }
+        },
+        "required": [
+          "id",
+          "lesson",
+          "evidence",
+          "by",
+          "at",
+          "snapshot"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "spec": {
+      "const": "1.0"
+    },
+    "course": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$(?![\\s\\S])",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "$ref": "https://agentcourses.io/schemas/1.0.0-rc.1/course.schema.json#/$defs/version"
+          },
+          "snapshot": {
+            "$ref": "https://agentcourses.io/schemas/1.0.0-rc.1/course.schema.json#/$defs/identity"
+          },
+          "generation": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "lesson": {
+                    "allOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$(?![\\s\\S])",
+                        "minLength": 1,
+                        "maxLength": 64
+                      },
+                      {
+                        "not": {
+                          "const": "explain-back"
+                        }
+                      }
+                    ]
+                  },
+                  "step": {
+                    "$ref": "https://agentcourses.io/schemas/1.0.0-rc.1/course.schema.json#/$defs/step"
+                  }
+                },
+                "required": [
+                  "lesson",
+                  "step"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lessons": {
+            "type": "object",
+            "propertyNames": {
+              "allOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$(?![\\s\\S])",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                {
+                  "not": {
+                    "const": "explain-back"
+                  }
+                }
+              ]
+            },
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "enum": [
+                    "started",
+                    "passed",
+                    "skipped"
+                  ]
+                },
+                "at": {
+                  "$ref": "https://agentcourses.io/schemas/1.0.0-rc.1/course.schema.json#/$defs/time"
+                },
+                "checks": {
+                  "type": "object",
+                  "propertyNames": {
+                    "allOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$(?![\\s\\S])",
+                        "minLength": 1,
+                        "maxLength": 64
+                      },
+                      {
+                        "not": {
+                          "const": "explain-back"
+                        }
+                      }
+                    ]
+                  },
+                  "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                      "last": {
+                        "enum": [
+                          "pass",
+                          "fail",
+                          "error",
+                          "not-run"
+                        ]
+                      },
+                      "runs": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "required": [
+                      "last",
+                      "runs"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "explain": {
+                  "type": "object",
+                  "properties": {
+                    "met": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "of": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "passed": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "met",
+                    "of",
+                    "passed"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "status"
+              ],
+              "additionalProperties": false,
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "status": {
+                        "const": "started"
+                      }
+                    },
+                    "required": [
+                      "status"
+                    ]
+                  },
+                  "then": {
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "at"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  "else": {
+                    "required": [
+                      "at"
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "calls": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "allOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$(?![\\s\\S])",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    {
+                      "not": {
+                        "const": "explain-back"
+                      }
+                    }
+                  ]
+                },
+                "lesson": {
+                  "allOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$(?![\\s\\S])",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    {
+                      "not": {
+                        "const": "explain-back"
+                      }
+                    }
+                  ]
+                },
+                "state": {
+                  "enum": [
+                    "open",
+                    "decided"
+                  ]
+                },
+                "by": {
+                  "enum": [
+                    "learner",
+                    "tutor"
+                  ]
+                },
+                "provenance": {
+                  "enum": [
+                    "verified",
+                    "unverified"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "lesson",
+                "state"
+              ],
+              "additionalProperties": false,
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "state": {
+                        "const": "open"
+                      }
+                    },
+                    "required": [
+                      "state"
+                    ]
+                  },
+                  "then": {
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "by"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "provenance"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  "else": {
+                    "required": [
+                      "by"
+                    ],
+                    "allOf": [
+                      {
+                        "if": {
+                          "properties": {
+                            "by": {
+                              "const": "learner"
+                            }
+                          },
+                          "required": [
+                            "by"
+                          ]
+                        },
+                        "then": {
+                          "required": [
+                            "provenance"
+                          ]
+                        },
+                        "else": {
+                          "not": {
+                            "anyOf": [
+                              {
+                                "required": [
+                                  "provenance"
+                                ]
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "objectives": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "allOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$(?![\\s\\S])",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    {
+                      "not": {
+                        "const": "explain-back"
+                      }
+                    }
+                  ]
+                },
+                "lesson": {
+                  "allOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$(?![\\s\\S])",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    {
+                      "not": {
+                        "const": "explain-back"
+                      }
+                    }
+                  ]
+                },
+                "evidence": {
+                  "enum": [
+                    "checked",
+                    "observed",
+                    "explained"
+                  ]
+                },
+                "by": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$(?![\\s\\S])",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "at": {
+                  "$ref": "https://agentcourses.io/schemas/1.0.0-rc.1/course.schema.json#/$defs/time"
+                },
+                "snapshot": {
+                  "$ref": "https://agentcourses.io/schemas/1.0.0-rc.1/course.schema.json#/$defs/identity"
+                }
+              },
+              "required": [
+                "id",
+                "lesson",
+                "evidence",
+                "by",
+                "at",
+                "snapshot"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "version",
+          "snapshot",
+          "generation",
+          "position",
+          "lessons",
+          "calls",
+          "objectives"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "project": {
+      "anyOf": [
+        {
+          "$ref": "https://agentcourses.io/schemas/1.0.0-rc.1/course.schema.json#/$defs/project"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "consent": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "destination": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 253,
+            "pattern": "^\\S+$(?![\\s\\S])"
+          },
+          "state": {
+            "enum": [
+              "granted",
+              "withdrawn"
+            ]
+          }
+        },
+        "required": [
+          "destination",
+          "state"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "declined": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "destination": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 253,
+            "pattern": "^\\S+$(?![\\s\\S])"
+          },
+          "hook": {
+            "enum": [
+              "rating",
+              "stuck",
+              "questions"
+            ]
+          },
+          "lesson": {
+            "allOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$(?![\\s\\S])",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              {
+                "not": {
+                  "const": "explain-back"
+                }
+              }
+            ]
+          }
+        },
+        "required": [
+          "destination",
+          "hook",
+          "lesson"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "version",
+    "snapshot",
+    "generation",
+    "position",
+    "lessons",
+    "calls",
+    "objectives",
+    "spec",
+    "course",
+    "history",
+    "project",
+    "consent",
+    "declined"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "course": {
+            "type": "null"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "version": {
+            "type": "null"
+          },
+          "snapshot": {
+            "type": "null"
+          },
+          "generation": {
+            "const": 0
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "version": {
+            "$ref": "https://agentcourses.io/schemas/1.0.0-rc.1/course.schema.json#/$defs/version"
+          },
+          "snapshot": {
+            "$ref": "https://agentcourses.io/schemas/1.0.0-rc.1/course.schema.json#/$defs/identity"
+          },
+          "generation": {
+            "minimum": 1
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-.PHONY: check check-docs check-receipts
+.PHONY: check check-docs check-receipts check-contracts
 
 CHECK_ROOT ?= $(CURDIR)
 DOCS_BASE_REF ?= HEAD
@@ -9,7 +9,7 @@ check-docs:
 	uv run --locked python tools/check_docs.py --root "$(CHECK_ROOT)" --scope present --baseline-ref "$(DOCS_BASE_REF)"
 
 # Sequential recipes stop before tests or builds when source inspection fails.
-check: check-docs
+check: check-docs check-contracts
 	uv lock --check
 	uv sync --locked --python 3.12.11
 	uv run --locked pytest -q
@@ -30,3 +30,7 @@ check-receipts:
 	uv run --locked python experiments/call-receipts/probe.py --cases "$(CHECK_ROOT)/experiments/call-receipts/cases"
 	uv run --locked python experiments/call-receipts/probe.py --audit-report "$(CHECK_ROOT)/docs/delivery/call-receipts.md"
 	uv run --locked python experiments/call-receipts/probe.py --require-decision "$(CHECK_ROOT)/docs/delivery/call-receipts.md"
+
+# The proof harness inspects author data without executing course commands.
+check-contracts:
+	uv run --locked python tools/check_contracts.py --root "$(CHECK_ROOT)"
