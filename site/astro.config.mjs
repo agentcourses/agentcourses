@@ -2,11 +2,29 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import { satteri } from '@astrojs/markdown-satteri';
 import { execFileSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { buildSearch } from './scripts/generate.mjs';
+import { sourceDigest, distDigest } from './scripts/verify-release.mjs';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const design = process.env.AC_SITE_MODE === 'design';
+
+// Preserve Starlight's configuration and UI defaults. Its build-done callback
+// only indexes search; replace that callback with the completed-process writer.
+function completedSearch(integration) {
+  if (Array.isArray(integration) || integration?.name !== '@astrojs/starlight' ||
+      typeof integration.hooks?.['astro:build:done'] !== 'function') {
+    throw new Error('Expected one Starlight integration with its search indexing hook');
+  }
+  return {
+    ...integration,
+    hooks: {
+      ...integration.hooks,
+      'astro:build:done': ({ dir }) => { buildSearch(fileURLToPath(dir)); },
+    },
+  };
+}
 
 // The sidebar frame for the nine candidate destinations, in reading order.
 // Each mode passes Starlight only the slugs that exist in its own collection.
@@ -69,15 +87,35 @@ const tableFrame = {
   element: {
     filter: ['table'],
     visit(node, ctx) {
+      const nameEmptyHeaders = (element) => {
+        if (element.tagName === 'th' && !(element.children ?? []).some((child) => child.type !== 'text' || child.value.trim())) {
+          ctx.appendChild(element, { type: 'element', tagName: 'span', properties: { className: ['sr-only'] }, children: [{ type: 'text', value: 'Comparison feature' }] });
+        }
+        for (const child of element.children ?? []) nameEmptyHeaders(child);
+      };
+      if (!design) nameEmptyHeaders(node);
       ctx.wrapNode(node, { type: 'element', tagName: 'div', properties: { className: ['ac-table'] }, children: [] });
     },
   },
 };
 
 export default defineConfig({
+  site: 'https://agentcourses.io',
   markdown: { processor: satteri({ hastPlugins: [tableFrame] }) },
   vite: { define: { 'import.meta.env.AC_EXAMPLES_ROOT': JSON.stringify(fileURLToPath(new URL('../examples/', import.meta.url))) } },
-  integrations: [starlight({
+  integrations: [{
+    name: 'canonical-candidate-sources',
+    hooks: {
+      'astro:config:setup': ({ command, injectScript }) => {
+        if (!design) injectScript('page', `
+          document.querySelectorAll('main .expressive-code pre').forEach((region, index) => {
+            region.setAttribute('aria-label', 'Code example ' + (index + 1));
+          });
+        `);
+        if (!design && command === 'build') execFileSync(process.execPath, ['site/scripts/generate.mjs', '--root', root], { cwd: root, stdio: 'inherit' });
+      },
+    },
+  }, completedSearch(starlight({
     title: 'Agent Courses',
     locales: { root: { label: 'English', lang: 'en-GB' } },
     favicon: '/mark.svg',
@@ -135,5 +173,14 @@ export default defineConfig({
       },
     },
     sidebar,
-  })],
+  })), {
+    name: 'production-byte-inventory',
+    hooks: {
+      'astro:build:done': () => {
+        if (design) return;
+        mkdirSync(new URL('./.astro/', import.meta.url), { recursive: true });
+        writeFileSync(new URL('./.astro/production-build.json', import.meta.url), JSON.stringify({ source_digest: sourceDigest(root), dist_digest: distDigest(root) }) + '\n');
+      },
+    },
+  }],
 });
