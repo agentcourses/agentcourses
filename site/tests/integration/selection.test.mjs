@@ -26,7 +26,11 @@ for (const [name, mode, args, expected] of selections) {
     t.after(() => rmSync(temporary, { recursive: true, force: true }));
     const directory = join(temporary, 'integration', 'checkout', 'site');
     mkdirSync(directory, { recursive: true });
-    for (const file of ['playwright.config.ts', 'package.json']) cpSync(join(site, file), join(directory, file));
+    for (const file of ['playwright.config.ts', 'package.json', 'scripts/deployment.mjs']) {
+      const destination = join(directory, file);
+      mkdirSync(dirname(destination), { recursive: true });
+      cpSync(join(site, file), destination);
+    }
     symlinkSync(join(site, 'node_modules'), join(directory, 'node_modules'), 'dir');
     for (const specimen of specimens) {
       const path = join(directory, 'tests', specimen);

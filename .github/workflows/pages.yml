@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - agent-courses-specification/ac-14-publish-and-freeze-the-reviewed-candidate
   workflow_dispatch:
     inputs:
       prove_failure:
@@ -27,6 +26,7 @@ jobs:
     env:
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/site/.browsers
       UV_PYTHON: 3.12.11
+      AC_DEPLOYMENT: github-pages
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -82,7 +82,7 @@ jobs:
   deploy:
     name: Deploy owner-reviewed candidate
     needs: checks
-    if: success() && !inputs.prove_failure && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/agent-courses-specification/ac-14-publish-and-freeze-the-reviewed-candidate')
+    if: success() && !inputs.prove_failure && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

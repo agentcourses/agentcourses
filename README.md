@@ -2,7 +2,7 @@
 
 Agent Courses defines a course format for AI tutors, with a specification, schemas, examples and nine documentation pages.
 The proposed first candidate is `1.0.0-rc.1`; its label still needs owner confirmation.
-Publication at `https://agentcourses.io/` and the separate candidate freeze remain pending.
+Publication will use `https://agentcourses.github.io/agentcourses/` after owner merge; the separate candidate freeze remains pending.
 Read the [candidate handoff](docs/releases/candidate.md) for accepted contracts, remaining gates and downstream obligations.
 Nothing here qualifies a runner or provides a public validator.
 
@@ -17,7 +17,8 @@ These are repository artefacts; schema hosting, protected release tags and packa
 The proposed release tag is `agentcourses-v1.0.0-rc.1`.
 Once the owner approves the freeze, that tag will identify the reviewed source without changing published schema bytes.
 The [Pages workflow](.github/workflows/pages.yml) builds with ordinary checks before uploading its production artefact.
-Deployment awaits owner-configured environment protection, custom-domain setup, DNS authority and HTTPS verification.
+After owner merge, the main workflow deploys to the default GitHub Pages address.
+The owner will configure DNS manually later; custom-domain publication and the candidate freeze remain separate work.
 
 ## Install and check
 
@@ -91,13 +92,26 @@ Missing fixtures fail rather than falling back to production.
 Read [the working conventions](AGENTS.md) and [the independent review guide](REVIEW.md).
 Independent review and passing checks precede draft pull request publication; the owner reviews and merges the pull request.
 The Actions status is named `make check`; its workflow runs on pull requests and main pushes with full tag history.
-The publication workflow also accepts the exact publication branch and manual dispatches; ordinary pull request events cannot deploy.
-Its `github-pages` environment needs required owner reviewers before a deployment branch is published.
-A review-only draft branch avoids starting deployment while required owner reviewers remain unconfigured.
-Read-only checks on 22 October 2026 found a public repository and Pages configured for workflow deployment.
-Pages has no custom domain; its default address is `https://agentcourses.github.io/agentcourses/`.
-The `github-pages` environment permits only `main`, has no required reviewers and allows administrator bypass.
-The main branch is unprotected and the repository has no rulesets; release protection remains outstanding.
-DNS authority and live HTTPS proof remain outstanding; local checks alone cannot complete publication.
-The candidate freeze, protected tag, prerelease record and post-merge deployment proofs require their separate owner gates.
+The publication workflow deploys main pushes and main-only manual dispatches through the `github-pages` environment.
+Ordinary pull request events and publication branches cannot deploy.
+The owner has chosen the default address, `https://agentcourses.github.io/agentcourses/`, for the initial publication.
+After merge, verify the normal deployment, exact live bytes and the controlled failure that must skip upload and deployment.
+Those checks remain pending; preparing the pull request does not complete publication.
+Read-only checks on 22 October 2026 found workflow Pages, no custom domain and an environment limited to `main`.
+The environment has no required reviewers and allows administrator bypass.
+Main protection remains deferred by the owner; no settings change is part of this publication adjustment.
+The candidate freeze, protected tag, prerelease record and later custom-domain setup retain their separate owner gates.
+
+Production defaults to the fixed `github-pages` deployment profile, including the `/agentcourses/` base.
+Use `AC_DEPLOYMENT=custom-domain` for a future root build at `https://agentcourses.io/`; deployment needs separate owner authorisation.
+`AC_SITE_MODE=design` keeps its existing root preview in either profile.
+The build and browser checks must use the same profile.
+After a clean, committed production build, verify the deployed artefact with:
+
+```bash
+node site/scripts/verify-release.mjs --root . --url https://agentcourses.github.io/agentcourses/
+```
+
+This checks temporary download locations while preserving permanent `https://agentcourses.io/schemas/` identifiers inside the payloads.
+It does not establish that those permanent addresses are live.
 Owned material is licensed under [Apache-2.0](LICENSE).

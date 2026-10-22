@@ -1,3 +1,4 @@
+import { deployment, deployed } from './deployment.mjs';
 import { test, expect } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -10,18 +11,21 @@ test('every foundation-mapped normative fragment and local article link resolves
   const snapshots = new Map<string, { status: number; ids: string[] }>();
   const local = new Set<string>();
   for (const route of routes) {
-    const response = await page.goto(route);
+    const response = await page.goto(deployed(route));
     expect(response?.status(), route).toBe(200);
     const rendered = await page.evaluate(() => ({
       ids: [...document.querySelectorAll('[id]')].map((node) => node.id),
       hrefs: [...document.querySelectorAll<HTMLAnchorElement>('main a[href]')].map((node) => node.href),
     }));
-    snapshots.set(new URL(route, baseURL).href, { status: response!.status(), ids: rendered.ids });
+    snapshots.set(new URL(deployed(route), baseURL).href, { status: response!.status(), ids: rendered.ids });
     for (const href of rendered.hrefs) {
-      if (new URL(href).origin === new URL(page.url()).origin) local.add(href);
+      if (new URL(href).origin === new URL(page.url()).origin) {
+        expect(new URL(href).pathname.startsWith(deployment.base), href).toBe(true);
+        local.add(href);
+      }
     }
   }
-  const ids = snapshots.get(new URL('/specification/', baseURL).href)!.ids;
+  const ids = snapshots.get(new URL(deployed('/specification/'), baseURL).href)!.ids;
   expect(new Set(ids).size, 'rendered IDs are unique').toBe(ids.length);
   for (const entry of mapping.anchors) expect(ids, entry.public).toContain(entry.public.split('#')[1]);
   const checks = await inspectLinkTargets(local, async (target: string, needsIDs: boolean) => {
@@ -41,7 +45,7 @@ test('every foundation-mapped normative fragment and local article link resolves
 });
 test('actual page and code clipboard controls copy the rendered production content', async ({ page, context, baseURL }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: new URL(baseURL!).origin });
-  await page.goto('/authors/checks/');
+  await page.goto(deployed('/authors/checks/'));
   await page.getByRole('button', { name: 'Copy page', exact: true }).click();
   await expect(page.locator('.ac-copy-page [role="status"]')).toHaveText('Page copied to the clipboard.');
   const article = await page.evaluate(() => navigator.clipboard.readText());
@@ -54,10 +58,10 @@ test('actual page and code clipboard controls copy the rendered production conte
 });
 test('all schema downloads preserve their canonical bytes', async ({ request }) => {
   const inventory = JSON.parse(readFileSync(`${root}/site/public/schemas/manifest.json`, 'utf8'));
-  const response = await request.get('/schemas/manifest.json');
+  const response = await request.get(deployed('/schemas/manifest.json'));
   expect(await response.body()).toEqual(readFileSync(`${root}/site/public/schemas/manifest.json`));
   for (const release of inventory.releases) for (const schema of release.schemas) {
-    const response = await request.get(new URL(schema.id).pathname); expect(response.status()).toBe(200);
+    const response = await request.get(deployed(new URL(schema.id).pathname)); expect(response.status()).toBe(200);
     expect(await response.body()).toEqual(readFileSync(`${root}/site/public${new URL(schema.id).pathname}`));
     if (release.candidate === inventory.candidate) expect(await response.body()).toEqual(readFileSync(`${root}/${schema.path}`));
   }
