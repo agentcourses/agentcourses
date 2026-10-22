@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { deploymentProfile, withBase, deploymentLinks } from '../../scripts/deployment.mjs';
 
-test('production defaults to the fixed GitHub Pages project profile', () => {
-  assert.deepEqual(deploymentProfile(), { site: 'https://agentcourses.github.io', base: '/agentcourses/' });
-  assert.deepEqual(deploymentProfile('production', 'custom-domain'), { site: 'https://agentcourses.io', base: '/' });
+test('production defaults to the custom-domain root profile', () => {
+  assert.deepEqual(deploymentProfile(), { site: 'https://agentcourses.io', base: '/' });
+  assert.deepEqual(deploymentProfile('production', 'github-pages'), { site: 'https://agentcourses.github.io', base: '/agentcourses/' });
   assert.deepEqual(deploymentProfile('design', 'github-pages'), { site: 'https://agentcourses.io', base: '/' });
   assert.throws(() => deploymentProfile('production', 'https://other.invalid'), /Unsupported deployment profile/);
 });

@@ -8,7 +8,7 @@ receipt_approval: https://github.com/agentcourses/agentcourses/pull/2
 
 # Candidate publication and handoff
 
-This prepares the proposed `1.0.0-rc.1` candidate for publication at `https://agentcourses.github.io/agentcourses/`.
+This prepares the proposed `1.0.0-rc.1` candidate for publication at `https://agentcourses.io/`.
 The owner has accepted the course, records and receipt capability contracts through the linked reviewed changes.
 Publication, confirmation of the proposed candidate label and the separate owner freeze decision remain pending.
 After independent review and current-head checks, the owner may merge the publication pull request.
@@ -22,10 +22,9 @@ No stable release, installable package or qualified runner is claimed.
 
 The [source manifest](../../schemas/manifest.json) lists all eight schema addresses, flat source paths and payload SHA-256 checksums.
 Its SHA-256 is `d4c817d4200539fb1e95edd8814e0a9999fd58ee48a30e93aed3fb38e7414cc3`.
-The initial download inventory will be `https://agentcourses.github.io/agentcourses/schemas/manifest.json`.
-The future custom-domain inventory remains `https://agentcourses.io/schemas/manifest.json`.
+The download inventory will be `https://agentcourses.io/schemas/manifest.json`.
 Schema addresses follow `https://agentcourses.io/schemas/1.0.0-rc.1/<type>.schema.json`; these permanent identifiers are not yet live.
-Initial downloads will serve identical payload bytes beneath the temporary Pages base, without changing their identifiers.
+Downloads will serve each payload at its own identifier address once deployment and HTTPS succeed.
 A published address must retain its exact bytes; changed schema bytes require a new candidate and tag.
 
 ## Accepted contract boundaries
@@ -47,23 +46,23 @@ Records must not contain private answers, conversations, code, file contents, th
 The [Pages workflow](../../.github/workflows/pages.yml) checks source, builds the site and uploads only its tested production artefact.
 Deployment accepts only main and uses the existing `github-pages` environment.
 The owner will review and merge the source before the normal main deployment runs.
-This sequence supersedes the earlier pre-merge deployment, custom-domain and freeze prerequisites.
+This sequence supersedes the earlier pre-merge deployment and freeze prerequisites.
 It does not complete publication or approve the candidate freeze.
 
 Read-only checks refreshed on 22 October 2026 found a public repository and Pages configured for workflow deployment.
-Pages reports HTTPS enforcement at `https://agentcourses.github.io/agentcourses/`, with no custom domain and no reported build status.
+Pages reports the custom domain `agentcourses.io`, without enforced HTTPS and with no reported build status.
 The `github-pages` environment permits only `main`, has no required reviewers and allows administrator bypass.
 Main protection remains deferred by the owner; this adjustment changes no settings.
-The owner will configure DNS personally and manually later.
-Custom-domain publication, release protection, candidate-label confirmation and freeze approval remain separate owner gates.
+On 22 October 2026 the owner chose `agentcourses.io` for the initial publication and configured its DNS.
+HTTPS enforcement, release protection, candidate-label confirmation and freeze approval remain separate owner gates.
 Local checks cannot establish live HTTPS readiness or successful deployment.
 
 After merge, record the exact fetched main commit and its successful ordinary checks.
 Run the normal Pages workflow, then verify all nine pages, their canonical URLs, response types and every built page, schema and asset byte.
-Build and verify the same `github-pages` profile; its deployment base is `/agentcourses/`.
-The verifier accepts `https://agentcourses.github.io/agentcourses/` and the future `https://agentcourses.io/` root profile.
+Build and verify the same `custom-domain` profile; its deployment base is `/`.
+The verifier accepts `https://agentcourses.io/` and the fallback `https://agentcourses.github.io/agentcourses/` project profile.
 It confines redirects to the chosen HTTPS origin and base, verifies production provenance, and checks unchanged schema identifiers and bytes.
-Temporary download verification makes no claim that the permanent schema identifiers are live.
+Only a passing live verification shows that the permanent schema identifiers are live.
 Record the workflow commit, source tree, manifest checksum, deployment run and output digest in external execution evidence.
 
 Dispatch `prove_failure=true` on that same main commit and confirm `missing-link` fails ordinary `make check`.

@@ -63,7 +63,7 @@ function workflowSafety(root) {
   if (input?.type !== 'boolean' || input.default !== false || Object.keys(workflow.on ?? {}).some((event) => !['push', 'workflow_dispatch'].includes(event)) || !workflow.on?.push) fail('workflow-safety', 'Workflow must expose a false-default boolean failure proof and exclude PR events');
   const branches = workflow.on.push.branches;
   if (!Array.isArray(branches) || branches.length !== 1 || branches[0] !== 'main') fail('workflow-safety', 'Only main may deploy');
-  if (check.env?.AC_DEPLOYMENT !== 'github-pages') fail('workflow-safety', 'Publication checks must build the GitHub Pages project profile');
+  if (check.env?.AC_DEPLOYMENT !== 'custom-domain') fail('workflow-safety', 'Publication checks must build the custom-domain root profile');
   const permissions = workflow.permissions ?? {};
   if (permissions.pages === 'write' || permissions['id-token'] === 'write' || check.permissions?.pages === 'write' || check.permissions?.['id-token'] === 'write') fail('workflow-safety', 'Only deployment may request Pages or OIDC writes');
   const upload = uploads[0];

@@ -22,7 +22,7 @@ permissions:
 jobs:
   checks:
     env:
-      AC_DEPLOYMENT: github-pages
+      AC_DEPLOYMENT: custom-domain
     runs-on: ubuntu-latest
     steps:
       - run: make check
@@ -240,8 +240,8 @@ for (const [label, path, rule, mutate] of [
   const { dir, verifyRelease } = await setup(t, projectURL);
   await rejectsRule(() => verifyRelease({ root: dir, url: projectURL, transport: transport(dir, (r, p) => p === '/agentcourses' + path ? mutate(r) : r, '/agentcourses/') }), rule);
 });
-for (const profile of ['', 'custom-domain']) test(`publication preflight rejects an absent or wrong deployment profile: ${profile}`, async (t) => {
+for (const profile of ['', 'github-pages']) test(`publication preflight rejects an absent or wrong deployment profile: ${profile}`, async (t) => {
   const { dir, verifyRelease } = await setup(t);
-  writeFileSync(join(dir, '.github/workflows/pages.yml'), workflow.replace('AC_DEPLOYMENT: github-pages', `AC_DEPLOYMENT: ${profile}`));
+  writeFileSync(join(dir, '.github/workflows/pages.yml'), workflow.replace('AC_DEPLOYMENT: custom-domain', `AC_DEPLOYMENT: ${profile}`));
   await rejectsRule(() => verifyRelease({ root: dir, preflight: true }), 'workflow-safety');
 });
