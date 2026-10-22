@@ -6,9 +6,11 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { buildSearch } from './scripts/generate.mjs';
 import { sourceDigest, distDigest } from './scripts/verify-release.mjs';
 import { fileURLToPath } from 'node:url';
+import { deploymentProfile, deploymentLinks } from './scripts/deployment.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const design = process.env.AC_SITE_MODE === 'design';
+const deployment = deploymentProfile(design ? 'design' : 'production');
 
 // Preserve Starlight's configuration and UI defaults. Its build-done callback
 // only indexes search; replace that callback with the completed-process writer.
@@ -100,8 +102,9 @@ const tableFrame = {
 };
 
 export default defineConfig({
-  site: 'https://agentcourses.io',
-  markdown: { processor: satteri({ hastPlugins: [tableFrame] }) },
+  site: deployment.site,
+  base: deployment.base,
+  markdown: { processor: satteri({ hastPlugins: [tableFrame, deploymentLinks(deployment.base)] }) },
   vite: { define: { 'import.meta.env.AC_EXAMPLES_ROOT': JSON.stringify(fileURLToPath(new URL('../examples/', import.meta.url))) } },
   integrations: [{
     name: 'canonical-candidate-sources',
@@ -179,7 +182,7 @@ export default defineConfig({
       'astro:build:done': () => {
         if (design) return;
         mkdirSync(new URL('./.astro/', import.meta.url), { recursive: true });
-        writeFileSync(new URL('./.astro/production-build.json', import.meta.url), JSON.stringify({ source_digest: sourceDigest(root), dist_digest: distDigest(root) }) + '\n');
+        writeFileSync(new URL('./.astro/production-build.json', import.meta.url), JSON.stringify({ source_digest: sourceDigest(root), dist_digest: distDigest(root), deployment_url: deployment.site + deployment.base }) + '\n');
       },
     },
   }],

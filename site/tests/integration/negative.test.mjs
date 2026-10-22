@@ -6,7 +6,8 @@ import { spawnSync } from 'node:child_process';
 import { fixture, cli, root } from './support.mjs';
 const cases = [
   ['missing page', (d) => rmSync(join(d, 'site/src/content/docs/authors/checks.mdx')), ['required-file']],
-  ['missing author group', (d) => rmSync(join(d, 'site/src/content/docs/authors'), { recursive: true }), Array(4).fill('required-file')],
+  // README and the candidate handoff also link to the removed author quickstart.
+  ['missing author group', (d) => rmSync(join(d, 'site/src/content/docs/authors'), { recursive: true }), ['missing-link', 'missing-link', ...Array(4).fill('required-file')]],
   ['lower marker', (d) => writeFileSync(join(d, 'tools/document-stage.json'), '{"stage":"runners"}'), ['stage-regression']],
   ['missing marker', (d) => rmSync(join(d, 'tools/document-stage.json')), ['missing-link', 'missing-stage', 'required-file']],
   ['unknown public fragment', (d) => appendFileSync(join(d, 'site/src/content/docs/index.mdx'), '\n[Unknown](/specification/#format--not-real)\n'), ['public-anchor']],

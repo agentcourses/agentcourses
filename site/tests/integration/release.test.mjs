@@ -11,7 +11,7 @@ const titles = ['Agent Courses', 'Specification', 'Runners', 'Quickstart', 'Best
 const workflow = `name: Publish
 on:
   push:
-    branches: [main, agent-courses-specification/ac-14-publish-and-freeze-the-reviewed-candidate]
+    branches: [main]
   workflow_dispatch:
     inputs:
       prove_failure:
@@ -21,6 +21,8 @@ permissions:
   contents: read
 jobs:
   checks:
+    env:
+      AC_DEPLOYMENT: github-pages
     runs-on: ubuntu-latest
     steps:
       - run: make check
@@ -34,7 +36,7 @@ jobs:
           path: site/dist
   deploy:
     needs: checks
-    if: success() && !inputs.prove_failure && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/agent-courses-specification/ac-14-publish-and-freeze-the-reviewed-candidate')
+    if: success() && !inputs.prove_failure && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     environment: github-pages
     permissions:
       pages: write
@@ -43,7 +45,7 @@ jobs:
     steps:
       - uses: actions/deploy-pages@pinned
 `;
-async function setup(t) {
+async function setup(t, url = 'https://agentcourses.io/') {
   const dir = fixture(t);
   mkdirSync(join(dir, '.github/workflows'), { recursive: true });
   writeFileSync(join(dir, '.github/workflows/pages.yml'), workflow);
@@ -54,14 +56,14 @@ async function setup(t) {
   initialise(dir);
   for (let i = 0; i < paths.length; i++) {
     const path = join(dir, 'site/dist', paths[i].slice(1), 'index.html'); mkdirSync(join(path, '..'), { recursive: true });
-    writeFileSync(path, `<!doctype html><html><head><title>${titles[i]} | Agent Courses</title><link rel="canonical" href="https://agentcourses.io${paths[i]}"></head><body><h1>${titles[i]}</h1></body></html>`);
+    writeFileSync(path, `<!doctype html><html><head><title>${titles[i]} | Agent Courses</title><link rel="canonical" href="${url.replace(/\/$/, '')}${paths[i]}"></head><body><h1>${titles[i]}</h1></body></html>`);
   }
   for (const [path, bytes] of (await import(pathToFileURL(join(root, 'site/scripts/generate.mjs')))).schemaOutputs(dir).output) {
     mkdirSync(join(dir, 'site/dist', path, '..'), { recursive: true }); writeFileSync(join(dir, 'site/dist', path), bytes);
   }
   mkdirSync(join(dir, 'site/dist/_astro'), { recursive: true }); writeFileSync(join(dir, 'site/dist/_astro/app.js'), 'console.log("static");\n');
   mkdirSync(join(dir, 'site/.astro'), { recursive: true });
-  writeFileSync(join(dir, 'site/.astro/production-build.json'), JSON.stringify({ source_digest: verifier.sourceDigest(dir), dist_digest: verifier.distDigest(dir) }));
+  writeFileSync(join(dir, 'site/.astro/production-build.json'), JSON.stringify({ source_digest: verifier.sourceDigest(dir), dist_digest: verifier.distDigest(dir), deployment_url: url }));
   return { dir, ...verifier };
 }
 function approval(dir, overrides = {}) {
@@ -77,11 +79,14 @@ function approval(dir, overrides = {}) {
 import { createHash } from 'node:crypto';
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 async function rejectsRule(run, rule) { await assert.rejects(run, (error) => { assert.deepEqual([error.rule], [rule]); return true; }); }
-function transport(dir, mutate = (response) => response) {
+function transport(dir, mutate = (response) => response, base = '/') {
   return async (url) => {
-    const parsed = new URL(url); const path = parsed.pathname.endsWith('/') ? `${parsed.pathname}index.html` : parsed.pathname;
+    const parsed = new URL(url);
+    assert.ok(parsed.pathname.startsWith(base), `Request escaped base: ${url}`);
+    const relative = parsed.pathname.slice(base.length);
+    const path = relative.endsWith('/') || !relative ? `${relative}index.html` : relative;
     let bytes;
-    try { bytes = readFileSync(join(dir, 'site/dist', path.slice(1))); } catch { return { status: 404, headers: { 'content-type': 'text/plain' }, body: Buffer.from('missing'), url }; }
+    try { bytes = readFileSync(join(dir, 'site/dist', path)); } catch { return { status: 404, headers: { 'content-type': 'text/plain' }, body: Buffer.from('missing'), url }; }
     const type = path.endsWith('.html') ? 'text/html; charset=utf-8' : path.endsWith('.json') ? 'application/json; charset=utf-8' : 'application/octet-stream';
     return mutate({ status: 200, headers: { 'content-type': type }, body: bytes, url }, parsed.pathname);
   };
@@ -194,4 +199,49 @@ for (const key of ['contract_approval', 'receipt_approval']) test(`preflight rej
   const { dir, verifyRelease } = await setup(t);
   const page = join(dir, 'docs/releases/candidate.md'); writeFileSync(page, read(page).replace(new RegExp(`${key}: .+`), `${key}: true`));
   await rejectsRule(() => verifyRelease({ root: dir, preflight: true }), 'candidate-blocker');
+});
+
+const projectURL = 'https://agentcourses.github.io/agentcourses/';
+test('default Pages verifies unchanged schema identifiers and every byte below its project base', async (t) => {
+  const { dir, verifyRelease } = await setup(t, projectURL);
+  const result = await verifyRelease({ root: dir, url: projectURL, transport: transport(dir, undefined, '/agentcourses/') });
+  assert.equal(result.build_digest, result.live_digest);
+});
+for (const [label, mutate] of [
+  ['same-origin redirect outside base', (r) => ({ ...r, status: 302, headers: { location: '/specification/' } })],
+  ['response URL outside base', (r) => ({ ...r, url: 'https://agentcourses.github.io/specification/' })],
+  ['response URL with credentials', (r) => ({ ...r, url: 'https://user@agentcourses.github.io/agentcourses/' })],
+  ['encoded traversal redirect', (r) => ({ ...r, status: 302, headers: { location: '/agentcourses/%2e%2e/specification/' } })],
+  ['base lookalike redirect', (r) => ({ ...r, status: 302, headers: { location: '/agentcourses-other/' } })],
+]) test(`default Pages rejects ${label}`, async (t) => {
+  const { dir, verifyRelease } = await setup(t, projectURL);
+  await rejectsRule(() => verifyRelease({ root: dir, url: projectURL, transport: transport(dir, mutate, '/agentcourses/') }), 'live-redirect');
+});
+test('default Pages rejects a root deployment build provenance', async (t) => {
+  const { dir, verifyRelease } = await setup(t);
+  await rejectsRule(() => verifyRelease({ root: dir, url: projectURL, transport: transport(dir, undefined, '/agentcourses/') }), 'build-provenance');
+});
+for (const url of ['https://agentcourses.github.io/', 'https://agentcourses.github.io/agentcourses', 'https://agentcourses.github.io/other/', 'https://other.invalid/agentcourses/', 'https://user@agentcourses.github.io/agentcourses/', projectURL + '?q=1', projectURL + '#fragment']) test(`rejects unsupported deployment URL ${url}`, async (t) => {
+  const { dir, verifyRelease } = await setup(t);
+  await rejectsRule(() => verifyRelease({ root: dir, url }), 'invalid-arguments');
+});
+test('a publication branch allowlist cannot bypass main-only deployment', async (t) => {
+  const { dir, verifyRelease } = await setup(t);
+  writeFileSync(join(dir, '.github/workflows/pages.yml'), workflow.replace('branches: [main]', 'branches: [main, publication]'));
+  await rejectsRule(() => verifyRelease({ root: dir, preflight: true }), 'workflow-safety');
+});
+for (const [label, path, rule, mutate] of [
+  ['wrong page identity', '/', 'live-title', (r) => ({ ...r, body: Buffer.from('<title>Wrong</title><h1>Wrong</h1>') })],
+  ['root-domain canonical', '/', 'live-canonical', (r) => ({ ...r, body: Buffer.from(r.body.toString().replace(projectURL, 'https://agentcourses.io/')) })],
+  ['schema HTML MIME', '/schemas/1.0.0-rc.1/course.schema.json', 'live-type', (r) => ({ ...r, headers: { 'content-type': 'text/html' } })],
+  ['changed schema bytes', '/schemas/1.0.0-rc.1/course.schema.json', 'live-bytes', (r) => ({ ...r, body: Buffer.concat([r.body, Buffer.from(' ')]) })],
+  ['missing browser asset', '/_astro/app.js', 'live-status', (r) => ({ ...r, status: 404 })],
+]) test(`default Pages retains rejection of ${label}`, async (t) => {
+  const { dir, verifyRelease } = await setup(t, projectURL);
+  await rejectsRule(() => verifyRelease({ root: dir, url: projectURL, transport: transport(dir, (r, p) => p === '/agentcourses' + path ? mutate(r) : r, '/agentcourses/') }), rule);
+});
+for (const profile of ['', 'custom-domain']) test(`publication preflight rejects an absent or wrong deployment profile: ${profile}`, async (t) => {
+  const { dir, verifyRelease } = await setup(t);
+  writeFileSync(join(dir, '.github/workflows/pages.yml'), workflow.replace('AC_DEPLOYMENT: github-pages', `AC_DEPLOYMENT: ${profile}`));
+  await rejectsRule(() => verifyRelease({ root: dir, preflight: true }), 'workflow-safety');
 });

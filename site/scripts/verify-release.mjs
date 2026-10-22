@@ -3,6 +3,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { resolve, isAbsolute } from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { deploymentProfile } from './deployment.mjs';
 import { expected, drift, schemaOutputs, routes, hash, files, git, fail, report } from './generate.mjs';
 
 const require = createRequire(new URL('../package.json', import.meta.url));
@@ -61,8 +62,8 @@ function workflowSafety(root) {
   const input = workflow.on?.workflow_dispatch?.inputs?.prove_failure;
   if (input?.type !== 'boolean' || input.default !== false || Object.keys(workflow.on ?? {}).some((event) => !['push', 'workflow_dispatch'].includes(event)) || !workflow.on?.push) fail('workflow-safety', 'Workflow must expose a false-default boolean failure proof and exclude PR events');
   const branches = workflow.on.push.branches;
-  const publication = 'agent-courses-specification/ac-14-publish-and-freeze-the-reviewed-candidate';
-  if (!Array.isArray(branches) || branches.length !== 2 || !branches.includes('main') || !branches.includes(publication)) fail('workflow-safety', 'Only the reviewed publication branch and main may deploy');
+  if (!Array.isArray(branches) || branches.length !== 1 || branches[0] !== 'main') fail('workflow-safety', 'Only main may deploy');
+  if (check.env?.AC_DEPLOYMENT !== 'github-pages') fail('workflow-safety', 'Publication checks must build the GitHub Pages project profile');
   const permissions = workflow.permissions ?? {};
   if (permissions.pages === 'write' || permissions['id-token'] === 'write' || check.permissions?.pages === 'write' || check.permissions?.['id-token'] === 'write') fail('workflow-safety', 'Only deployment may request Pages or OIDC writes');
   const upload = uploads[0];
@@ -72,8 +73,7 @@ function workflowSafety(root) {
   const deploy = deploys[0];
   const dependencies = Array.isArray(deploy.needs) ? deploy.needs : [deploy.needs];
   const expression = expressionValue(deploy.if);
-  // OR is allowed only inside the explicit, closed ref allow-list.
-  const refs = `(github.ref == 'refs/heads/main' || github.ref == 'refs/heads/${publication}')`;
+  const refs = `github.ref == 'refs/heads/main'`;
   if (dependencies.length !== 1 || dependencies[0] !== checkName || expression !== `success() && !inputs.prove_failure && github.event_name != 'pull_request' && ${refs}` || !deploy.environment || deploy.permissions?.pages !== 'write' || deploy.permissions?.['id-token'] !== 'write') fail('workflow-safety', 'Deployment requires successful checks, an allowed ref, an approved environment and a non-failure non-PR event');
   for (const [name, job] of Object.entries(jobs)) {
     if (job === deploy) continue;
@@ -124,13 +124,15 @@ function htmlIdentity(bytes) {
 }
 export async function verifyRelease(options) {
   const root = resolve(options.root ?? process.cwd());
-  let origin;
+  let deployment;
   if (options.url) {
     try {
       const url = new URL(options.url);
-      if (url.protocol !== 'https:' || url.username || url.password || url.pathname !== '/' || url.search || url.hash) throw new Error();
-      origin = url.origin;
-    } catch { fail('invalid-arguments', '--url requires an HTTPS origin without credentials, path, query or fragment'); }
+      const profiles = ['github-pages', 'custom-domain'].map((name) => deploymentProfile('production', name));
+      const supported = profiles.some(({ site, base }) => url.href === site + base);
+      if (!supported || url.protocol !== 'https:' || url.username || url.password || url.search || url.hash || /[%\\]/.test(options.url)) throw new Error();
+      deployment = url;
+    } catch { fail('invalid-arguments', '--url requires a supported HTTPS deployment base without credentials, query or fragment'); }
   }
   if (options.frozenRef) {
     clean(root);
@@ -150,27 +152,35 @@ export async function verifyRelease(options) {
   const differences = drift(root, expected(root));
   if (differences.length) fail('generated-drift', differences.join(', '));
   const result = { candidate: manifest.candidate };
-  if (!origin) return result;
+  if (!deployment) return result;
   clean(root);
   const source = sourceDigest(root); const built = distDigest(root);
   let provenance;
   try { provenance = JSON.parse(readFileSync(resolve(root, 'site/.astro/production-build.json'))); } catch { fail('build-provenance', 'Build this clean production source before live verification'); }
-  if (provenance.source_digest !== source || provenance.dist_digest !== built) fail('build-provenance', 'Production artefact does not match this clean source and dist inventory');
+  if (provenance.source_digest !== source || provenance.dist_digest !== built || provenance.deployment_url !== deployment.href) fail('build-provenance', 'Production artefact does not match this clean source and dist inventory');
   const transport = options.transport ?? (async (url) => {
     const response = await fetch(url, { redirect: 'manual' });
     return { status: response.status, headers: Object.fromEntries(response.headers), body: Buffer.from(await response.arrayBuffer()), url: response.url };
   });
+  function confined(value) {
+    try {
+      const url = new URL(value);
+      return url.protocol === 'https:' && url.origin === deployment.origin && !url.username && !url.password &&
+        url.pathname.startsWith(deployment.pathname) && !url.search && !url.hash && !/[%\\]/.test(url.pathname);
+    } catch { return false; }
+  }
   async function response(path, allowedTypes) {
-    let url = new URL(path, origin).href;
+    let url = new URL(path.replace(/^\//, ''), deployment).href;
+    if (!confined(url)) fail('live-redirect', `Request escaped the approved deployment base: ${url}`);
     for (let redirects = 0; redirects < 6; redirects++) {
       let result;
       try { result = await transport(url); } catch (error) { fail('live-network', `${url}: ${error.message}`); }
       const headers = Object.fromEntries(Object.entries(result.headers ?? {}).map(([key, value]) => [key.toLowerCase(), value]));
-      if (result.url && new URL(result.url).origin !== origin) fail('live-redirect', `Response escaped the approved origin: ${result.url}`);
+      if (result.url && !confined(result.url)) fail('live-redirect', `Response escaped the approved deployment base: ${result.url}`);
       if (result.status >= 300 && result.status < 400) {
         let target;
         try { target = new URL(headers.location, url); } catch { fail('live-redirect', `Invalid redirect from ${url}`); }
-        if (!headers.location || target.protocol !== 'https:' || target.origin !== origin) fail('live-redirect', `Unsafe redirect from ${url}`);
+        if (!headers.location || !confined(target.href)) fail('live-redirect', `Unsafe redirect from ${url}`);
         url = target.href; continue;
       }
       if (result.status !== 200) fail('live-status', `${path}: HTTP ${result.status}`);
@@ -185,13 +195,13 @@ export async function verifyRelease(options) {
     const title = metadata(readFileSync(resolve(root, 'site/src/content/docs', file), 'utf8')).title;
     const identity = htmlIdentity(await response(path, ['text/html']));
     if (identity.h1 !== title || ![title, `${title} | Agent Courses`].includes(identity.title)) fail('live-title', `Wrong page identity at ${path}; expected ${title}`);
-    if (identity.canonical.length !== 1 || identity.canonical[0] !== `${origin}${path}`) fail('live-canonical', `Wrong canonical URL at ${path}`);
+    if (identity.canonical.length !== 1 || identity.canonical[0] !== new URL(path.slice(1), deployment).href) fail('live-canonical', `Wrong canonical URL at ${path}`);
   }
   const publicManifest = await response('/schemas/manifest.json', ['application/json']);
   if (!publicManifest.equals(readFileSync(resolve(root, 'site/public/schemas/manifest.json')))) fail('live-bytes', 'Release inventory bytes differ');
   for (const release of manifest.releases) for (const schema of release.schemas) {
     const uri = new URL(schema.id);
-    if (uri.origin !== origin) fail('live-schema-id', `Schema ID is outside the live origin: ${schema.id}`);
+    if (uri.origin !== 'https://agentcourses.io') fail('live-schema-id', `Unexpected permanent schema origin: ${schema.id}`);
     const bytes = await response(uri.pathname, ['application/schema+json', 'application/json']);
     let payload;
     try { payload = JSON.parse(bytes); } catch { fail('live-schema-id', `Invalid schema JSON at ${schema.id}`); }

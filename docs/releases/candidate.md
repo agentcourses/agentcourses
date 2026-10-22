@@ -1,0 +1,84 @@
+---
+title: Candidate publication and handoff
+candidate: 1.0.0-rc.1
+blockers: []
+contract_approval: https://github.com/agentcourses/agentcourses/pull/6
+receipt_approval: https://github.com/agentcourses/agentcourses/pull/2
+---
+
+# Candidate publication and handoff
+
+This prepares the proposed `1.0.0-rc.1` candidate for publication at `https://agentcourses.github.io/agentcourses/`.
+The owner has accepted the course, records and receipt capability contracts through the linked reviewed changes.
+Publication, confirmation of the proposed candidate label and the separate owner freeze decision remain pending.
+After independent review and current-head checks, the owner may merge the publication pull request.
+The normal main workflow deploys afterward; live checks and the separate freeze remain pending.
+
+## Candidate identity
+
+The proposed tag is `agentcourses-v1.0.0-rc.1`; it does not exist yet.
+Once approved and created, that tag resolves the exact reviewed source commit and tree.
+No stable release, installable package or qualified runner is claimed.
+
+The [source manifest](../../schemas/manifest.json) lists all eight schema addresses, flat source paths and payload SHA-256 checksums.
+Its SHA-256 is `d4c817d4200539fb1e95edd8814e0a9999fd58ee48a30e93aed3fb38e7414cc3`.
+The initial download inventory will be `https://agentcourses.github.io/agentcourses/schemas/manifest.json`.
+The future custom-domain inventory remains `https://agentcourses.io/schemas/manifest.json`.
+Schema addresses follow `https://agentcourses.io/schemas/1.0.0-rc.1/<type>.schema.json`; these permanent identifiers are not yet live.
+Initial downloads will serve identical payload bytes beneath the temporary Pages base, without changing their identifiers.
+A published address must retain its exact bytes; changed schema bytes require a new candidate and tag.
+
+## Accepted contract boundaries
+
+The owner merged [the course and execution contract](https://github.com/agentcourses/agentcourses/pull/4) on 20 October 2026.
+The owner merged [the records and identity contract](https://github.com/agentcourses/agentcourses/pull/6) on the same date.
+The [receipt experiment](https://github.com/agentcourses/agentcourses/pull/2) records the capability choice accepted on 19 October 2026.
+The [committed receipt report](../delivery/call-receipts.md#approved-capability-contract--19-october-2026) explains its evidence and limits.
+These acceptances close the candidate contract questions, as mapped in the [requirement register](../../spec/requirements.md).
+They do not constitute publication approval or the final candidate freeze.
+
+Receipts require a learner-controlled confirmation path, a protected verifier and durable replay protection outside tutor authority.
+No actual host has been qualified.
+Unsupported hosts retain unverified calls, which cannot settle objectives.
+Records must not contain private answers, conversations, code, file contents, their hashes, credentials or learner identifiers.
+
+## Publication and freeze gates
+
+The [Pages workflow](../../.github/workflows/pages.yml) checks source, builds the site and uploads only its tested production artefact.
+Deployment accepts only main and uses the existing `github-pages` environment.
+The owner will review and merge the source before the normal main deployment runs.
+This sequence supersedes the earlier pre-merge deployment, custom-domain and freeze prerequisites.
+It does not complete publication or approve the candidate freeze.
+
+Read-only checks refreshed on 22 October 2026 found a public repository and Pages configured for workflow deployment.
+Pages reports HTTPS enforcement at `https://agentcourses.github.io/agentcourses/`, with no custom domain and no reported build status.
+The `github-pages` environment permits only `main`, has no required reviewers and allows administrator bypass.
+Main protection remains deferred by the owner; this adjustment changes no settings.
+The owner will configure DNS personally and manually later.
+Custom-domain publication, release protection, candidate-label confirmation and freeze approval remain separate owner gates.
+Local checks cannot establish live HTTPS readiness or successful deployment.
+
+After merge, record the exact fetched main commit and its successful ordinary checks.
+Run the normal Pages workflow, then verify all nine pages, their canonical URLs, response types and every built page, schema and asset byte.
+Build and verify the same `github-pages` profile; its deployment base is `/agentcourses/`.
+The verifier accepts `https://agentcourses.github.io/agentcourses/` and the future `https://agentcourses.io/` root profile.
+It confines redirects to the chosen HTTPS origin and base, verifies production provenance, and checks unchanged schema identifiers and bytes.
+Temporary download verification makes no claim that the permanent schema identifiers are live.
+Record the workflow commit, source tree, manifest checksum, deployment run and output digest in external execution evidence.
+
+Dispatch `prove_failure=true` on that same main commit and confirm `missing-link` fails ordinary `make check`.
+Upload and deployment must be skipped, with no Pages artefact, deployment or environment request.
+Both normal live proof and this controlled failure remain outstanding before publication can be declared complete.
+No pre-merge deployment, freeze, tag or prerelease is authorised by this adjustment.
+
+Present the live evidence for the owner's separate freeze decision before creating a protected tag or prerelease record.
+The approval record must bind the candidate, exact clean commit and tree, manifest checksum, deployment and attributable owner decision.
+A later frozen-reference check must match the inspected source tree to the approved tag and repeat live-byte verification.
+Do not edit this source merely to add later deployment or freeze evidence.
+
+## Downstream handoff
+
+The [specification](../../spec/format.md), [schemas](../../schemas/manifest.json) and [examples](../../examples/quickstart/COURSE.md) describe the candidate for downstream implementation.
+The [author quickstart](../../site/src/content/docs/authors/quickstart.mdx) and [runner guidance](../../site/src/content/docs/implementers/support.mdx) explain their intended use.
+Stable launch still needs the reference library, public validator, conformance classes and suite, qualified hosts, pilot evidence and learner outcomes.
+Package publication and runtime support remain later work.
