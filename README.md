@@ -1,117 +1,96 @@
-# Agent Courses
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner-dark.png">
+    <img alt="Agent Courses. Agent skills teach your agent. Agent courses teach you, through your agent." src="docs/assets/banner-light.png" width="760">
+  </picture>
+</p>
 
-Agent Courses defines a course format for AI tutors, with a specification, schemas, examples and nine documentation pages.
-The proposed first candidate is `1.0.0-rc.1`; its label still needs owner confirmation.
-Publication will use `https://agentcourses.github.io/agentcourses/` after owner merge; the separate candidate freeze remains pending.
-Read the [candidate handoff](docs/releases/candidate.md) for accepted contracts, remaining gates and downstream obligations.
-Nothing here qualifies a runner or provides a public validator.
+<p align="center">
+  <a href="https://github.com/agentcourses/agentcourses/actions/workflows/gates.yml"><img alt="make check" src="https://github.com/agentcourses/agentcourses/actions/workflows/gates.yml/badge.svg?branch=main"></a>
+  <img alt="Specification: 1.0 candidate" src="https://img.shields.io/badge/specification-1.0%20candidate-474745">
+  <a href="LICENSE"><img alt="Licence: Apache-2.0" src="https://img.shields.io/badge/licence-Apache--2.0-474745"></a>
+</p>
 
-## Candidate sources
+<p align="center">
+  <a href="https://agentcourses.github.io/agentcourses/">Documentation</a> ·
+  <a href="https://agentcourses.github.io/agentcourses/specification/">Specification</a> ·
+  <a href="https://agentcourses.github.io/agentcourses/authors/quickstart/">Write a course</a> ·
+  <a href="https://agentcourses.github.io/agentcourses/implementers/support/">Add course support</a>
+</p>
 
-Start with the [course format](spec/format.md), [execution contract](spec/execution.md), [records](spec/records.md) and [identity](spec/identity.md).
-The [schema manifest](schemas/manifest.json) lists the eight proposed versioned addresses and exact source checksums.
-The [quickstart course](examples/quickstart/COURSE.md) and [author quickstart](site/src/content/docs/authors/quickstart.mdx) show the format in use.
-The [changelog](CHANGELOG.md) records the current candidate preparation.
-These are repository artefacts; schema hosting, protected release tags and package installation are not yet available.
+An open format for courses that an AI agent teaches in your own project.
 
-The proposed release tag is `agentcourses-v1.0.0-rc.1`.
-Once the owner approves the freeze, that tag will identify the reviewed source without changing published schema bytes.
-The [Pages workflow](.github/workflows/pages.yml) builds with ordinary checks before uploading its production artefact.
-After owner merge, the main workflow deploys to the default GitHub Pages address.
-The owner will configure DNS manually later; custom-domain publication and the candidate freeze remain separate work.
+> [!NOTE]
+> Agent Courses 1.0 is a candidate specification, open for review.
+> Repository checks cover its schemas, examples and replay rules.
+> No runner or host is qualified yet.
+> A public validator, reference library and conformance suite are future work.
 
-## Install and check
+## What are Agent Courses?
 
-Use Python 3.12.11, uv 0.9.9, Node 24.22.0 from [.node-version](.node-version), and pnpm 10.27.0.
-Install those runtimes before running these commands from the repository root:
+Agent Courses is an open, folder-based format for courses an agent can teach.
+A course is a readable folder of Markdown, YAML and check programs.
+The agent tutors and can type the edits; the learner owns the decisions.
 
-```bash
-uv lock --check
-uv sync --locked --python 3.12.11
-pnpm --dir site install --frozen-lockfile
-PLAYWRIGHT_BROWSERS_PATH="$PWD/site/.browsers" pnpm --dir site exec playwright install chromium
-make check
-uv run --locked python tools/prove_gate_failure.py
+```text
+my-course/
+├── COURSE.md          # required: identity, outcome and lesson order
+├── lessons/           # one Markdown file per lesson
+├── checks/            # check programs, with pass and fail fixtures
+├── tutor/             # tutor-only: rubrics, quiz keys, misconceptions
+├── starter/           # files that seed the learner's project
+├── references/        # optional reading the tutor may load
+└── feedback.yaml      # optional: the feedback this course may ask for
 ```
 
-Linux CI installs Chromium system dependencies with `playwright install --with-deps chromium`.
-The gate inspects documents first, checks the lock, runs Python tests, checks and builds Astro, then opens the built overview in Chromium.
-Playwright proves the built overview opens with active navigation; axe is installed for the separate design acceptance suite.
-No account, model credential or paid call is required.
+## Why Agent Courses?
 
-## Source contracts
+[Agent Skills](https://agentskills.io) give an agent new capabilities.
+Agent Courses give a person new capabilities, with their own agent as the tutor.
+The format makes a few commitments:
 
-[The stage marker](tools/document-stage.json) explicitly activates cumulative document groups.
-Stages advance in this order: `foundation`, `course`, `records`, `authors`, `runners`, `candidate`.
-Deleting files cannot lower the declared stage or the reviewed baseline.
-Set `DOCS_BASE_REF` to the immutable predecessor commit; local checks default to `HEAD`.
-CI uses the pull request merge base or the preceding main commit.
-Only the reviewed nine-file seed may lack a baseline marker.
+- **Your project, not a sandbox.** Lessons teach against the learner's own code.
+- **You own the calls.** The tutor can explain options and recommend one. Decisions reserved for the learner wait for the learner.
+- **Evidence, not assertion.** An objective settles on passing evidence and verified learner ownership of its calls. A page view or a tutor's claim never counts.
+- **Local by default.** No account, telemetry or feedback service is needed. Records stay local and hold no code, conversations, call answers or answer hashes. A host may keep its own prompt history.
+- **Readable and portable.** Any runner can load plain Markdown, YAML and check programs.
 
-```bash
-make check-docs CHECK_ROOT=/absolute/source/tree
-uv run --locked python tools/check_docs.py --scope course
-uv run --locked python tools/check_docs.py --site-map
-uv run --locked python tools/prove_gate_failure.py --prepare-only /tmp/fresh-broken-tree
-make check CHECK_ROOT=/tmp/fresh-broken-tree
-```
+## How do Agent Courses work?
 
-The final command must fail with `missing-link`.
-Inspection exits zero on success, one for findings and two for invalid arguments.
-Each finding names its rule, source path and problem.
-The map command writes only JSON to stdout and reads active canonical specification sources without generated pages.
-Explicit HTML IDs map source roots to `/specification/#format` and source fragments to `/specification/#format--course-folder`.
-The other canonical stems are `execution`, `consent`, `records` and `identity`.
-Public guides may use these mapped targets before composition exists; other links require present routes.
+A **runner** is the agent, or agent extension, that teaches a course.
+It loads only what each moment needs:
 
-The [requirement register](spec/requirements.md) uses Markdown tables with `Delivery owner` (`course`, `records`, `schemas`) and `State` (`resolved`, `pending`) columns.
-A pending requirement row needs `Question`, `Source` and `Why waits`; unresolved cells contain plain `pending`.
-Only records may own pending questions: receipts, call events, replay/recovery, settlement, followed-field, identity, schema addresses, naming or freeze qualification.
-Resolved requirement rows require `Normative` and `Example` links.
-A later schema proof owner may be assigned without claiming an executed proof.
-Records activation permits no pending requirement rows.
-The documentation gate reads only this repository; no strategy checkout or resolution history is required.
-The receipt experiment report is allowed at foundation and mandatory at records.
-Identity vector manifests name source files with `input` or `input_path`, relative to their manifest.
+1. **Catalogue:** it reads each `COURSE.md` frontmatter, just enough to list the course.
+2. **Start:** when the learner starts, it reads the full course page.
+3. **Teach:** it loads each lesson as it begins, check files when a check runs, and tutor rubrics when judging.
 
-## Documentation collections
+Each lesson declares one stage: `understand`, `practise`, `build` or `demonstrate`.
+The last lesson is the only `demonstrate` lesson.
+The tutor follows one loop: goal, build together, learner calls, checks and review.
+The last lesson adds an explain-back: the learner explains their work and the runner judges it.
 
-Production contains the overview, specification, runner showcase, four author pages and two implementer pages.
-Navigation follows the active source map and candidate stage marker.
-The generated specification composes five canonical sources; ignored schema downloads come from the manifest and complete release tags.
-`ExampleCode.astro` reads an `example`, `file` and `lang` from repository examples; it never executes them.
-Example names are lowercase kebab-case directories; file paths must remain inside that example, including after resolving symlinks.
+## Where can I use Agent Courses?
 
-`AC_SITE_MODE=design` reads only `site/tests/design/fixtures`, using the same docs schema.
-An explicit design build requires `index.mdx`, `specification.mdx`, `runners.mdx`, four author pages and two implementer pages.
-Missing fixtures fail rather than falling back to production.
-`make check` builds and tests both collections and restores the production build last.
+The [runner showcase](https://agentcourses.github.io/agentcourses/runners/) lists planned runners and the evidence each still needs.
+No runner or host is qualified against the 1.0 candidate yet.
+To build one, start with [adding course support](https://agentcourses.github.io/agentcourses/implementers/support/) and the [conformance guide](https://agentcourses.github.io/agentcourses/implementers/conformance/).
 
-## Contributing and operations
+## Getting started
 
-Read [the working conventions](AGENTS.md) and [the independent review guide](REVIEW.md).
-Independent review and passing checks precede draft pull request publication; the owner reviews and merges the pull request.
-The Actions status is named `make check`; its workflow runs on pull requests and main pushes with full tag history.
-The publication workflow deploys main pushes and main-only manual dispatches through the `github-pages` environment.
-Ordinary pull request events and publication branches cannot deploy.
-The owner has chosen the default address, `https://agentcourses.github.io/agentcourses/`, for the initial publication.
-After merge, verify the normal deployment, exact live bytes and the controlled failure that must skip upload and deployment.
-Those checks remain pending; preparing the pull request does not complete publication.
-Read-only checks on 22 October 2026 found workflow Pages, no custom domain and an environment limited to `main`.
-The environment has no required reviewers and allows administrator bypass.
-Main protection remains deferred by the owner; no settings change is part of this publication adjustment.
-The candidate freeze, protected tag, prerelease record and later custom-domain setup retain their separate owner gates.
+- **[Documentation](https://agentcourses.github.io/agentcourses/)**: the overview and guides.
+- **[Specification](https://agentcourses.github.io/agentcourses/specification/)**: the full format, composed from the [canonical sources](spec/format.md).
+- **[Author quickstart](https://agentcourses.github.io/agentcourses/authors/quickstart/)**: write and check a first course.
+- **[Example course](examples/quickstart/COURSE.md)**: the tested course the quickstart builds.
+- **[Schemas](schemas/manifest.json)**: versioned JSON Schemas for courses, lessons, checks, feedback and records.
+- **[Changelog](CHANGELOG.md)**: what the current candidate contains.
 
-Production defaults to the fixed `github-pages` deployment profile, including the `/agentcourses/` base.
-Use `AC_DEPLOYMENT=custom-domain` for a future root build at `https://agentcourses.io/`; deployment needs separate owner authorisation.
-`AC_SITE_MODE=design` keeps its existing root preview in either profile.
-The build and browser checks must use the same profile.
-After a clean, committed production build, verify the deployed artefact with:
+## Open development
 
-```bash
-node site/scripts/verify-release.mjs --root . --url https://agentcourses.github.io/agentcourses/
-```
+Agent Courses is developed in the open, and the 1.0 candidate is open for review.
+Questions and proposals are welcome as [issues](https://github.com/agentcourses/agentcourses/issues).
+The [contributing guide](docs/CONTRIBUTING.md) explains how to propose changes, run the checks and prepare a runner listing.
 
-This checks temporary download locations while preserving permanent `https://agentcourses.io/schemas/` identifiers inside the payloads.
-It does not establish that those permanent addresses are live.
-Owned material is licensed under [Apache-2.0](LICENSE).
+## Licence
+
+Everything owned in this repository is licensed under [Apache-2.0](LICENSE).
+The bundled IBM Plex and Source Serif 4 fonts keep their SIL Open Font License; see `site/public/fonts/`.
