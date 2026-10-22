@@ -8,10 +8,11 @@ import { fixture, cli, root, initialise, commit, git, read } from './support.mjs
 const moduleURL = pathToFileURL(join(root, 'site/scripts/verify-release.mjs'));
 const paths = ['/', '/specification/', '/runners/', '/authors/quickstart/', '/authors/best-practices/', '/authors/checks/', '/authors/explain-back/', '/implementers/support/', '/implementers/conformance/'];
 const titles = ['Agent Courses', 'Specification', 'Runners', 'Quickstart', 'Best practices', 'Writing checks', 'Explain-back and rubrics', 'Support Agent Courses', 'Conformance'];
-const workflow = `name: Publish
+const workflow = `name: gates
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
     inputs:
       prove_failure:
@@ -31,7 +32,7 @@ jobs:
           uv run python tools/prove_gate_failure.py --prepare-only /tmp/bad-tree
           make check CHECK_ROOT=/tmp/bad-tree
       - uses: actions/upload-pages-artifact@pinned
-        if: success() && !inputs.prove_failure
+        if: success() && !inputs.prove_failure && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         with:
           path: site/dist
   deploy:
@@ -48,7 +49,7 @@ jobs:
 async function setup(t, url = 'https://agentcourses.io/') {
   const dir = fixture(t);
   mkdirSync(join(dir, '.github/workflows'), { recursive: true });
-  writeFileSync(join(dir, '.github/workflows/pages.yml'), workflow);
+  writeFileSync(join(dir, '.github/workflows/gates.yml'), workflow);
   mkdirSync(join(dir, 'docs/releases'), { recursive: true });
   writeFileSync(join(dir, 'docs/releases/candidate.md'), '---\ntitle: Candidate\ncandidate: 1.0.0-rc.1\nblockers: []\ncontract_approval: https://example.invalid/contract\nreceipt_approval: https://example.invalid/receipt\n---\n\nCandidate review; stable release remains deferred.\n');
   const verifier = await import(moduleURL);
@@ -107,9 +108,13 @@ for (const [name, transform] of [
   ['ignored failed gate', (s) => s.replace('- run: make check', '- continue-on-error: true\n        run: make check')],
   ['missing check dependency', (s) => s.replace('needs: checks', 'needs: another-job')],
   ['failure-proof upload', (s) => s.replace('if: success() && !inputs.prove_failure', 'if: success()')],
-  ['failure-proof deployment', (s) => s.replace("if: success() && !inputs.prove_failure && github.event_name", "if: always() && github.event_name")],
+  ['failure-proof deployment', (s) => s.replace("needs: checks\n    if: success() && !inputs.prove_failure", "needs: checks\n    if: always()")],
+  ['pull request upload', (s) => s.replace("&& github.event_name != 'pull_request' && github.ref == 'refs/heads/main'\n        with:", "&& github.ref == 'refs/heads/main'\n        with:")],
+  ['non-main upload', (s) => s.replace("&& github.event_name != 'pull_request' && github.ref == 'refs/heads/main'\n        with:", "&& github.event_name != 'pull_request'\n        with:")],
+  ['pull request deployment', (s) => s.replace("needs: checks\n    if: success() && !inputs.prove_failure && github.event_name != 'pull_request' && ", "needs: checks\n    if: success() && !inputs.prove_failure && ")],
+  ['non-main deployment', (s) => s.replace("needs: checks\n    if: success() && !inputs.prove_failure && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'", "needs: checks\n    if: success() && !inputs.prove_failure && github.event_name != 'pull_request'")],
 ]) test(name + ' fails workflow safety', async (t) => {
-  const { dir, verifyRelease } = await setup(t); writeFileSync(join(dir, '.github/workflows/pages.yml'), transform(workflow));
+  const { dir, verifyRelease } = await setup(t); writeFileSync(join(dir, '.github/workflows/gates.yml'), transform(workflow));
   await rejectsRule(() => verifyRelease({ root: dir, preflight: true }), 'workflow-safety');
 });
 for (const bad of [undefined, 'relative.json']) test(`freeze rejects ${bad ?? 'missing'} approval path`, async (t) => {
@@ -227,7 +232,7 @@ for (const url of ['https://agentcourses.github.io/', 'https://agentcourses.gith
 });
 test('a publication branch allowlist cannot bypass main-only deployment', async (t) => {
   const { dir, verifyRelease } = await setup(t);
-  writeFileSync(join(dir, '.github/workflows/pages.yml'), workflow.replace('branches: [main]', 'branches: [main, publication]'));
+  writeFileSync(join(dir, '.github/workflows/gates.yml'), workflow.replace('branches: [main]', 'branches: [main, publication]'));
   await rejectsRule(() => verifyRelease({ root: dir, preflight: true }), 'workflow-safety');
 });
 for (const [label, path, rule, mutate] of [
@@ -242,6 +247,6 @@ for (const [label, path, rule, mutate] of [
 });
 for (const profile of ['', 'github-pages']) test(`publication preflight rejects an absent or wrong deployment profile: ${profile}`, async (t) => {
   const { dir, verifyRelease } = await setup(t);
-  writeFileSync(join(dir, '.github/workflows/pages.yml'), workflow.replace('AC_DEPLOYMENT: custom-domain', `AC_DEPLOYMENT: ${profile}`));
+  writeFileSync(join(dir, '.github/workflows/gates.yml'), workflow.replace('AC_DEPLOYMENT: custom-domain', `AC_DEPLOYMENT: ${profile}`));
   await rejectsRule(() => verifyRelease({ root: dir, preflight: true }), 'workflow-safety');
 });

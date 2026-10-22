@@ -43,7 +43,7 @@ Records must not contain private answers, conversations, code, file contents, th
 
 ## Publication and freeze gates
 
-The [Pages workflow](../../.github/workflows/pages.yml) checks source, builds the site and uploads only its tested production artefact.
+The [checks and publication workflow](../../.github/workflows/gates.yml) checks source, builds the site and uploads only its tested production artefact.
 Deployment accepts only main and uses the existing `github-pages` environment.
 The owner will review and merge the source before the normal main deployment runs.
 This sequence supersedes the earlier pre-merge deployment and freeze prerequisites.
@@ -58,7 +58,7 @@ HTTPS enforcement, release protection, candidate-label confirmation and freeze a
 Local checks cannot establish live HTTPS readiness or successful deployment.
 
 After merge, record the exact fetched main commit and its successful ordinary checks.
-Run the normal Pages workflow, then verify all nine pages, their canonical URLs, response types and every built page, schema and asset byte.
+Run the normal checks and publication workflow, then verify all nine pages, their canonical URLs, response types and every built page, schema and asset byte.
 Build and verify the same `custom-domain` profile; its deployment base is `/`.
 The verifier accepts `https://agentcourses.io/` and the fallback `https://agentcourses.github.io/agentcourses/` project profile.
 It confines redirects to the chosen HTTPS origin and base, verifies production provenance, and checks unchanged schema identifiers and bytes.

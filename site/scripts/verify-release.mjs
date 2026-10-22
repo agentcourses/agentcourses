@@ -46,7 +46,7 @@ function closure(root, manifest) {
 }
 function workflowSafety(root) {
   let workflow;
-  try { workflow = parseYAML(readFileSync(resolve(root, '.github/workflows/pages.yml'), 'utf8')); } catch { fail('workflow-safety', 'Publication workflow is missing or invalid'); }
+  try { workflow = parseYAML(readFileSync(resolve(root, '.github/workflows/gates.yml'), 'utf8')); } catch { fail('workflow-safety', 'Checks and publication workflow is missing or invalid'); }
   const jobs = workflow.jobs ?? {};
   const checkJobs = Object.entries(jobs).filter(([, job]) => (job.steps ?? []).some((step) => /(^|\n)\s*make check\s*(\n|$)/.test(step.run ?? '')));
   if (checkJobs.length !== 1) fail('workflow-safety', 'Exactly one checks job must run ordinary make check');
@@ -58,9 +58,12 @@ function workflowSafety(root) {
   const uploads = steps.filter((step) => (step.uses ?? '').startsWith('actions/upload-pages-artifact@'));
   const deploys = Object.values(jobs).filter((job) => (job.steps ?? []).some((step) => (step.uses ?? '').startsWith('actions/deploy-pages@')));
   const expressionValue = (condition) => String(condition ?? '').trim().replace(/^\$\{\{\s*/, '').replace(/\s*\}\}$/, '').replace(/\s+/g, ' ');
-  const guard = (condition) => expressionValue(condition) === 'success() && !inputs.prove_failure';
+  const refs = `github.ref == 'refs/heads/main'`;
+  // Upload and deployment share one guard: a successful normal run of a main push or main dispatch.
+  const publish = `success() && !inputs.prove_failure && github.event_name != 'pull_request' && ${refs}`;
+  const guard = (condition) => expressionValue(condition) === publish;
   const input = workflow.on?.workflow_dispatch?.inputs?.prove_failure;
-  if (input?.type !== 'boolean' || input.default !== false || Object.keys(workflow.on ?? {}).some((event) => !['push', 'workflow_dispatch'].includes(event)) || !workflow.on?.push) fail('workflow-safety', 'Workflow must expose a false-default boolean failure proof and exclude PR events');
+  if (input?.type !== 'boolean' || input.default !== false || Object.keys(workflow.on ?? {}).some((event) => !['push', 'pull_request', 'workflow_dispatch'].includes(event)) || !workflow.on?.push) fail('workflow-safety', 'Workflow must expose a false-default boolean failure proof and allow only push, pull request and manual events');
   const branches = workflow.on.push.branches;
   if (!Array.isArray(branches) || branches.length !== 1 || branches[0] !== 'main') fail('workflow-safety', 'Only main may deploy');
   if (check.env?.AC_DEPLOYMENT !== 'custom-domain') fail('workflow-safety', 'Publication checks must build the custom-domain root profile');
@@ -72,9 +75,7 @@ function workflowSafety(root) {
   if (deploys.length !== 1) fail('workflow-safety', 'Exactly one deployment job is required');
   const deploy = deploys[0];
   const dependencies = Array.isArray(deploy.needs) ? deploy.needs : [deploy.needs];
-  const expression = expressionValue(deploy.if);
-  const refs = `github.ref == 'refs/heads/main'`;
-  if (dependencies.length !== 1 || dependencies[0] !== checkName || expression !== `success() && !inputs.prove_failure && github.event_name != 'pull_request' && ${refs}` || !deploy.environment || deploy.permissions?.pages !== 'write' || deploy.permissions?.['id-token'] !== 'write') fail('workflow-safety', 'Deployment requires successful checks, an allowed ref, an approved environment and a non-failure non-PR event');
+  if (dependencies.length !== 1 || dependencies[0] !== checkName || !guard(deploy.if) || !deploy.environment || deploy.permissions?.pages !== 'write' || deploy.permissions?.['id-token'] !== 'write') fail('workflow-safety', 'Deployment requires successful checks, an allowed ref, an approved environment and a non-failure non-PR event');
   for (const [name, job] of Object.entries(jobs)) {
     if (job === deploy) continue;
     if ((job.steps ?? []).some((step) => (step.uses ?? '').startsWith('actions/deploy-pages@') || ((step.uses ?? '').startsWith('actions/upload-pages-artifact@') && name !== checkName))) fail('workflow-safety', 'Unexpected upload or deploy job');

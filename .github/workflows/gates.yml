@@ -1,25 +1,36 @@
 name: gates
 
+# One workflow checks every pull request and main push. On main it uploads the
+# exact tested build and deploys it, so the full gate runs once per commit.
 on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      prove_failure:
+        description: Prove a missing source link blocks upload and deployment
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 concurrency:
   group: gates-${{ github.ref }}
-  cancel-in-progress: true
+  # Superseded pull request runs stop early. A running main run is never cancelled, so a deployment is never cut off;
+  # a newer main run waiting behind it replaces an older waiting one.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
     name: make check
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/site/.browsers
       UV_PYTHON: 3.12.11
+      AC_DEPLOYMENT: custom-domain
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -54,12 +65,46 @@ jobs:
           fi
           echo "DOCS_BASE_REF=$baseline" >> "$GITHUB_ENV"
       - name: Install locked environments
+        # The ubuntu-24.04 image already carries Chromium's system libraries, so no apt-get step runs here.
         run: |
           uv lock --check
           uv sync --locked --python 3.12.11
           pnpm --dir site install --frozen-lockfile
-          pnpm --dir site exec playwright install --with-deps chromium
+          pnpm --dir site exec playwright install chromium
       - name: Prove a broken input stops the ordinary gate
         run: uv run --locked python tools/prove_gate_failure.py
       - name: Run the checks
         run: make check
+      - name: Verify candidate closure and release history
+        if: github.event_name != 'pull_request'
+        run: |
+          node site/scripts/verify-release.mjs --root . --preflight
+          node site/scripts/verify-release.mjs --root . --check-history
+      - name: Prove a missing link blocks publication
+        if: inputs.prove_failure
+        run: |
+          broken_tree=$(mktemp -d "$RUNNER_TEMP/agentcourses-broken-XXXXXX")
+          uv run --locked python tools/prove_gate_failure.py --prepare-only "$broken_tree"
+          make check CHECK_ROOT="$broken_tree"
+      - name: Upload the tested production artefact
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+        if: success() && !inputs.prove_failure && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        with:
+          path: site/dist
+
+  deploy:
+    name: Deploy owner-reviewed candidate
+    needs: check
+    if: success() && !inputs.prove_failure && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Deploy the checked artefact
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
