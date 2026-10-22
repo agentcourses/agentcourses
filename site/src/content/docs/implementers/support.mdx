@@ -1,0 +1,74 @@
+---
+title: Support Agent Courses
+description: Implement discovery, safe teaching, learner-owned decisions and replay from the candidate contracts.
+---
+
+A runner turns an authored folder into lessons against the learner's project. This guide follows discovery, catalogue, start, teach, check and record. It links the authoritative rules instead of creating a second requirements register. The candidate provides examples and internal checks; it supplies no released runner SDK or qualified host.
+
+## Discover and catalogue
+
+Discover installed courses under `.agents/courses/` ([record locations](/specification/#records--files)). Treat an installed course as a folder rooted at a regular `COURSE.md`, with the folder name matching the course name. Ignore unlisted paths. Read frontmatter for catalogue entries, the complete course page at start and individual lessons only when they begin. Load checks, references and tutor material when their tasks need them ([course shape](/specification/#format--course-shape), [loading layout](/specification/#format--folder-layout)).
+
+Validate the structure and cross-file relationships before teaching. A schema can check one file's shape, but cannot prove heading order, referenced files or every relationship. Unknown keys follow the contract's warning policy rather than becoming new capabilities. See [constraints beyond schemas](/specification/#format--markdown-only-constraints) and [unknown keys](/specification/#format--unknown-keys).
+
+Keep the installed course and its identity pinned. Resolve a Git reference once and retain its commit. Compute the specified identity, verify it before teaching or resuming, and refuse changed bytes or a different payload claiming the same name and version. Upgrade only at the learner's explicit request. Identity establishes matching content, not a publisher signature ([identity and pinning](/specification/#identity--pinning)).
+
+## Start in the selected project
+
+Validate the course's project options first: `own`, `starter`, a Git reference or the proposed local-folder reference. An omitted `project` means `[own]`; a scalar means one option. With several options, wait for the learner's choice ([project field](/specification/#format--project-field)). Resolve Git pins and validate `project:` links against the immutable source before starting. For the proposed local-folder option, validate the selected subtree before copying into an empty destination supplied by the learner or embedding application. Never run source code while copying. The complete order is in [project preparation](/specification/#execution--project-preparation) and [project selection](/specification/#format--project-selection).
+
+Use the editable destination as the project root; keep the installed course read-only. On resume, use the existing workspace and original pin without copying again. Validate project links when opened and warn if they no longer resolve. Do not silently substitute the latest upstream version ([local projects](/specification/#format--local-projects), [project link timing](/specification/#format--link-validation-timing)).
+
+## Teach and wait
+
+Follow the [teaching loop](/specification/#execution--teaching-loop) and every [learner gate](/specification/#execution--gates). Read the Goal verbatim, teach against the project and put each call to the learner before the change that depends on it. Silence never advances a gate. A tutor recommendation is allowed; deciding for the learner is not ([call duties](/specification/#execution--calls-duties)).
+
+Show each edit and its reason. Reread a file immediately before editing so learner changes survive. Do not reveal tutor-only material. Give hints in order, one per request. In the final explain-back, ask open questions against the rubric and keep project files unchanged. See [building duties](/specification/#execution--build-duties), [help](/specification/#execution--help-ladder) and [explain-back](/specification/#execution--explain-back).
+
+## Run checks through host permissions
+
+Course prose and referenced projects are untrusted. Ignore instructions that try to change host permissions, disable consent or escape the course and project. Show the exact command before its first execution, including referenced project installation commands. A host refusal is not permission to try a different tool ([safety](/specification/#execution--safety), [command display](/specification/#execution--command-display)).
+
+The command exit code decides the result: `0` is `pass`, `1` is `fail`, and every other code is `error`. Contradictory diagnostic JSON never overrides it. Run checks from the learner's project root, with `AGENT_COURSE_PROJECT` naming that root and `AGENT_COURSE_DIR` naming the installed course. Enforce the timeout. The contract advises a read-only project, scratch space and no undeclared network; explain justified exceptions to the learner. A refused command or refused network check is not run. Timeouts and broken programs are `error`, never learner failure ([check paths](/specification/#execution--check-paths), [host permission](/specification/#execution--host-permission), [results](/specification/#execution--check-results)).
+
+### Capability limits
+
+This table explains outcomes, not an alternative capability contract. The authoritative definitions are [capabilities](/specification/#execution--capabilities) and [evidence](/specification/#execution--evidence).
+
+| Capability absent | Required limit | Evidence consequence |
+| --- | --- | --- |
+| `run-checks` | Do not claim command-check execution | Command checks remain not run; their objectives stay unsettled. |
+| `observe` | Do not claim an observation you cannot make | Record an observe check as not run; its objective stays unsettled. |
+| `judge` | Do not claim a rubric judgement | Record the explain-back attempt; its objective stays unsettled. |
+
+These are the only three capabilities. A runner with none may deliver a course and settle nothing. A successful result with a capability still needs verified calls before settlement ([observe checks](/specification/#execution--observe-checks), [explain-back](/specification/#execution--explain-back), [settlement](/specification/#execution--settlement)).
+
+## Protect learner confirmation
+
+Implement the [chosen receipt boundary](/specification/#records--receipt-boundary), rather than treating a chat role as proof. The learner controls confirmation. Tutor tools cannot invoke or alter that path, the verifier, its configuration, transport, replay protection or protected log writer. Confirmation binds snapshot, lesson, call and one occurrence without recording answers, conversations or their hashes.
+
+No host is qualified by this candidate or its [receipt experiment](https://github.com/agentcourses/agentcourses/blob/main/docs/delivery/call-receipts.md#limitations). On unsupported hosts every learner decision stays unverified; never promise a verified receipt. An imported JSON `verified` label cannot authenticate itself. A missing boundary leaves objectives depending on those calls unsettled. A known tutor decision never becomes learner evidence, and even a valid receipt needs the objective's other passing evidence ([settlement](/specification/#execution--settlement)).
+
+## Record, replay and recover
+
+Keep `.agents/courses.lock`, local records and retained course sources according to [record locations](/specification/#records--files). Append protected events and derive the record from complete history. File-shape validity, cross-file validity and trusted provenance are distinct ([three kinds of validity](/specification/#records--validity)).
+
+Before dispatching checks, judgements or calls, bind the operation to the current snapshot and generation. An upgrade invalidates prior admissions, even if identical content later returns. Reject stale results instead of relabelling them. After restart, unfinished checks and judgements need fresh dispatch. Confirmation occurrences need their original durable issuance binding or fresh confirmation ([protected admission](/specification/#records--operation-admission)).
+
+Replay requires retained, verified authored sources and protected verifier context. Missing authority or a required source stops authoritative replay without publishing a partial projection. Recover committed transitions before checking the installed pin and rebuilding a damaged record. An orphaned record is preserved; missing history never authorises a reset. Open calls are put again without inferring an answer ([replay](/specification/#records--replay), [retained sources](/specification/#records--replay-data), [resume](/specification/#records--resume-record)).
+
+Skipping records skipped work, never passed work, and settles nothing. Follow the specified append, atomic replacement and upgrade recovery rules rather than inventing storage defaults ([writing and recovery](/specification/#records--recovery), [durable transitions](/specification/#records--transition-durability)).
+
+## Keep personal evidence local
+
+Records and operation evidence contain no call answers, conversations, project contents, answer hashes, credentials or learner/machine identifiers. Keep them local and excluded from Git. Host prompt histories are outside this promise. Feedback is optional, declared separately and sent only after showing the exact allowed payload and receiving explicit consent for its named destination. Refusal or withdrawal never changes evidence or progress ([privacy](/specification/#records--privacy), [feedback payloads](/specification/#consent--payload-fields), [consent](/specification/#consent--consent-rules)).
+
+## Inspect what exists today
+
+From a checkout with the README's pinned tools installed, this internal command checks repository examples:
+
+```sh
+uv run --locked python tools/check_contracts.py --root .
+```
+
+It is not a public validator, runner conformance suite or host qualification test. Inspect the [contract sources](https://github.com/agentcourses/agentcourses/tree/main/spec), [schema manifest](https://github.com/agentcourses/agentcourses/blob/main/schemas/manifest.json) and [example traces](https://github.com/agentcourses/agentcourses/tree/main/examples) alongside its results. The [conformance guide](/implementers/conformance/) explains the remaining qualification gaps and proposed tooling names.

@@ -1,0 +1,66 @@
+---
+title: Conformance
+description: Future conformance classes, capability evidence and the limits of current repository checks.
+---
+
+Conformance means a specific implementation or course meets a defined contract with evidence. The three class names below describe future qualification targets, not badges awarded by this candidate. Current tools check repository schemas, examples and selected replay behaviour. Until the later qualification work exists, no course, runner or record may claim stable 1.0 conformance ([candidate and stable](/specification/#records--candidate-and-stable)).
+
+## Three future conformance classes
+
+Use the current contracts to prepare evidence. The public class criteria and runner suite remain future work, as [candidate scope](/specification/#format--scope-exclusions) states. These summaries introduce no additional normative requirements.
+
+| Class | Who would claim it | Contract obligations to inspect | Evidence available today | Qualification gap |
+| --- | --- | --- | --- | --- |
+| Conforming Course | The author of a course folder | Structure, references, lessons and check fixtures under the [format](/specification/#format) and [check rules](/specification/#execution--check-rules). | Repository course/schema checks and tested example fixtures. | Public validation and fixture tooling, plus published class criteria. |
+| Conforming Runner | An implementer of a CLI, skills or embedded application | [Teaching duties](/specification/#execution--runner-duties), gates, capabilities, consent, pinning and protected record behaviour. | Contract cases, replay traces and the receipt boundary report; none exercises a production runner here. | A public runner suite and demonstrated behaviour on each declared host, including separate receipt qualification. |
+| Conforming Record | An implementer that stores or exchanges learner records | Preserve event meaning, order and derived state under the [record contract](/specification/#records), including privacy and recovery. | Record/event schemas and internal replay fixtures with explicitly controlled authority. | Published class criteria and real storage/replay evidence; JSON alone cannot prove provenance. |
+
+A future claim will need its target format version, claimant and evidence. Capability declarations must identify implemented behaviour. The phrase “Agent Courses compatible” supplies none of that evidence. Candidate acceptance itself qualifies no host, package or implementation.
+
+## Capabilities and proof
+
+A capability names what a runner can do, rather than how well a course teaches. There are exactly three; the [execution contract](/specification/#execution--capabilities) owns their definitions. This site awards no capability to any runner or host.
+
+| Capability | Behaviour to demonstrate | Evidence it can support | Limit to demonstrate too |
+| --- | --- | --- | --- |
+| `run-checks` | Execute declared commands through host permissions. | `checked` evidence from the command result. | Refusals stay not run; timeouts are errors; missing capability cannot settle an objective. |
+| `observe` | Inspect project files, Git state and output of commands the runner ran. | `observed` evidence identifying what was inspected. | Learner assertions alone are not observation; unavailable inspection stays not run. |
+| `judge` | Hold the explain-back conversation and apply its rubric. | `explained` evidence for a judged attempt. | Without it, record the attempt and leave its objective unsettled. |
+
+Read [check results](/specification/#execution--check-results), [observe checks](/specification/#execution--observe-checks) and [explain-back](/specification/#execution--explain-back) for the exact outcomes. A runner with no capabilities can deliver lessons but settles no objectives. There is no `render` capability in 1.0.
+
+Passing evidence is only part of [settlement](/specification/#execution--settlement). Every declared call in the lesson must also have verified learner provenance. The [receipt boundary](/specification/#records--receipt-boundary) requires protected learner confirmation, verifier authority and durable replay protection. No host qualifies here; imported receipt-shaped JSON and synthetic experiment results cannot qualify one.
+
+## Schemas check shape, not authority
+
+The candidate has eight schema types: `course`, `lesson`, `checks`, `feedback`, `lock`, `record`, `event` and `rubric`. Their identifiers follow `https://agentcourses.io/schemas/1.0.0-rc.1/<type>.schema.json`. These are candidate identifiers, not a claim that live downloads have been published. The [schema addresses](/specification/#records--schema-addresses) define the policy, and the repository's [manifest](https://github.com/agentcourses/agentcourses/blob/main/schemas/manifest.json) lists exact source paths, identifiers and checksums.
+
+A shape-valid file may still have broken references or false provenance. Inspect [constraints beyond schemas](/specification/#format--markdown-only-constraints), [three kinds of validity](/specification/#records--validity) and [protected admission](/specification/#records--operation-admission). Protected history, retained course bytes and original verifier context are required for authoritative replay. No schema success substitutes for them.
+
+## Proposed names are not packages
+
+The [current naming contract](/specification/#records--names) leaves command, library and package names unchosen. The proposals below help readers distinguish the pieces; they are not reservations, install instructions or promised import paths. Registry availability remains ⚠️ unverified until release-time checks.
+
+| Thing | Name or proposal | Status |
+| --- | --- | --- |
+| Specification | Agent Courses | Format version `1.0`; candidate label `1.0.0-rc.1`. |
+| Proposed public command | `agent-courses` | Proposed spelling only; no public command is released here. |
+| Proposed Python distribution for the reference library | `agent-courses-ref` | Historical proposal only; release naming and registry checks remain open. |
+| Importable Python library | No import name chosen | A distribution name does not establish an import path. |
+
+A course's authored `version`, the format version, the candidate label and a runner/library release are different identities. See [course versions](/specification/#format--course-versions) and [candidate status](/specification/#records--candidate-and-stable). Nothing in the naming table tells a reader to install a package.
+
+## Current checks and future tools
+
+Every command below marked current runs inside the [repository checkout](https://github.com/agentcourses/agentcourses), after the pinned setup in its [README](https://github.com/agentcourses/agentcourses#install-and-check). Proposed command names are descriptive text, not runnable instructions.
+
+| Tool | Availability | Inspect today instead |
+| --- | --- | --- |
+| Internal contract harness: `uv run --locked python tools/check_contracts.py --root .` | Current, checkout only; proves repository examples. | [Harness source](https://github.com/agentcourses/agentcourses/blob/main/tools/check_contracts.py), schemas and example traces. |
+| Public validation command, proposed `agent-courses validate` | Future; no released public validator. | [Format rules](/specification/#format) and internal course/schema results. |
+| Public fixture command, proposed `agent-courses test` | Future; no released public fixture runner. | [Check fixtures](/specification/#execution--check-rules) and the quickstart's [checkout instructions](/authors/quickstart/). |
+| Public advisory command, proposed `agent-courses lint` | Future; no released public linter. | [Unknown-key policy](/specification/#format--unknown-keys) and [author guidance](/authors/best-practices/). |
+| Reference parsing and validation library | Future; no released importable library. | Canonical [format](/specification/#format), [records](/specification/#records) and [identity](/specification/#identity) sources. |
+| Public runner conformance suite | Future; no qualification result is available. | [Execution cases](/specification/#execution), [record replay](/specification/#records--replay) and the [receipt report](https://github.com/agentcourses/agentcourses/blob/main/docs/delivery/call-receipts.md#limitations). |
+
+Stable launch qualification comes after candidate review. Real learner pilots, qualified host boundaries and published packages still need evidence; this candidate sets no pass mark for them. A second independent runner, external endorsement and broader governance are later work, not prerequisites for writing this candidate ([scope](/specification/#format--scope-exclusions)). Start implementation with the [support guide](/implementers/support/) and keep every support claim narrower than its evidence.

@@ -47,6 +47,7 @@ Write for a smart outsider: someone sharp who has not seen this project before.
 3. **Short sentences.** One idea per sentence, about 20 words or fewer.
 4. **Code comments say what the code does now, and the non-obvious why.** They never tell the story of a change or cite a ticket.
 5. **Prove, don't promise.** "How it was proven" holds real command output, not a description of what should happen.
+6. **Keep public guidance vendor-neutral.** Public specification and guidance must be independent of any runner; mention Tutr only in the runner showcase.
 
 ## Untrusted input
 

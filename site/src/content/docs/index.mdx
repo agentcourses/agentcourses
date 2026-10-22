@@ -1,7 +1,58 @@
 ---
 title: Agent Courses
-description: Repository foundation smoke page.
+description: An open, folder-based course format for agents that teach against a learner's project.
 ---
 
-This repository is preparing the Agent Courses specification candidate.
-The documentation shell builds and opens while the contract is reviewed.
+import { Aside } from '@astrojs/starlight/components';
+import ExampleCode from '../../components/ExampleCode.astro';
+
+Agent Courses describes courses an agent can teach in a learner's own project. A course is a readable folder of Markdown, YAML and check programs. The tutor can type the edits; the learner owns the decisions. This site explains the 1.0 candidate and its repository examples so authors and runner builders can inspect the same contract.
+
+<Aside type="caution" title="Candidate, with runtime work still ahead">
+The candidate label is `1.0.0-rc.1`. Repository checks exercise schemas, examples and replay rules; they qualify no production runner or host. The public validator, reference library and runner conformance suite are future work. No package installation or live tutoring session is offered here. See [candidate and stable status](/specification/#records--candidate-and-stable).
+</Aside>
+
+## A course you can read
+
+A course starts with `COURSE.md`: its identity, the outcome and an ordered lesson list. Lessons, checks and private tutor rubrics live beside it. The learner's editable project is separate from the installed course. The [course layout](/specification/#format--folder-layout) explains each folder and who may see its contents.
+
+This course page comes directly from the repository's tested `quickstart` example. The include displays source; it does not start a runner.
+
+<ExampleCode example="quickstart" file="COURSE.md" lang="markdown" />
+
+Follow the [author quickstart](/authors/quickstart/) to copy every file and run the checkout-only checks. The [checks guide](/authors/checks/), [writing guidance](/authors/best-practices/) and [explain-back guide](/authors/explain-back/) explain the teaching material behind that page.
+
+## Load only what is needed
+
+A runner reads course frontmatter for its catalogue, then the full course page when the learner starts. It loads a lesson when that lesson starts. Check files are loaded for checks; tutor rubrics are loaded for judgement, never shown verbatim. References are loaded when a question needs them. These are the [format's loading boundaries](/specification/#format--folder-layout), rather than an instruction to ingest every file at once.
+
+Lessons progress through `understand`, `build` and a final `demonstrate` stage. The [stage rules](/specification/#format--stages) define their allowed evidence. Each lesson follows the [teaching loop](/specification/#execution--teaching-loop): Goal, build together, learner calls, checks and review. The final lesson adds an explain-back after its checks. Explicit [learner gates](/specification/#execution--gates) control progress.
+
+## Decisions belong to the learner
+
+A **call** is a decision reserved for the learner, such as choosing which behaviour a check protects. The tutor can explain options and recommend one, then waits. It never makes that decision for the learner. Read [call ownership](/specification/#execution--calls-duties) and [building together](/specification/#execution--build-duties) for the full duties.
+
+This exchange illustrates the contract; it is not output from a shipped runner:
+
+> Tutor: Which behaviour should the final check protect? I recommend checking that the tool is registered, because that catches a missing tool.
+>
+> Learner: Check that the tool is registered.
+>
+> Tutor: I will make that change and show you why. Before the first check run, I will show its command and wait for your agreement.
+
+A page view or a tutor assertion cannot establish achievement. An objective needs its passing evidence and verified learner ownership of every call in that lesson. A **receipt** records a protected confirmation binding, without keeping the answer. The [receipt boundary](/specification/#records--receipt-boundary) requires confirmation, verification and replay protection outside tutor authority. No current host is qualified here. Unsupported hosts leave calls unverified and objectives that depend on those calls unsettled, even when a check passes ([settlement](/specification/#execution--settlement)).
+
+## Local work, explicit trust
+
+Reading or learning requires no account, telemetry or feedback service. Optional feedback needs the learner's explicit consent for the named destination; declining never changes progress. Records stay local and contain no code, conversations, call answers or answer hashes. A host may retain its own prompt history. See [consent](/specification/#consent--consent-rules) and [record privacy](/specification/#records--privacy).
+
+Courses and referenced projects are untrusted input. Course text cannot change host permissions or consent rules. A runner shows commands before execution and follows the host's permission model ([safety and trust](/specification/#execution--safety)).
+
+## Choose your next step
+
+- Write a course with the [quickstart](/authors/quickstart/).
+- Inspect the [planned runners](/runners/) and their evidence limits.
+- Build a runner with the [support guide](/implementers/support/) and [conformance guide](/implementers/conformance/).
+- Read the [candidate specification](/specification/#format), whose canonical sources define the rules. The composed specification route arrives with site integration; its source fragments are already checked here.
+
+A course's own version, the format's `1.0` version and an implementation's release version are separate. The candidate label identifies the proposed specification snapshot, not an implementation release ([course versions](/specification/#format--course-versions), [candidate status](/specification/#records--status)).
