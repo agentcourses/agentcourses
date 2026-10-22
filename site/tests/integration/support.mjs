@@ -7,12 +7,12 @@ export const root = fileURLToPath(new URL('../../../', import.meta.url));
 export const read = (path) => readFileSync(path, 'utf8');
 export function fixture(t) {
   const directory = mkdtempSync(join(tmpdir(), 'ac-integration-'));
-  for (const name of ['spec', 'schemas', 'tools', 'examples', 'docs', 'experiments', 'fixtures', 'site/src/content/docs']) {
+  for (const name of ['.github/workflows', 'spec', 'schemas', 'tools', 'examples', 'docs', 'experiments', 'fixtures', 'site/src/content/docs']) {
     mkdirSync(dirname(join(directory, name)), { recursive: true });
     cpSync(join(root, name), join(directory, name), { recursive: true });
   }
   writeFileSync(join(directory, 'tools/document-stage.json'), '{"stage":"candidate"}\n');
-  for (const name of ['pyproject.toml', 'uv.lock', 'README.md', 'AGENTS.md', 'REVIEW.md', 'CLAUDE.md', 'LICENSE', '.node-version']) cpSync(join(root, name), join(directory, name));
+  for (const name of ['pyproject.toml', 'uv.lock', 'README.md', 'CHANGELOG.md', 'AGENTS.md', 'REVIEW.md', 'CLAUDE.md', 'LICENSE', '.node-version']) cpSync(join(root, name), join(directory, name));
   symlinkSync(join(root, '.venv'), join(directory, '.venv'));
   mkdirSync(join(directory, 'site'), { recursive: true });
   symlinkSync(join(root, 'site/node_modules'), join(directory, 'site/node_modules'));
