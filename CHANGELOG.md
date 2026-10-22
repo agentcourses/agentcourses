@@ -11,7 +11,7 @@ The [source manifest](schemas/manifest.json) binds eight versioned schema addres
 The [quickstart course](examples/quickstart/COURSE.md) supplies repository examples for author guidance.
 Nine site pages provide the overview, specification, runner showcase, author guidance and implementer guidance.
 
-The [publication workflow](.github/workflows/pages.yml) runs ordinary checks and uploads the tested production site for main-only deployment.
+The [checks and publication workflow](.github/workflows/gates.yml) runs the ordinary checks once and uploads the tested production site for main-only deployment.
 Initial publication uses `https://agentcourses.io/` after owner merge.
 Schema identifiers and their downloads share that domain; HTTPS awaits GitHub's certificate.
 A manual failure-proof dispatch must reject an injected missing link and skip upload and deployment.

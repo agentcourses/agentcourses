@@ -44,8 +44,8 @@ These are repository artefacts; schema hosting, protected release tags and packa
 
 The proposed release tag is `agentcourses-v1.0.0-rc.1`.
 Once the owner approves the freeze, that tag will identify the reviewed source without changing published schema bytes.
-The [Pages workflow](../.github/workflows/pages.yml) builds with ordinary checks before uploading its production artefact.
-After owner merge, the main workflow deploys to `https://agentcourses.io/` through GitHub Pages.
+The [checks and publication workflow](../.github/workflows/gates.yml) runs the ordinary checks before uploading its production artefact on main.
+After owner merge, the same run deploys that tested artefact to `https://agentcourses.io/` through GitHub Pages.
 The owner configured its DNS on 22 October 2026; HTTPS and the candidate freeze remain separate work.
 
 ## Set up and run the checks
@@ -62,7 +62,7 @@ make check
 uv run --locked python tools/prove_gate_failure.py
 ```
 
-Linux CI installs Chromium system dependencies with `playwright install --with-deps chromium`.
+Linux CI uses the system libraries already in the `ubuntu-24.04` runner image and installs only Chromium, with `playwright install chromium`.
 The gate inspects documents first, checks the lock, runs Python tests, checks and builds Astro, then opens the built overview in Chromium.
 Playwright proves the built overview opens with active navigation; axe is installed for the separate design acceptance suite.
 No account, model credential or paid call is required.
@@ -120,7 +120,7 @@ Missing fixtures fail rather than falling back to production.
 Read [the working conventions](../AGENTS.md) and [the independent review guide](../REVIEW.md).
 Independent review and passing checks precede draft pull request publication; the owner reviews and merges the pull request.
 The Actions status is named `make check`; its workflow runs on pull requests and main pushes with full tag history.
-The publication workflow deploys main pushes and main-only manual dispatches through the `github-pages` environment.
+For main pushes and main-only manual dispatches, the same workflow uploads the tested build and deploys it through the `github-pages` environment.
 Ordinary pull request events and publication branches cannot deploy.
 On 22 October 2026 the owner chose the custom domain, `https://agentcourses.io/`, for the initial publication.
 After merge, verify the normal deployment, exact live bytes and the controlled failure that must skip upload and deployment.
