@@ -17,3 +17,6 @@ site/dist/
 site/.browsers/
 site/test-results/
 site/playwright-report/
+
+# Schema downloads are reconstructed from flat sources and immutable release tags.
+site/public/schemas/

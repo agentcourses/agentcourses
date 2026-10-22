@@ -6,12 +6,14 @@ process.env.PLAYWRIGHT_BROWSERS_PATH ??= fileURLToPath(new URL('./.browsers', im
 
 const design = process.env.AC_SITE_MODE === 'design';
 const directory = fileURLToPath(new URL(design ? './tests/design' : './tests', import.meta.url));
+const productionDirectory = fileURLToPath(new URL('./tests/', import.meta.url)).replaceAll('\\', '/').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 if (!existsSync(fileURLToPath(new URL('./tests/smoke.spec.ts', import.meta.url)))) {
   throw new Error('The required production smoke test is missing');
 }
 export default defineConfig({
   testDir: directory,
-  testMatch: design ? '**/*.spec.ts' : 'smoke.spec.ts',
+  // Playwright matches absolute paths, so checkout directory names must not select suites.
+  testMatch: design ? '**/*.spec.ts' : new RegExp(`^${productionDirectory}(?:smoke\\.spec\\.ts|integration/.*\\.spec\\.ts)$`),
   forbidOnly: !!process.env.CI,
   retries: 0,
   workers: 1,
