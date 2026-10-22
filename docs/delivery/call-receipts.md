@@ -182,7 +182,7 @@ An isolated confirmation would retain only binding identifiers, an input occurre
 Even those identifiers can correlate activity, so access and retention still need a reviewed runner policy.
 A public-envelope design costs less integration work but cannot establish learner ownership.
 Host-local prompt histories may already exist; the experiment neither reads nor erases them.
-Tutr record minimisation cannot promise removal from a learner's chosen host.
+Learner-record minimisation cannot promise removal from a learner's chosen host.
 
 ## Limitations
 
