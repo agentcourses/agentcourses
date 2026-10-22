@@ -23,16 +23,16 @@ Examples live under `examples/` and are checked like code.
 
 ### Runner listings
 
-The [runner showcase](https://agentcourses.github.io/agentcourses/runners/) lists planned runners.
+The [runner showcase](https://agentcourses.io/runners/) lists planned runners.
 A future listing should name the implementation release, target format version, tested host and declared capabilities.
 It should link reproducible runtime evidence and state missing capabilities and receipt limits.
-Read [adding course support](https://agentcourses.github.io/agentcourses/implementers/support/) and the [conformance guide](https://agentcourses.github.io/agentcourses/implementers/conformance/) first.
+Read [adding course support](https://agentcourses.io/implementers/support/) and the [conformance guide](https://agentcourses.io/implementers/conformance/) first.
 
 ## Candidate status
 
 Agent Courses defines a course format for AI tutors, with a specification, schemas, examples and nine documentation pages.
 The proposed first candidate is `1.0.0-rc.1`; its label still needs owner confirmation.
-Publication will use `https://agentcourses.github.io/agentcourses/` after owner merge; the separate candidate freeze remains pending.
+Publication will use `https://agentcourses.io/` after owner merge; the separate candidate freeze remains pending.
 Read the [candidate handoff](releases/candidate.md) for accepted contracts, remaining gates and downstream obligations.
 Nothing here qualifies a runner or provides a public validator.
 
@@ -45,8 +45,8 @@ These are repository artefacts; schema hosting, protected release tags and packa
 The proposed release tag is `agentcourses-v1.0.0-rc.1`.
 Once the owner approves the freeze, that tag will identify the reviewed source without changing published schema bytes.
 The [Pages workflow](../.github/workflows/pages.yml) builds with ordinary checks before uploading its production artefact.
-After owner merge, the main workflow deploys to the default GitHub Pages address.
-The owner will configure DNS manually later; custom-domain publication and the candidate freeze remain separate work.
+After owner merge, the main workflow deploys to `https://agentcourses.io/` through GitHub Pages.
+The owner configured its DNS on 22 October 2026; HTTPS and the candidate freeze remain separate work.
 
 ## Set up and run the checks
 
@@ -122,23 +122,23 @@ Independent review and passing checks precede draft pull request publication; th
 The Actions status is named `make check`; its workflow runs on pull requests and main pushes with full tag history.
 The publication workflow deploys main pushes and main-only manual dispatches through the `github-pages` environment.
 Ordinary pull request events and publication branches cannot deploy.
-The owner has chosen the default address, `https://agentcourses.github.io/agentcourses/`, for the initial publication.
+On 22 October 2026 the owner chose the custom domain, `https://agentcourses.io/`, for the initial publication.
 After merge, verify the normal deployment, exact live bytes and the controlled failure that must skip upload and deployment.
 Those checks remain pending; preparing the pull request does not complete publication.
-Read-only checks on 22 October 2026 found workflow Pages, no custom domain and an environment limited to `main`.
+Read-only checks on 22 October 2026 found workflow Pages, the custom domain `agentcourses.io` without enforced HTTPS, and an environment limited to `main`.
 The environment has no required reviewers and allows administrator bypass.
 Main protection remains deferred by the owner; no settings change is part of this publication adjustment.
-The candidate freeze, protected tag, prerelease record and later custom-domain setup retain their separate owner gates.
+The candidate freeze, protected tag, prerelease record and HTTPS enforcement retain their separate owner gates.
 
-Production defaults to the fixed `github-pages` deployment profile, including the `/agentcourses/` base.
-Use `AC_DEPLOYMENT=custom-domain` for a future root build at `https://agentcourses.io/`; deployment needs separate owner authorisation.
+Production defaults to the `custom-domain` deployment profile, a root build for `https://agentcourses.io/`.
+Use `AC_DEPLOYMENT=github-pages` for a fallback build beneath the default `https://agentcourses.github.io/agentcourses/` address; deploying it needs separate owner authorisation.
 `AC_SITE_MODE=design` keeps its existing root preview in either profile.
 The build and browser checks must use the same profile.
 After a clean, committed production build, verify the deployed artefact with:
 
 ```bash
-node site/scripts/verify-release.mjs --root . --url https://agentcourses.github.io/agentcourses/
+node site/scripts/verify-release.mjs --root . --url https://agentcourses.io/
 ```
 
-This checks temporary download locations while preserving permanent `https://agentcourses.io/schemas/` identifiers inside the payloads.
-It does not establish that those permanent addresses are live.
+This checks the live pages and the schema downloads at their permanent `https://agentcourses.io/schemas/` addresses.
+Until it passes after deployment, those addresses are not claimed to be live.

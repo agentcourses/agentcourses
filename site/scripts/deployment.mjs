@@ -1,6 +1,6 @@
-// These are the two supported publication destinations. Schema identifiers keep
-// their permanent custom-domain identity independently of the deployment host.
-export function deploymentProfile(mode = 'production', profile = process.env.AC_DEPLOYMENT ?? 'github-pages') {
+// These are the two supported publication destinations; production defaults to the custom domain.
+// Schema identifiers keep their permanent custom-domain identity independently of the deployment host.
+export function deploymentProfile(mode = 'production', profile = process.env.AC_DEPLOYMENT ?? 'custom-domain') {
   if (!['github-pages', 'custom-domain'].includes(profile)) throw new Error(`Unsupported deployment profile: ${profile}`);
   return mode === 'design' || profile === 'custom-domain'
     ? { site: 'https://agentcourses.io', base: '/' }

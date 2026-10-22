@@ -12,10 +12,10 @@
 </p>
 
 <p align="center">
-  <a href="https://agentcourses.github.io/agentcourses/">Documentation</a> ·
-  <a href="https://agentcourses.github.io/agentcourses/specification/">Specification</a> ·
-  <a href="https://agentcourses.github.io/agentcourses/authors/quickstart/">Write a course</a> ·
-  <a href="https://agentcourses.github.io/agentcourses/implementers/support/">Add course support</a>
+  <a href="https://agentcourses.io/">Documentation</a> ·
+  <a href="https://agentcourses.io/specification/">Specification</a> ·
+  <a href="https://agentcourses.io/authors/quickstart/">Write a course</a> ·
+  <a href="https://agentcourses.io/implementers/support/">Add course support</a>
 </p>
 
 An open format for courses that an AI agent teaches in your own project.
@@ -71,15 +71,15 @@ The last lesson adds an explain-back: the learner explains their work and the ru
 
 ## Where can I use Agent Courses?
 
-The [runner showcase](https://agentcourses.github.io/agentcourses/runners/) lists planned runners and the evidence each still needs.
+The [runner showcase](https://agentcourses.io/runners/) lists planned runners and the evidence each still needs.
 No runner or host is qualified against the 1.0 candidate yet.
-To build one, start with [adding course support](https://agentcourses.github.io/agentcourses/implementers/support/) and the [conformance guide](https://agentcourses.github.io/agentcourses/implementers/conformance/).
+To build one, start with [adding course support](https://agentcourses.io/implementers/support/) and the [conformance guide](https://agentcourses.io/implementers/conformance/).
 
 ## Getting started
 
-- **[Documentation](https://agentcourses.github.io/agentcourses/)**: the overview and guides.
-- **[Specification](https://agentcourses.github.io/agentcourses/specification/)**: the full format, composed from the [canonical sources](spec/format.md).
-- **[Author quickstart](https://agentcourses.github.io/agentcourses/authors/quickstart/)**: write and check a first course.
+- **[Documentation](https://agentcourses.io/)**: the overview and guides.
+- **[Specification](https://agentcourses.io/specification/)**: the full format, composed from the [canonical sources](spec/format.md).
+- **[Author quickstart](https://agentcourses.io/authors/quickstart/)**: write and check a first course.
 - **[Example course](examples/quickstart/COURSE.md)**: the tested course the quickstart builds.
 - **[Schemas](schemas/manifest.json)**: versioned JSON Schemas for courses, lessons, checks, feedback and records.
 - **[Changelog](CHANGELOG.md)**: what the current candidate contains.

@@ -12,10 +12,10 @@ The [quickstart course](examples/quickstart/COURSE.md) supplies repository examp
 Nine site pages provide the overview, specification, runner showcase, author guidance and implementer guidance.
 
 The [publication workflow](.github/workflows/pages.yml) runs ordinary checks and uploads the tested production site for main-only deployment.
-Initial publication uses `https://agentcourses.github.io/agentcourses/` after owner merge.
-Permanent schema identifiers remain on `agentcourses.io`; the owner will configure DNS manually later.
+Initial publication uses `https://agentcourses.io/` after owner merge.
+Schema identifiers and their downloads share that domain; HTTPS awaits GitHub's certificate.
 A manual failure-proof dispatch must reject an injected missing link and skip upload and deployment.
-The [candidate handoff](docs/releases/candidate.md) records accepted contract evidence, the interim Pages address and remaining publication proof and the separate freeze process.
+The [candidate handoff](docs/releases/candidate.md) records accepted contract evidence, the publication address, remaining publication proof and the separate freeze process.
 The proposed tag is `agentcourses-v1.0.0-rc.1`; no release tag or public schema availability is claimed yet.
 
 No actual host is qualified, and this candidate provides no public validator or conformance certification.
