@@ -1,0 +1,63 @@
+{
+  "participant": "synthetic-owner",
+  "synthetic": true,
+  "baseline_commit": "f39cbea910c475f76d87ae186184f1c1d1150f34",
+  "candidate_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "protocol_sha256": "d705280da431f11f376650d296ecd213a34ab27755e5f10a0c436ae57afa1820",
+  "runs": [
+    {
+      "candidate": "baseline",
+      "task": "minimal",
+      "variant": "A",
+      "started_at": "2026-10-23T09:00:00Z",
+      "ended_at": "2026-10-23T09:15:00Z",
+      "pauses": [],
+      "active_seconds": 900,
+      "completed": true,
+      "errors": [],
+      "assistance": [],
+      "comprehension": {
+        "required_material": true,
+        "assessment": true,
+        "tutor_privacy": true,
+        "consent": true
+      }
+    },
+    {
+      "candidate": "new",
+      "task": "minimal",
+      "variant": "B",
+      "started_at": "2026-10-23T09:16:00Z",
+      "ended_at": "2026-10-23T09:26:00Z",
+      "pauses": [],
+      "active_seconds": 600,
+      "completed": true,
+      "errors": [],
+      "assistance": [],
+      "comprehension": {
+        "required_material": true,
+        "assessment": true,
+        "tutor_privacy": true,
+        "consent": true
+      }
+    },
+    {
+      "candidate": "new",
+      "task": "representative",
+      "variant": "A",
+      "started_at": "2026-10-23T09:27:00Z",
+      "ended_at": "2026-10-23T09:47:00Z",
+      "pauses": [],
+      "active_seconds": 1200,
+      "completed": true,
+      "errors": [],
+      "assistance": [],
+      "comprehension": {
+        "required_material": true,
+        "assessment": true,
+        "tutor_privacy": true,
+        "consent": true
+      }
+    }
+  ]
+}
