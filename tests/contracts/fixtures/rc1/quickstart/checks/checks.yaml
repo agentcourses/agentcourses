@@ -1,0 +1,8 @@
+- id: final-check
+  run: python "$AGENT_COURSE_DIR/checks/final_check.py"
+  verify: agent.py defines an agent
+  timeout: 30
+  network: false
+- id: agent-runs
+  kind: observe
+  verify: agent.py exists and defines an agent

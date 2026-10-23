@@ -1,29 +1,31 @@
 ---
 title: Candidate publication and handoff
-candidate: 1.0.0-rc.1
+candidate: 1.0.0-rc.2
 blockers: []
-contract_approval: https://github.com/agentcourses/agentcourses/pull/6
+contract_approval: https://github.com/agentcourses/agentcourses/pull/18
 receipt_approval: https://github.com/agentcourses/agentcourses/pull/2
 ---
 
 # Candidate publication and handoff
 
-This prepares the proposed `1.0.0-rc.1` candidate for publication at `https://agentcourses.io/`.
-The owner has accepted the course, records and receipt capability contracts through the linked reviewed changes.
+This prepares the proposed `1.0.0-rc.2` candidate for publication at `https://agentcourses.io/`.
+The [central declaration interpretation](https://github.com/agentcourses/agentcourses/pull/18) supplies the new contract lineage.
+That predecessor has independent source approval; its owner acceptance and merge remain pending before this change may merge.
 Publication, confirmation of the proposed candidate label and the separate owner freeze decision remain pending.
-After independent review and current-head checks, the owner may merge the publication pull request.
-The normal main workflow deploys afterward; live checks and the separate freeze remain pending.
+After predecessor acceptance, independent review and current-head checks, the owner may merge the publication pull request.
 
 ## Candidate identity
 
-The proposed tag is `agentcourses-v1.0.0-rc.1`; it does not exist yet.
+The proposed tag is `agentcourses-v1.0.0-rc.2`; it does not exist yet.
 Once approved and created, that tag resolves the exact reviewed source commit and tree.
 No stable release, installable package or qualified runner is claimed.
 
-The [source manifest](../../schemas/manifest.json) lists all eight schema addresses, flat source paths and payload SHA-256 checksums.
-Its SHA-256 is `d4c817d4200539fb1e95edd8814e0a9999fd58ee48a30e93aed3fb38e7414cc3`.
+The [source manifest](../../schemas/manifest.json) lists all eight new schema addresses, versioned source paths and payload SHA-256 checksums.
+It also identifies the exact retained first-candidate manifest and its baseline source commit.
+The retained candidate is unfrozen; no tag or release approval is invented for it.
+Its SHA-256 is `04d371a90b4ea918e794fa0bea6d0da4c3b79fd2e6b00be68339d219961134f6`.
 The download inventory will be `https://agentcourses.io/schemas/manifest.json`.
-Schema addresses follow `https://agentcourses.io/schemas/1.0.0-rc.1/<type>.schema.json`; these permanent identifiers are not yet live.
+Schema addresses follow `https://agentcourses.io/schemas/1.0.0-rc.2/<type>.schema.json`; these permanent identifiers are not yet live.
 Downloads will serve each payload at its own identifier address once deployment and HTTPS succeed.
 A published address must retain its exact bytes; changed schema bytes require a new candidate and tag.
 
@@ -33,8 +35,9 @@ The owner merged [the course and execution contract](https://github.com/agentcou
 The owner merged [the records and identity contract](https://github.com/agentcourses/agentcourses/pull/6) on the same date.
 The [receipt experiment](https://github.com/agentcourses/agentcourses/pull/2) records the capability choice accepted on 19 October 2026.
 The [committed receipt report](../delivery/call-receipts.md#approved-capability-contract--19-october-2026) explains its evidence and limits.
-These acceptances close the candidate contract questions, as mapped in the [requirement register](../../spec/requirements.md).
-They do not constitute publication approval or the final candidate freeze.
+These historical acceptances preserve the original contract boundaries, as mapped in the [requirement register](../../spec/requirements.md).
+The new interpretation additionally waits for the predecessor owner acceptance described above.
+Neither the historical acceptances nor schema readiness constitutes publication approval or the final candidate freeze.
 
 Receipts require a learner-controlled confirmation path, a protected verifier and durable replay protection outside tutor authority.
 No actual host has been qualified.
@@ -77,7 +80,9 @@ Do not edit this source merely to add later deployment or freeze evidence.
 
 ## Downstream handoff
 
-The [specification](../../spec/format.md), [schemas](../../schemas/manifest.json) and [examples](../../examples/quickstart/COURSE.md) describe the candidate for downstream implementation.
+The [specification](../../spec/format.md) and [schemas](../../schemas/manifest.json) describe the new candidate for downstream implementation.
+The unchanged [quickstart](../../examples/quickstart/COURSE.md) remains first-candidate input in the [reviewed inventory](../../examples/manifest.json).
+Example migration, public comparison evidence, publication and freeze remain pending separately.
 The [author quickstart](../../site/src/content/docs/authors/quickstart.mdx) and [runner guidance](../../site/src/content/docs/implementers/support.mdx) explain their intended use.
 Stable launch still needs the reference library, public validator, conformance classes and suite, qualified hosts, pilot evidence and learner outcomes.
 Package publication and runtime support remain later work.

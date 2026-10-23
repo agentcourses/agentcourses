@@ -18,7 +18,7 @@ def contracts():
 
 def test_schema_registry():
     c = contracts()
-    schemas, registry = c.schema_registry(ROOT)
+    schemas, registry = c.schema_registry(ROOT, '1.0.0-rc.1')
     assert set(schemas) == set(c.KINDS)
     assert len(schemas) == 8
     for kind, schema in schemas.items():
@@ -48,7 +48,7 @@ def test_schema_cases():
     assert {case['kind'] for case in cases if case['outcome'] == 'rejected'} == set(c.KINDS)
     for case in cases:
         assert case['requirement'].startswith('req-')
-        findings = c.validate_frontmatter(case['kind'], case['data'])
+        findings = c.validate_frontmatter(case['kind'], case['data'],candidate=case['candidate'])
         errors = [f for f in findings if f.severity == 'error']
         if case['outcome'] == 'rejected':
             assert isinstance(case['finding'], dict), case['case']
@@ -69,7 +69,7 @@ def test_schema_cases():
                     parent.insert(key, edit['value'])
                 else:
                     parent[key] = edit['value']
-                assert not [f for f in c.validate_frontmatter(case['kind'], repaired) if f.severity == 'error'], case['case']
+                assert not [f for f in c.validate_frontmatter(case['kind'], repaired,candidate=case['candidate']) if f.severity == 'error'], case['case']
             else:
                 assert case.get('malformed') in ('null', 'empty', 'wrong-type'), case['case']
         else:
@@ -91,14 +91,14 @@ def test_schema_registry_checks_root_payload_and_refs(tmp_path):
     import hashlib
     import shutil
     c=contracts()
-    for directory in ['schemas','fixtures','examples']:
+    for directory in ['schemas','fixtures','examples','tests/contracts/fixtures']:
         shutil.copytree(ROOT/directory,tmp_path/directory)
     path=tmp_path/'schemas/course.schema.json'
     schema=json.loads(path.read_text())
     schema['properties']['description']['minLength']=1000
     path.write_text(json.dumps(schema)+'\n')
     def rehash():
-        manifest_path=tmp_path/'schemas/manifest.json'
+        manifest_path=tmp_path/'schemas/history/1.0.0-rc.1/manifest.json'
         manifest=json.loads(manifest_path.read_text())
         for entry in manifest['releases'][0]['schemas']:
             entry['sha256']=hashlib.sha256((tmp_path/entry['path']).read_bytes()).hexdigest()
@@ -107,7 +107,7 @@ def test_schema_registry_checks_root_payload_and_refs(tmp_path):
     assert any('course-baseline' in f.message for f in c.check_repository(tmp_path))
     schema['properties']['description']={'$ref':'https://unavailable.invalid/schema.json'}
     path.write_text(json.dumps(schema)+'\n');rehash()
-    with pytest.raises(Unresolvable):c.schema_registry(tmp_path)
+    with pytest.raises(Unresolvable):c.schema_registry(tmp_path,'1.0.0-rc.1')
 
 
 @pytest.mark.parametrize('expected', [
@@ -119,12 +119,14 @@ def test_repository_cases_require_exact_finding(tmp_path, monkeypatch, expected)
     c = contracts()
     shutil.copytree(ROOT / 'schemas', tmp_path / 'schemas')
     (tmp_path / 'fixtures/schema').mkdir(parents=True)
-    case = dict(case='wrong-reason', kind='course', requirement='req-course-frontmatter',
+    (tmp_path / 'examples').mkdir()
+    (tmp_path / 'examples/manifest.json').write_text(json.dumps(dict(courses=[],includes=[])))
+    case = dict(candidate='1.0.0-rc.1',case='wrong-reason', kind='course', requirement='req-course-frontmatter',
                 outcome='rejected', finding=expected,
                 data=dict(name='UPPER', description='Example', version='1.0.0'))
     (tmp_path / 'fixtures/schema/cases.json').write_text(json.dumps([case]))
-    monkeypatch.setattr(c, 'identity_vectors', lambda root: [])
-    monkeypatch.setattr(c, 'check_course', lambda root: [])
+    monkeypatch.setattr(c, 'identity_vectors', lambda root, **kwargs: [])
+    monkeypatch.setattr(c, 'check_course', lambda root, **kwargs: [])
     findings = c.check_repository(tmp_path)
     assert {f.rule for f in findings} == {'req-course-frontmatter'}
     assert 'wrong-reason' in findings[0].message

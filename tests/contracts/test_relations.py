@@ -11,7 +11,7 @@ from tools import check_contracts as c
 
 
 def errors(root):
-    return {f.rule for f in c.check_course(root) if f.severity == 'error'}
+    return {f.rule for f in c.check_course(root,candidate='1.0.0-rc.1') if f.severity == 'error'}
 
 
 def test_course_relations(course):
@@ -137,7 +137,7 @@ def quickstart(tmp_path):
 
 
 def assert_rules(root, expected_errors, expected_warnings=frozenset()):
-    findings = c.check_course(root)
+    findings = c.check_course(root,candidate='1.0.0-rc.1')
     assert {f.rule for f in findings if f.severity == 'error'} == expected_errors
     assert {f.rule for f in findings if f.severity == 'warning'} == expected_warnings
     assert all('req-record-replay-data' not in f.message for f in findings)
@@ -204,7 +204,7 @@ def test_broken_checks_file_reports_only_its_own_fault(quickstart, old, new, exp
     text = path.read_text()
     assert text.count(old) == 1
     path.write_text(text.replace(old, new))
-    findings = c.check_course(quickstart)
+    findings = c.check_course(quickstart,candidate='1.0.0-rc.1')
     assert sorted(f.rule for f in findings) == expected, findings
 
 
@@ -213,7 +213,7 @@ def test_course_metadata_fault_has_no_record_message(quickstart, name):
     path = quickstart / name
     path.unlink()
     path.symlink_to('missing.yaml')
-    findings = c.check_course(quickstart)
+    findings = c.check_course(quickstart,candidate='1.0.0-rc.1')
     assert findings
     assert all('req-record-replay-data' not in f.message for f in findings)
 
@@ -730,30 +730,6 @@ RUNNER = 'judged on what a runner does when it resolves or starts a project, not
 RECORD = 'the recorded project path lives in learner records, which the record and event schema cases cover'
 RUNS_CHECK = 'needs the check program run against its fixtures; course validation never runs a course command'
 NOT_BUILT = {
-    # This sweep uses the original quickstart and reader; these named cases need rc.2 interpretation.
-    F + 'central-checks-null-rejected': 'needs the rc.2 course schema: checks is an ignored extension in the original reader',
-    F + 'central-checks-type-rejected': 'needs rc.2 list validation: the original reader does not type-check central checks',
-    F + 'central-feedback-null-rejected': 'needs the rc.2 course schema: feedback is an ignored extension in the original reader',
-    F + 'central-feedback-type-rejected': 'needs rc.2 object validation: the original reader does not type-check central feedback',
-    F + 'central-checks-duplicate-rejected': 'needs central check-id comparison; the original reader compares checks/checks.yaml entries only',
-    F + 'central-check-shape-rejected': 'needs nested rc.2 check validation reported as schema-course; the original reader validates the separate checks file',
-    F + 'central-extension-warning': 'needs an identified rc.2 baseline; the original reader additionally warns about its format and central fields',
-    F + 'mixed-checks-equal-rejected': 'needs rc.2 rejection of a present checks/checks.yaml even when equal; the original reader uses that file',
-    F + 'mixed-checks-empty-rejected': 'needs rc.2 presence rejection of empty checks/checks.yaml; the original reader has no mixed-layout rule',
-    F + 'mixed-feedback-empty-rejected': 'needs rc.2 presence rejection of empty feedback.yaml; the original reader has no mixed-layout rule',
-    F + 'mixed-feedback-equal-rejected': 'needs rc.2 rejection of a present feedback.yaml even when equal; the original reader uses that file',
-    F + 'mixed-both-rejected': 'needs one rc.2 mixed-layout finding for both old files; the original reader treats them as declaration sources',
-    F + 'mixed-precedence-rejected': 'needs rc.2 mixed-layout rejection before nested validation; the original reader has neither central loading nor that early boundary',
-    F + 'resource-fixture-project-rejected': 'needs rc.2 fixture-role exclusion under scripts/fixtures; the original reader accepts contained local project sources',
-    F + 'resource-fixture-starter-rejected': 'needs the rc.2 assets/starter base and resolved fixture-role exclusion; the original reader uses starter/',
-    F + 'resource-markdown-relative-rejected': 'needs the otherwise valid rc.2 resource baseline; applying it to the original reader adds unrelated declaration and starter findings',
-    F + 'resource-old-base-rejected': 'needs assets/starter as the rc.2 lesson base; starter/ is the valid base for this historical sweep',
-    F + 'resource-selection-missing-rejected': RUNNER + '; this case also requires the rc.2 assets/starter source',
-    E + 'candidate-copy-missing-rejected': 'needs rc.2 lesson resolution from assets/starter; the original reader searches starter/',
-    E + 'candidate-copy-nonfile-rejected': 'needs the rc.2 resource baseline so only its selected directory fails; the original reader searches starter/',
-    E + 'candidate-copy-source-escape-rejected': 'needs containment relative to the rc.2 assets/starter base; the original reader validates the historical starter base',
-    C + 'candidate-feedback-duplicate-rejected': 'needs central feedback question-id comparison; the original reader compares feedback.yaml questions only',
-    C + 'candidate-feedback-range-rejected': 'needs nested rc.2 feedback validation reported as schema-course; the original reader validates feedback.yaml',
     F + 'starter-answer-finished-rejected': 'needs a person to judge whether a starter file is a finished answer',
     F + 'version-rename-patch-rejected': 'needs two versions of a course to compare',
     F + 'version-rename-patch-warning': 'needs two versions of a course to compare',
@@ -787,7 +763,8 @@ NOT_BUILT = {
 
 def test_register_cases_are_all_swept_or_explained():
     cases, _ = register()
-    swept = {item.anchor for item in SWEEP}
+    from test_candidates import CANDIDATE_CASES
+    swept = {item.anchor for item in SWEEP} | CANDIDATE_CASES.keys()
     assert not swept & NOT_BUILT.keys()
     assert swept | NOT_BUILT.keys() == cases.keys()
     for item in SWEEP:
@@ -808,7 +785,7 @@ def test_register_case_reports_exactly_its_rule(tmp_path, item):
     shutil.copytree(ROOT / 'examples/quickstart', root)
     for edit in item.edits:
         edit(root)
-    findings = c.check_course(root)
+    findings = c.check_course(root,candidate='1.0.0-rc.1')
     assert located_rules(findings, 'error') == sorted(item.errors), findings
     assert located_rules(findings, 'warning') == sorted(item.warnings), findings
     assert all('req-record-replay-data' not in f.message for f in findings)
@@ -860,6 +837,6 @@ SIBLINGS = {
 def test_sibling_fault_reports_exactly_its_rule(quickstart, errors, warnings, edits):
     for edit in edits:
         edit(quickstart)
-    findings = c.check_course(quickstart)
+    findings = c.check_course(quickstart,candidate='1.0.0-rc.1')
     assert located_rules(findings, 'error') == sorted(errors), findings
     assert located_rules(findings, 'warning') == sorted(warnings), findings

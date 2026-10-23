@@ -3,7 +3,7 @@ title: Conformance
 description: Future conformance classes, capability evidence and the limits of current repository checks.
 ---
 
-Conformance means a specific implementation or course meets a defined contract with evidence. The three class names below describe future qualification targets, not badges awarded by this candidate. Current tools check repository schemas, examples and selected replay behaviour. Until the later qualification work exists, no course, runner or record may claim stable 1.0 conformance ([candidate and stable](/specification/#records--candidate-and-stable)).
+Conformance means a specific implementation or course meets a defined contract with evidence. The three class names below describe future qualification targets, not badges awarded by this candidate. Internal checkout tools validate current-format courses, repository schemas, examples and controlled replay behaviour. Until the later qualification work exists, no course, runner or record may claim stable 1.0 conformance ([candidate and stable](/specification/#records--candidate-and-stable)).
 
 ## Three future conformance classes
 
@@ -33,7 +33,7 @@ Passing evidence is only part of [settlement](/specification/#execution--settlem
 
 ## Schemas check shape, not authority
 
-The candidate has eight schema types: `course`, `lesson`, `checks`, `feedback`, `lock`, `record`, `event` and `rubric`. Schema addresses follow `https://agentcourses.io/schemas/<candidate>/<type>.schema.json`. Schemas for current-format declarations are still being implemented; the manifest lists only the bytes actually available. An existing download does not establish support for the current frontmatter. The [schema addresses](/specification/#records--schema-addresses) define the policy, and the repository's [manifest](https://github.com/agentcourses/agentcourses/blob/main/schemas/manifest.json) lists exact source paths, identifiers and checksums.
+The candidate has eight schema types: `course`, `lesson`, `checks`, `feedback`, `lock`, `record`, `event` and `rubric`. Schema addresses follow `https://agentcourses.io/schemas/<candidate>/<type>.schema.json`. The current `1.0.0-rc.2` schemas validate central declarations through the course schema and its local references. Source payloads live under `schemas/1.0.0-rc.2/`; generated downloads preserve each payload's exact bytes at its identifier address. The download inventory lists available payloads; live publication remains subject to the candidate publication checks. The [schema addresses](/specification/#records--schema-addresses) define the policy, and the repository's [manifest](https://github.com/agentcourses/agentcourses/blob/main/schemas/manifest.json) lists exact source paths, identifiers and checksums.
 
 A shape-valid file may still have broken references or false provenance. Inspect [constraints beyond schemas](/specification/#format--markdown-only-constraints), [three kinds of validity](/specification/#records--validity) and [protected admission](/specification/#records--operation-admission). Protected history, retained course bytes and original verifier context are required for authoritative replay. No schema success substitutes for them.
 
@@ -56,7 +56,7 @@ Every command below marked current runs inside the [repository checkout](https:/
 
 | Tool | Availability | Inspect today instead |
 | --- | --- | --- |
-| Internal contract harness: `uv run --locked python tools/check_contracts.py --root .` | Current, checkout only; proves repository fixtures; current-format consumers are still being implemented. | [Harness source](https://github.com/agentcourses/agentcourses/blob/main/tools/check_contracts.py), schemas and example traces. |
+| Internal contract harness: `uv run --locked python tools/check_contracts.py --root .` | Current, checkout only; checks inventory-selected examples with their explicit candidate context. | [Harness source](https://github.com/agentcourses/agentcourses/blob/main/tools/check_contracts.py), schemas and example traces. |
 | Public validation command, proposed `agent-courses validate` | Future; no released public validator. | [Format rules](/specification/#format) and internal course/schema results. |
 | Public fixture command, proposed `agent-courses test` | Future; no released public fixture runner. | [Check fixtures](/specification/#execution--check-rules) and the quickstart's [local fixture commands](/authors/quickstart/). |
 | Public advisory command, proposed `agent-courses lint` | Future; no released public linter. | [Unknown-key policy](/specification/#format--unknown-keys) and [author guidance](/authors/best-practices/). |
