@@ -8,10 +8,17 @@ banner:
 import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 import Stages from '../../../src/components/Stages.astro';
 import RunnerTile from '../../../src/components/RunnerTile.astro';
+import ReadingPaths from '../../../src/components/ReadingPaths.astro';
+import TeachingExchange from '../../../src/components/TeachingExchange.astro';
+import { sampleReadingSource } from '../../../src/components/reading-paths';
 
-<p class="ac-thesis">A calm sample sentence stands where the overview's one-line thesis will go.</p>
+<p class="ac-thesis">An open format for teaching with AI agents.</p>
 
-This overview fixture shows how a newcomer's first page is laid out. Its paragraphs, lists and tables are placeholders with realistic length, so the reading column, rhythm and wrapping can be judged before real content is connected.
+A course helps a learner build something and explain their decisions. This site describes the format; it does not offer a live tutoring session.
+
+<TeachingExchange exchange={sampleReadingSource.exchange} />
+
+<ReadingPaths source={sampleReadingSource} />
 
 ## What a course folder looks like
 

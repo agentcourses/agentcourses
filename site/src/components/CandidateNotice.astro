@@ -1,0 +1,26 @@
+---
+import { Icon } from '@astrojs/starlight/components';
+interface Props { candidate: string; reviewHref: string }
+const { candidate, reviewHref } = Astro.props;
+---
+<section class="sl-banner ac-banner print:hidden" aria-label="Announcement" data-pagefind-ignore data-candidate={candidate}>
+  <div class="ac-banner__text"><slot>{candidate} is open for review. <a href={reviewHref}>Read the candidate</a>.</slot></div>
+  <button type="button" class="ac-banner__close" aria-label="Dismiss announcement"><Icon name="close" /></button>
+</section>
+<script is:inline>
+  (() => {
+    const banner = document.currentScript.previousElementSibling;
+    const key = `ac-candidate-dismissed:${banner.dataset.candidate}`;
+    const root = document.documentElement;
+    const measure = () => root.style.setProperty('--ac-banner-h', banner.hidden ? '0px' : `${banner.offsetHeight}px`);
+    try { banner.hidden = localStorage.getItem(key) === 'true'; } catch {}
+    measure();
+    new ResizeObserver(measure).observe(banner);
+    banner.querySelector('button').addEventListener('click', () => {
+      banner.hidden = true;
+      try { localStorage.setItem(key, 'true'); } catch {}
+      measure();
+      document.querySelector('header.header .site-title')?.focus();
+    });
+  })();
+</script>
