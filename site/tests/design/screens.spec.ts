@@ -15,6 +15,9 @@ async function settle(page: Page): Promise<void> {
 const pages = [
   { name: 'article', path: article },
   { name: 'overview', path: '/' },
+  { name: 'author-task', path: '/authors/quickstart/' },
+  { name: 'runner-task', path: '/implementers/support/' },
+  { name: 'direct-subsection', path: '/specification/#a-sample-subsection' },
 ] as const;
 
 for (const { name, path } of pages) {
@@ -46,4 +49,21 @@ for (const scheme of ['light', 'dark'] as Scheme[]) {
     await expect(page.locator('#starlight__sidebar')).toHaveCSS('transform', 'none');
     await expect(page).toHaveScreenshot(`drawer-phone-${scheme}.png`, { maxDiffPixelRatio: 0.002 });
   });
+}
+
+for (const [size, viewport] of [['phone', phone], ['desktop', desktop]] as const) {
+  for (const scheme of schemes) {
+    for (const state of ['dismissed-notice', 'licence'] as const) {
+      test(`${state} at ${size} size in ${scheme} mode`, async ({ page }) => {
+        await page.setViewportSize(viewport);
+        await open(page, '/', scheme);
+        await settle(page);
+        await page.getByRole('button', { name: 'Dismiss announcement' }).focus();
+        await page.keyboard.press('Enter');
+        await expect(page.locator('.ac-banner')).toBeHidden();
+        if (state === 'licence') await page.getByRole('region', { name: 'Publication status and licence' }).scrollIntoViewIfNeeded();
+        await expect(page).toHaveScreenshot(`${state}-${size}-${scheme}.png`, { maxDiffPixelRatio: 0.002 });
+      });
+    }
+  }
 }

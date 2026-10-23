@@ -1,6 +1,6 @@
 ---
 /**
- * Starlight's Markdown content wrapper, unchanged, plus keyboard access for wide content.
+ * Starlight's Markdown wrapper adds publication status, a licence link and keyboard access for wide content.
  * A table frame or code panel wider than the reading column scrolls inside itself; while it
  * overflows it joins the tab order as a named region, so keyboard users can scroll it and
  * hear what it holds. Expressive Code does the same for code, but only once the browser is
@@ -8,9 +8,19 @@
  * whenever a region changes size.
  */
 import Default from '@astrojs/starlight/components/MarkdownContent.astro';
+import { sampleReadingSource } from './reading-paths';
+const design = process.env.AC_SITE_MODE === 'design';
+const candidate = design ? sampleReadingSource.candidate : '1.0.0-rc.1';
+const licence = design ? sampleReadingSource.licence : { label: 'Apache-2.0', href: 'https://github.com/agentcourses/agentcourses/blob/main/LICENSE' };
 ---
 
-<Default><slot /></Default>
+<Default>
+  <slot />
+  <section class="ac-publication not-content" aria-label="Publication status and licence">
+    <p>{candidate} · Open for review</p>
+    <p><a href={licence.href}>{licence.label}</a> · An open format for teaching with AI agents.</p>
+  </section>
+</Default>
 
 <script>
   /** A table frame is named by its caption, or else by the heading of its section. */

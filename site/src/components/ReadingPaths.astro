@@ -1,0 +1,13 @@
+---
+import { readingPaths, type ReadingSource } from './reading-paths';
+interface Props { source: ReadingSource }
+const source = readingPaths(Astro.props.source);
+---
+<nav class="ac-reading-paths not-content" aria-label="Choose your next task">
+  {[['For course authors', source.author], ['For runner builders', source.runner]].map(([label, tasks]) => (
+    <section aria-label={label as string}>
+      <h2>{label as string}</h2>
+      <ul>{(tasks as ReadingSource['author']).map((task) => <li><a href={task.href}>{task.label}</a></li>)}</ul>
+    </section>
+  ))}
+</nav>

@@ -56,3 +56,38 @@ import TableOfContents from '@astrojs/starlight/components/TableOfContents.astro
     }
   }
 </style>
+
+<script>
+  // Keep Starlight's heading model and controls, but let an explicit fragment take priority
+  // over its scroll observer. Both controls must show the same destination, even off screen.
+  const syncContents = async () => {
+    await Promise.all([customElements.whenDefined('starlight-toc'), customElements.whenDefined('mobile-starlight-toc')]);
+    document.querySelectorAll<HTMLElement>('starlight-toc, mobile-starlight-toc').forEach((toc) => {
+      const links = [...toc.querySelectorAll<HTMLAnchorElement>('a')];
+      const fragmentLink = () => links.find((link) => {
+        try { return decodeURIComponent(link.hash) === decodeURIComponent(location.hash); } catch { return false; }
+      });
+      const select = (link?: HTMLAnchorElement) => {
+        links.forEach((item) => item.toggleAttribute('aria-current', false));
+        link?.setAttribute('aria-current', 'true');
+        Reflect.set(toc, '_current', link ?? null);
+        const display = toc.querySelector('.display-current');
+        if (display) display.textContent = link?.textContent ?? '';
+      };
+      if (!Object.hasOwn(toc, 'current')) {
+        let prototype = Object.getPrototypeOf(toc);
+        while (prototype && !Object.getOwnPropertyDescriptor(prototype, 'current')) prototype = Object.getPrototypeOf(prototype);
+        const setter = Object.getOwnPropertyDescriptor(prototype, 'current')?.set;
+        Object.defineProperty(toc, 'current', { set(link: HTMLAnchorElement) {
+          if (location.hash) select(fragmentLink());
+          else setter?.call(toc, link);
+        } });
+      }
+      select(location.hash ? fragmentLink() : links[0]);
+    });
+  };
+  syncContents();
+  document.addEventListener('astro:page-load', syncContents);
+  window.addEventListener('hashchange', syncContents);
+  window.addEventListener('popstate', syncContents);
+</script>

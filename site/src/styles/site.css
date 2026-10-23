@@ -871,3 +871,56 @@ site-search dialog:focus-visible {
     scroll-behavior: auto !important;
   }
 }
+
+/* Teaching comes before the reader's choice of task. */
+.ac-exchange {
+  margin-block: 24px 32px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  background: var(--bg-2);
+  padding: 20px 24px;
+}
+.ac-exchange ol, .ac-reading-paths ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ac-exchange li + li { margin-top: 18px; }
+.ac-exchange strong {
+  display: block;
+  color: var(--fg);
+  font-size: var(--sl-text-xs);
+  font-weight: 600;
+}
+.ac-reading-paths {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-block: 24px 32px;
+}
+.ac-reading-paths section {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  padding: 20px;
+}
+.ac-reading-paths h2 {
+  margin: 0 0 12px;
+  color: var(--fg);
+  font-family: var(--f-body);
+  font-size: var(--sl-text-h3);
+}
+.ac-reading-paths li + li { margin-top: 12px; }
+.ac-reading-paths a { color: var(--fg-2); text-underline-offset: 3px; }
+.ac-publication {
+  margin-top: 32px;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+  color: var(--fg-2);
+  font-size: var(--sl-text-sm);
+}
+.ac-publication p { margin: 0; }
+.ac-publication a { color: var(--fg); text-underline-offset: 3px; }
+@media (max-width: 620px) {
+  .ac-reading-paths { grid-template-columns: 1fr; }
+  .ac-exchange { padding: 18px; }
+}

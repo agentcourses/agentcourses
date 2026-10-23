@@ -1,0 +1,10 @@
+---
+import type { ReadingSource } from './reading-paths';
+interface Props { exchange: ReadingSource['exchange'] }
+const { exchange } = Astro.props;
+---
+<section class="ac-exchange not-content" aria-label="A teaching exchange">
+  <ol>
+    {exchange.map(({ speaker, text }) => <li><strong>{speaker === 'tutor' ? 'Tutor' : 'Learner'}</strong> <span>{text}</span></li>)}
+  </ol>
+</section>
