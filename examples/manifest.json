@@ -1,0 +1,57 @@
+{
+  "courses": [
+    {
+      "name": "quickstart",
+      "path": "examples/quickstart",
+      "role": "author-quickstart",
+      "candidate": "1.0.0-rc.1",
+      "identity": "sha256:5660aeb6da6756643f621d1fc017cae33189863b2f98a886ac653515315a7d76",
+      "source": {
+        "kind": "pinned-baseline",
+        "commit": "f39cbea910c475f76d87ae186184f1c1d1150f34"
+      }
+    }
+  ],
+  "includes": [
+    {
+      "example": "quickstart",
+      "file": "COURSE.md"
+    },
+    {
+      "example": "quickstart",
+      "file": "checks/checks.yaml"
+    },
+    {
+      "example": "quickstart",
+      "file": "checks/final_check.py"
+    },
+    {
+      "example": "quickstart",
+      "file": "checks/fixtures/final-check/fail/agent.py"
+    },
+    {
+      "example": "quickstart",
+      "file": "checks/fixtures/final-check/pass/agent.py"
+    },
+    {
+      "example": "quickstart",
+      "file": "feedback.yaml"
+    },
+    {
+      "example": "quickstart",
+      "file": "lessons/finish.md"
+    },
+    {
+      "example": "quickstart",
+      "file": "lessons/intro.md"
+    },
+    {
+      "example": "quickstart",
+      "file": "lessons/make.md"
+    },
+    {
+      "example": "quickstart",
+      "file": "tutor/finish.rubric.md"
+    }
+  ]
+}

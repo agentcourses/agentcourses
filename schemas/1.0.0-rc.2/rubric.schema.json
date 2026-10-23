@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentcourses.io/schemas/1.0.0-rc.2/rubric.schema.json",
+  "title": "Agent Courses rubric",
+  "type": "object",
+  "properties": {
+    "pass": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]* of [1-9][0-9]*$(?![\\s\\S])"
+    }
+  },
+  "required": [
+    "pass"
+  ],
+  "additionalProperties": true
+}

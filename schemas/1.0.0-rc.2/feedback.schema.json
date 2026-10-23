@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentcourses.io/schemas/1.0.0-rc.2/feedback.schema.json",
+  "title": "Agent Courses feedback",
+  "type": "object",
+  "properties": {
+    "rating": {
+      "enum": [
+        "per-lesson",
+        "at-end"
+      ]
+    },
+    "stuck": {
+      "type": "object",
+      "properties": {
+        "after_failures": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 10
+        }
+      },
+      "required": [],
+      "additionalProperties": true
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "ask": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "minItems": 2,
+            "maxItems": 8
+          }
+        },
+        "required": [
+          "id",
+          "ask",
+          "options"
+        ],
+        "additionalProperties": true
+      },
+      "minItems": 1,
+      "maxItems": 5
+    }
+  },
+  "required": [],
+  "additionalProperties": true
+}

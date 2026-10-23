@@ -7,7 +7,7 @@ export const root = fileURLToPath(new URL('../../../', import.meta.url));
 export const read = (path) => readFileSync(path, 'utf8');
 export function fixture(t) {
   const directory = mkdtempSync(join(tmpdir(), 'ac-integration-'));
-  for (const name of ['.github/workflows', 'spec', 'schemas', 'tools', 'examples', 'docs', 'experiments', 'fixtures', 'site/src/content/docs']) {
+  for (const name of ['.github/workflows', 'spec', 'schemas', 'tools', 'examples', 'docs', 'experiments', 'fixtures', 'tests/contracts/fixtures', 'site/src/content/docs']) {
     mkdirSync(dirname(join(directory, name)), { recursive: true });
     cpSync(join(root, name), join(directory, name), { recursive: true });
   }

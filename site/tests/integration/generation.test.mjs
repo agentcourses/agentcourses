@@ -1,8 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
-import { writeFileSync, appendFileSync, rmSync, readdirSync } from 'node:fs';
+import { writeFileSync, appendFileSync, rmSync, readdirSync, mkdirSync, existsSync } from 'node:fs';
 import { fixture, cli, read, rules, git, initialise, commit, root } from './support.mjs';
+function legacyFixture(t) {
+  const dir=fixture(t);
+  const archive=join(dir,'schemas/history/1.0.0-rc.1/manifest.json');
+  if (existsSync(archive)) {
+    writeFileSync(join(dir,'schemas/manifest.json'),read(archive));
+    rmSync(join(dir,'schemas/history'),{recursive:true});
+    rmSync(join(dir,'schemas/1.0.0-rc.2'),{recursive:true});
+  }
+  return dir;
+}
 const page = 'site/src/content/docs/specification.mdx';
 const generate = (dir) => cli('generate.mjs', dir);
 const check = (dir) => cli('check-generated.mjs', dir);
@@ -62,7 +72,7 @@ export function nextRelease(dir, candidate) {
 import { createHash } from 'node:crypto';
 const awaitHash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 test('two historical flat release tags reconstruct bytes and reject omitted history or changed identity', (t) => {
-  const dir = fixture(t); initialise(dir);
+  const dir = legacyFixture(t); initialise(dir);
   assert.equal(generate(dir).status, 0); const original = read(join(dir, 'schemas/course.schema.json'));
   git(dir, 'tag', 'agentcourses-v1.0.0-rc.1');
   nextRelease(dir, '1.0.0-rc.2'); commit(dir); git(dir, 'tag', 'agentcourses-v1.0.0-rc.2');
@@ -76,7 +86,7 @@ test('two historical flat release tags reconstruct bytes and reject omitted hist
   assert.deepEqual(rules(generate(dir)), ['missing-history']);
 });
 test('a frozen candidate identity cannot be reused with newly checksummed bytes', (t) => {
-  const dir = fixture(t); initialise(dir); git(dir, 'tag', 'agentcourses-v1.0.0-rc.1');
+  const dir = legacyFixture(t); initialise(dir); git(dir, 'tag', 'agentcourses-v1.0.0-rc.1');
   const manifest = JSON.parse(read(join(dir, 'schemas/manifest.json')));
   appendFileSync(join(dir, 'schemas/course.schema.json'), ' ');
   manifest.releases[0].schemas[0].sha256 = awaitHash(read(join(dir, 'schemas/course.schema.json')));
@@ -84,7 +94,7 @@ test('a frozen candidate identity cannot be reused with newly checksummed bytes'
   assert.deepEqual(rules(generate(dir)), ['frozen-identity']);
 });
 test('a release tag with a missing historical payload fails explicitly', (t) => {
-  const dir = fixture(t); initialise(dir);
+  const dir = legacyFixture(t); initialise(dir);
   const payload = read(join(dir, 'schemas/course.schema.json'));
   git(dir, 'rm', '-q', 'schemas/course.schema.json'); commit(dir); git(dir, 'tag', 'agentcourses-v1.0.0-rc.1');
   writeFileSync(join(dir, 'schemas/course.schema.json'), payload); nextRelease(dir, '1.0.0-rc.2'); commit(dir);
@@ -110,7 +120,7 @@ const identifierCases = [
 ];
 for (const input of ['current', 'historical']) for (const [label, transform] of identifierCases) {
   test(`schema public identifiers: ${input} ${label}`, (t) => {
-    const dir = fixture(t);
+    const dir = input === 'historical' ? legacyFixture(t) : fixture(t);
     assert.equal(generate(dir).status, 0);
     const manifestPath = join(dir, 'schemas/manifest.json');
     const originalManifest = read(manifestPath);
@@ -162,4 +172,41 @@ test('public documentation describes only the current course format', () => {
   assert.match(format, /\| `feedback` \| No \|/);
   assert.ok(/explicit upgrade request/.test(read(join(root, 'spec/records.md'))), 'learner course-content upgrades remain documented');
   assert.ok(read(join(root, 'spec/records.md')).includes('`history`'), 'learner progress history remains documented');
+});
+
+export function retainedTransition(dir) {
+  const manifestPath = join(dir, 'schemas/manifest.json');
+  const manifest = JSON.parse(read(manifestPath));
+  if (manifest.retained) return manifest;
+  mkdirSync(join(dir, 'schemas/history/1.0.0-rc.1'), { recursive: true });
+  writeFileSync(join(dir, 'schemas/history/1.0.0-rc.1/manifest.json'), read(manifestPath));
+  const current = { candidate: '1.0.0-rc.2', dialect: manifest.dialect, releases: [{ candidate: '1.0.0-rc.2', schemas: [] }], retained: [{candidate:'1.0.0-rc.1',manifest_path:'schemas/history/1.0.0-rc.1/manifest.json',source_commit:'f39cbea910c475f76d87ae186184f1c1d1150f34',status:'retained-unfrozen'}] };
+  mkdirSync(join(dir, 'schemas/1.0.0-rc.2'), {recursive:true});
+  for (const entry of manifest.releases[0].schemas) {
+    const name = entry.path.split('/').at(-1);
+    const payload = read(join(dir, entry.path)).replaceAll('/schemas/1.0.0-rc.1/', '/schemas/1.0.0-rc.2/');
+    const path = `schemas/1.0.0-rc.2/${name}`;
+    writeFileSync(join(dir,path),payload);
+    current.releases[0].schemas.push({id:entry.id.replace('/1.0.0-rc.1/','/1.0.0-rc.2/'),path,sha256:awaitHash(payload)});
+  }
+  writeFileSync(manifestPath,JSON.stringify(current,null,2)+'\n');
+  return current;
+}
+test('retained candidate reconstructs without tags', (t) => {
+  const dir=fixture(t); retainedTransition(dir);
+  const result=generate(dir); assert.equal(result.status,0,`retained candidate reconstructs without tags: ${result.stderr}`);
+  const inventory=JSON.parse(read(join(dir,'site/public/schemas/manifest.json')));
+  assert.deepEqual(inventory.releases.map(r=>r.candidate),['1.0.0-rc.1','1.0.0-rc.2']);
+  for (const candidate of ['1.0.0-rc.1','1.0.0-rc.2']) {
+    const manifest=JSON.parse(read(join(dir,candidate==='1.0.0-rc.1'?'schemas/history/1.0.0-rc.1/manifest.json':'schemas/manifest.json')));
+    for (const entry of manifest.releases[0].schemas) assert.equal(read(join(dir,entry.path)),read(join(dir,'site/public',new URL(entry.id).pathname)));
+  }
+});
+test('missing retained payload is history-input',(t)=>{
+  const dir=fixture(t);retainedTransition(dir);rmSync(join(dir,'schemas/course.schema.json'));
+  const result=generate(dir);assert.equal(result.status,1);assert.deepEqual(rules(result),['history-input']);
+});
+test('retained checksum mismatch is schema-checksum',(t)=>{
+  const dir=fixture(t);retainedTransition(dir);appendFileSync(join(dir,'schemas/course.schema.json'),' ');
+  const result=generate(dir);assert.equal(result.status,1);assert.deepEqual(rules(result),['schema-checksum']);
 });

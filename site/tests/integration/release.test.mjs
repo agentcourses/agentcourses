@@ -51,7 +51,7 @@ async function setup(t, url = 'https://agentcourses.io/') {
   mkdirSync(join(dir, '.github/workflows'), { recursive: true });
   writeFileSync(join(dir, '.github/workflows/gates.yml'), workflow);
   mkdirSync(join(dir, 'docs/releases'), { recursive: true });
-  writeFileSync(join(dir, 'docs/releases/candidate.md'), '---\ntitle: Candidate\ncandidate: 1.0.0-rc.1\nblockers: []\ncontract_approval: https://example.invalid/contract\nreceipt_approval: https://example.invalid/receipt\n---\n\nCandidate review; stable release remains deferred.\n');
+  writeFileSync(join(dir, 'docs/releases/candidate.md'), '---\ntitle: Candidate\ncandidate: '+JSON.parse(read(join(dir,'schemas/manifest.json'))).candidate+'\nblockers: []\ncontract_approval: https://example.invalid/contract\nreceipt_approval: https://example.invalid/receipt\n---\n\nCandidate review; stable release remains deferred.\n');
   const verifier = await import(moduleURL);
   const generated = cli('generate.mjs', dir); assert.equal(generated.status, 0, generated.stderr);
   initialise(dir);
@@ -71,7 +71,7 @@ function approval(dir, overrides = {}) {
   const path = join(dir, '..', `approval-${dir.split('/').at(-1)}.json`);
   const manifest = readFileSync(join(dir, 'schemas/manifest.json'));
   const record = {
-    candidate: '1.0.0-rc.1', build_commit: git(dir, 'rev-parse', 'HEAD'), build_tree: git(dir, 'rev-parse', 'HEAD^{tree}'),
+    candidate: JSON.parse(read(join(dir,'schemas/manifest.json'))).candidate, build_commit: git(dir, 'rev-parse', 'HEAD'), build_tree: git(dir, 'rev-parse', 'HEAD^{tree}'),
     manifest_sha256: hash(manifest), deployment_run_url: 'https://github.com/agentcourses/agentcourses/actions/runs/123',
     owner: 'Fixture owner', approved_at: '2026-10-21T12:00:00Z', decision_link: 'https://example.invalid/owner-message', decision: 'approved', ...overrides,
   };
@@ -135,18 +135,20 @@ test('freeze rejects dirty sources', async (t) => {
 });
 test('frozen-ref allows a clean identical tree at another commit, and rejects a changed tree', async (t) => {
   const { dir, verifyRelease } = await setup(t); const path = approval(dir); t.after(() => rmSync(path, { force: true }));
-  git(dir, 'tag', 'agentcourses-v1.0.0-rc.1'); git(dir, 'commit', '--allow-empty', '-qm', 'merge equivalent');
-  await verifyRelease({ root: dir, frozenRef: 'agentcourses-v1.0.0-rc.1', requireFreeze: true, approvalRecord: path });
+  git(dir, 'tag', 'agentcourses-v1.0.0-rc.2'); git(dir, 'commit', '--allow-empty', '-qm', 'merge equivalent');
+  await verifyRelease({ root: dir, frozenRef: 'agentcourses-v1.0.0-rc.2', requireFreeze: true, approvalRecord: path });
   appendFileSync(join(dir, 'README.md'), '\nNew tree\n'); commit(dir);
-  await rejectsRule(() => verifyRelease({ root: dir, frozenRef: 'agentcourses-v1.0.0-rc.1' }), 'frozen-tree');
+  await rejectsRule(() => verifyRelease({ root: dir, frozenRef: 'agentcourses-v1.0.0-rc.2' }), 'frozen-tree');
 });
 test('history detects omitted frozen output and rewritten current checksums', async (t) => {
-  const { dir, verifyRelease } = await setup(t); git(dir, 'tag', 'agentcourses-v1.0.0-rc.1');
+  const { dir, verifyRelease } = await setup(t); git(dir, 'tag', 'agentcourses-v1.0.0-rc.2');
   rmSync(join(dir, 'site/public/schemas/1.0.0-rc.1/course.schema.json'));
   await rejectsRule(() => verifyRelease({ root: dir, checkHistory: true }), 'generated-drift');
   cli('generate.mjs', dir);
-  appendFileSync(join(dir, 'schemas/course.schema.json'), ' ');
-  const manifest = JSON.parse(read(join(dir, 'schemas/manifest.json'))); manifest.releases[0].schemas[0].sha256 = hash(readFileSync(join(dir, 'schemas/course.schema.json')));
+  const manifest = JSON.parse(read(join(dir, 'schemas/manifest.json')));
+  const currentPath=manifest.releases[0].schemas[0].path;
+  appendFileSync(join(dir, currentPath), ' ');
+  manifest.releases[0].schemas[0].sha256 = hash(readFileSync(join(dir, currentPath)));
   writeFileSync(join(dir, 'schemas/manifest.json'), JSON.stringify(manifest));
   await rejectsRule(() => verifyRelease({ root: dir, checkHistory: true }), 'frozen-identity');
 });
@@ -249,4 +251,18 @@ for (const profile of ['', 'github-pages']) test(`publication preflight rejects 
   const { dir, verifyRelease } = await setup(t);
   writeFileSync(join(dir, '.github/workflows/gates.yml'), workflow.replace('AC_DEPLOYMENT: custom-domain', `AC_DEPLOYMENT: ${profile}`));
   await rejectsRule(() => verifyRelease({ root: dir, preflight: true }), 'workflow-safety');
+});
+
+test('candidate transition keeps main preflight coherent',async(t)=>{
+  const dir=fixture(t);
+  const manifest=JSON.parse(read(join(dir,'schemas/manifest.json')));
+  assert.equal(manifest.candidate,'1.0.0-rc.2','candidate transition requires the separately identified new source');
+  assert.ok(manifest.retained.some(entry=>entry.candidate==='1.0.0-rc.1'));
+  const generated=cli('generate.mjs',dir);assert.equal(generated.status,0,generated.stderr);
+  const verifier=await import(moduleURL);
+  const result=await verifier.verifyRelease({root:dir,preflight:true});
+  assert.equal(result.candidate,'1.0.0-rc.2');
+  const page=read(join(dir,'docs/releases/candidate.md'));
+  assert.match(page,/publication[^\n]*pending|Publication[^\n]*pending/);
+  assert.match(page,/freeze[^\n]*pending/);
 });

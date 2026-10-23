@@ -24,8 +24,8 @@ def test_quickstart_copy(tmp_path, monkeypatch):
     monkeypatch.setattr(subprocess, 'run', run_with_contract_environment)
     copied=tmp_path/'quickstart'
     shutil.copytree(ROOT/'examples/quickstart',copied)
-    assert c.check_course(copied) == []
-    course,lessons,checks,rubric=c.course_metadata(copied)
+    assert c.check_course(copied,candidate='1.0.0-rc.1') == []
+    course,lessons,checks,rubric=c.course_metadata(copied,candidate='1.0.0-rc.1')
     assert rubric==(2,3) and course['project']==['own']
     assert lessons['finish']['stage']=='demonstrate'
     check=checks['final-check']
@@ -47,7 +47,7 @@ def test_quickstart_copy(tmp_path, monkeypatch):
 
 @pytest.mark.parametrize(('args','exitcode','message'),[
     (['--root',str(ROOT)],0,'contracts:'),
-    (['--example',str(ROOT/'examples/quickstart')],0,'contracts:'),
+    (['--example',str(ROOT/'tests/contracts/fixtures/rc1/quickstart'),'--candidate','1.0.0-rc.1'],0,'contracts:'),
     (['--bad-option'],2,'usage:'),
     (['--example','/absent-course'],2,'usage:'),
     (['--root','/absent-course'],2,'usage:'),
@@ -70,7 +70,7 @@ def test_nonexistent_path_is_bad_invocation(tmp_path, option, capsys):
 
 
 def test_current_author_guide_snippets(tmp_path):
-    """The displayed current declarations and programs work together without a validator claim."""
+    """The displayed current declarations and programs work together and validate through the checkout reader."""
     from markdown_it import MarkdownIt
     import yaml
 
@@ -93,6 +93,11 @@ def test_current_author_guide_snippets(tmp_path):
     program = course / 'scripts/final_check.py'
     program.parent.mkdir(parents=True)
     program.write_text(python[0])
+    (course / 'COURSE.md').write_text(courses[0])
+    for name in ('lessons/intro.md', 'lessons/make.md', 'lessons/finish.md', 'tutor/finish.rubric.md'):
+        target = course / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes((ROOT / 'examples/quickstart' / name).read_bytes())
     # Includes provide unchanged lessons and rubric; declaration references still resolve.
     referenced = set()
     for lesson in ('intro', 'make', 'finish'):
@@ -110,6 +115,15 @@ def test_current_author_guide_snippets(tmp_path):
         assert result.returncode == expected, (result.stdout, result.stderr)
         assert json.loads(result.stdout)['status'] == fixture
         assert (project / 'agent.py').read_bytes() == before
+    assert c.check_course(course) == [], 'current guide must validate with the implemented reader'
+    result = subprocess.run([sys.executable, str(ROOT / 'tools/check_contracts.py'), '--example', str(course)],
+        capture_output=True, text=True, timeout=20)
+    assert result.returncode == 0, (result.stdout, result.stderr)
+    assert result.stdout.strip() == 'contracts: 0 errors, 0 warnings'
+    data, body = c.decode_markdown((course / 'COURSE.md').read_text())
+    data['feedback'] = feedback['feedback']
+    (course / 'COURSE.md').write_text('---\n' + yaml.safe_dump(data, sort_keys=False) + '---\n' + body)
+    assert c.check_course(course) == [], 'optional guide feedback must validate too'
 
 
 def test_current_worked_trace_identities(tmp_path):
@@ -130,6 +144,8 @@ def test_current_worked_trace_identities(tmp_path):
     assert set(files) == {'COURSE.md', 'scripts/final_check.py',
         'scripts/fixtures/final-check/pass/agent.py', 'scripts/fixtures/final-check/fail/agent.py',
         'lessons/intro.md', 'lessons/make.md', 'lessons/finish.md', 'tutor/finish.rubric.md'}
+    assert c.check_course(course) == [], 'current worked trace must validate before identity calculation'
+    assert set(c.course_metadata(course)[2]) == {'agent-runs', 'final-check'}
     initial = c.course_digest(course)
     assert f'initial course identity is `{initial}`' in text
     page = course / 'COURSE.md'
@@ -153,18 +169,25 @@ def test_public_repository_commands_have_current_scope_and_setup():
         lines = [line for line in text.splitlines() if 'tools/check_contracts.py ' in line]
         if lines:
             commands[name] = lines
-            if any('--root .' not in line or '--example' in line for line in lines):
-                problems.append((name, 'unsupported author-course validation command'))
+            if any('--root .' not in line and '--example /absolute/path/to/quickstart' not in line for line in lines):
+                problems.append((name, 'unsupported checkout validation command'))
             if setup not in text:
                 problems.append((name, 'repository command lacks actual checkout setup'))
-            if 'current-format' not in text.lower() or 'still being implemented' not in text:
-                problems.append((name, 'repository proof lacks current-consumer limitation'))
+            if 'checkout' not in text.lower():
+                problems.append((name, 'repository proof lacks checkout scope'))
         for token in MarkdownIt('commonmark').parse(text):
             for child in token.children or []:
                 if child.type == 'link_open' and child.attrGet('href') == 'https://github.com/agentcourses/agentcourses#install-and-check':
                     problems.append((name, 'missing README setup anchor'))
+    public = [ROOT / 'README.md', ROOT / 'spec/records.md',
+              *sorted((ROOT / 'site/src/content/docs').rglob('*.mdx'))]
+    for page in public:
+        text = page.read_text().lower()
+        if any(stale in text for stale in ('still being implemented', 'whole-course validation are not available',
+                'whole-course validation is not available', 'declarations await implementation', 'does not yet validate')):
+            problems.append((page.relative_to(ROOT).as_posix(), 'stale current-reader availability'))
     assert commands, 'the existing repository proof commands remain documented'
-    assert problems == []
+    assert problems == [], f'public current tooling: {problems!r}'
 
 
 def test_public_folder_diagrams_resolve_starters_under_assets():
@@ -193,3 +216,9 @@ def test_public_folder_diagrams_resolve_starters_under_assets():
                     observed.append((page.relative_to(ROOT).as_posix(), resolved))
     assert observed, 'public layouts retain the starter role'
     assert [(page, path) for page, path in observed if path != 'assets/starter'] == []
+
+
+def test_explicit_legacy_cli():
+    result=subprocess.run([sys.executable,str(ROOT/'tools/check_contracts.py'),'--example',str(ROOT/'tests/contracts/fixtures/rc1/quickstart'),'--candidate','1.0.0-rc.1'],capture_output=True,text=True,timeout=20)
+    assert result.returncode==0, f'explicit-legacy-cli: {result.stdout}{result.stderr}'
+    assert result.stdout.strip()=='contracts: 0 errors, 0 warnings'

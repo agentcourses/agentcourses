@@ -1,0 +1,6 @@
+rating: at-end
+stuck: {after_failures: 3}
+questions:
+  - id: next-step
+    ask: Which topic would you choose next?
+    options: [Tools, Checks]

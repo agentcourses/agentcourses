@@ -19,3 +19,13 @@ def course(tmp_path):
         path.write_bytes(payload.encode())
     assert len(list(root.rglob('*.*'))) >= 9
     return root
+
+
+def legacy_retained(root):
+    """Mutations retain the original synthetic fixture's reviewed interpreter context."""
+    import json
+    from tools import check_contracts as c
+    registry=json.loads((ROOT/'tests/contracts/fixtures/candidate-provenance.json').read_text())
+    entries=[entry for entry in registry['snapshots'] if entry['source']['kind']=='synthetic-worked-trace']
+    assert len(entries)==1 and (ROOT/entries[0]['fixture_path']).is_file()
+    return c.RetainedCourse(root, entries[0]['candidate'])

@@ -29,6 +29,10 @@ import yaml
 
 KINDS = ('course', 'lesson', 'checks', 'feedback', 'lock', 'record', 'event', 'rubric')
 ROOT = Path(__file__).resolve().parents[1]
+CANDIDATES = ('1.0.0-rc.1', '1.0.0-rc.2')
+CURRENT = '1.0.0-rc.2'
+
+
 DIALECT = 'https://json-schema.org/draft/2020-12/schema'
 
 
@@ -48,9 +52,50 @@ def refuse_retrieval(uri):
     raise NoSuchResource(ref=uri)
 
 
-def schema_registry(root: Path):
+def schema_registry(root: Path, candidate: str | None = None):
     """Meta-validate all payloads and resolve references only from local resources."""
     manifest = json.loads((root / 'schemas/manifest.json').read_text())
+    ownership = set()
+    candidates = set()
+    inventories = [manifest]
+    for entry in manifest.get('retained', []):
+        if (entry.get('status') != 'retained-unfrozen' or
+            entry.get('manifest_path') != f"schemas/history/{entry.get('candidate')}/manifest.json" or
+            not re.fullmatch(r'[0-9a-f]{40}|[0-9a-f]{64}', entry.get('source_commit', ''))):
+            raise ContractError('schema-manifest: invalid retained inventory')
+        retained_path = authored_path(root, entry['manifest_path'], rule='schema-manifest')
+        retained_manifest = json.loads(retained_path.read_bytes())
+        if retained_manifest.get('candidate') != entry['candidate'] or retained_manifest.get('retained'):
+            raise ContractError('schema-manifest: retained candidate mismatch')
+        inventories.append(retained_manifest)
+    for inventory in inventories:
+        candidate_name = inventory['candidate']
+        if candidate_name in candidates:
+            raise ContractError('schema-manifest: duplicate candidate')
+        candidates.add(candidate_name)
+        releases = inventory['releases']
+        if len(releases) != 1 or releases[0]['candidate'] != candidate_name:
+            raise ContractError('schema-manifest: candidate must have one release')
+        for entry in releases[0]['schemas']:
+            name = Path(entry['path']).name
+            expected = f'schemas/{candidate_name}/{name}' if inventory is manifest and manifest.get('retained') else f'schemas/{name}'
+            if entry['path'] != expected or entry['path'] in ownership:
+                raise ContractError('schema-manifest: unsafe or duplicate payload ownership')
+            ownership.add(entry['path'])
+    actual = {path.relative_to(root).as_posix() for path in (root / 'schemas').rglob('*.schema.json')}
+    if actual != ownership:
+        raise ContractError('schema-manifest: unlisted or missing schema payload')
+    candidate = manifest['candidate'] if candidate is None else candidate
+    if candidate != manifest['candidate']:
+        retained = [entry for entry in manifest.get('retained', []) if entry['candidate'] == candidate]
+        if len(retained) != 1:
+            raise ContractError('schema-manifest: unsupported candidate ' + candidate)
+        manifest_path = authored_path(root, retained[0]['manifest_path'], rule='schema-manifest')
+        if not manifest_path.is_relative_to((root / 'schemas').resolve()):
+            raise ContractError('schema-manifest: retained manifest outside schemas')
+        manifest = json.loads(manifest_path.read_bytes())
+        if manifest['candidate'] != candidate:
+            raise ContractError('schema-manifest: retained candidate mismatch')
     if manifest['dialect'] != DIALECT:
         raise ContractError('schema-dialect: expected Draft 2020-12')
     schemas = {}
@@ -92,9 +137,9 @@ def schema_registry(root: Path):
     return schemas, registry
 
 
-@lru_cache(maxsize=1)
-def default_registry():
-    return schema_registry(ROOT)
+@lru_cache(maxsize=2)
+def default_registry(candidate=None):
+    return schema_registry(ROOT, candidate)
 
 
 class UniqueSafeLoader(yaml.SafeLoader):
@@ -150,7 +195,7 @@ FILE_RULES = dict(course='req-course-frontmatter', lesson='req-lesson-frontmatte
                   lock='req-record-lock', record='req-record-fields')
 
 
-def _semantic_shape(kind, data):
+def _semantic_shape(kind, data, *, central=True):
     """Check comparisons and keyed uniqueness that JSON Schema cannot express."""
     findings = []
 
@@ -166,6 +211,11 @@ def _semantic_shape(kind, data):
         if value['met'] > value['of']:
             error('met exceeds of')
 
+    if kind == 'course' and central:
+        if 'checks' in data:
+            findings += _semantic_shape('checks', data['checks'])
+        if 'feedback' in data:
+            findings += _semantic_shape('feedback', data['feedback'])
     if kind == 'rubric':
         k, n = map(int, data['pass'].split(' of '))
         if k > n:
@@ -217,8 +267,8 @@ def _unknown_fields(kind, data, schema, registry, path=''):
     return findings
 
 
-def validate_frontmatter(kind: str, data: Mapping[str, object]) -> list[Finding]:
-    return _validate(kind, data, default_registry())
+def validate_frontmatter(kind: str, data: Mapping[str, object], *, candidate=None) -> list[Finding]:
+    return _validate(kind, data, default_registry(candidate))
 
 
 TIME_FORMATS = FormatChecker(formats=[])
@@ -243,7 +293,7 @@ def _validate(kind, data, context):
     findings = [Finding('schema-' + kind, '/'.join(map(str, e.absolute_path)), f'[{e.validator}] {e.message}', 'error')
                 for e in validator.iter_errors(data)]
     if not findings:
-        findings += _semantic_shape(kind, data)
+        findings += _semantic_shape(kind, data, central=schemas['course']['$id'].split('/')[-2] == CURRENT)
         if kind in ('course', 'lesson', 'checks', 'feedback', 'rubric'):
             findings += _unknown_fields(kind, data, schemas[kind], registry)
     return findings
@@ -342,16 +392,173 @@ def project_link(target):
     return path, end
 
 
-def course_metadata(root: Path):
-    course, body = decode_markdown(read_authored(root, 'COURSE.md'))
+def _candidate_guard(root, course, candidate):
+    if candidate not in CANDIDATES:
+        raise ContractError('req-format-identifier: unsupported candidate ' + str(candidate))
+    if candidate == CURRENT:
+        if course.get('format') != CURRENT:
+            raise ContractError('req-format-identifier: expected format "1.0.0-rc.2"')
+        if any((root / name).exists() or (root / name).is_symlink()
+               for name in ('checks/checks.yaml', 'feedback.yaml')):
+            raise ContractError('req-mixed-declarations: legacy declaration file present')
+
+
+def _course_header(root, candidate):
+    try:
+        course, body = decode_markdown(read_authored(root, 'COURSE.md'))
+        _candidate_guard(root, course, candidate)
+        errors = [f for f in validate_frontmatter('course', course, candidate=candidate) if f.severity == 'error']
+        if errors:
+            raise ContractError('; '.join(f.rule + ': ' + f.message for f in errors))
+        return course, body
+    except (OSError, UnicodeError) as error:
+        raise ContractError('req-course-frontmatter: unreadable COURSE.md') from error
+
+
+def course_metadata(root: Path, *, candidate: str = CURRENT) -> tuple[Mapping, Mapping, Mapping, tuple[int, int]]:
+    course, body = _course_header(root, candidate)
     _, parts = sections(body)
     order = ordered_lessons(parts.get('Lessons', []))
     lessons = {name: decode_markdown(read_authored(root, f'lessons/{name}.md'))[0] for name in order}
     checkfile = root / 'checks/checks.yaml'
-    checks = decode_yaml(read_authored(root, 'checks/checks.yaml')) if checkfile.is_symlink() or checkfile.exists() else []
+    checks = course.get('checks', []) if candidate == CURRENT else (decode_yaml(read_authored(root, 'checks/checks.yaml')) if checkfile.is_symlink() or checkfile.exists() else [])
     rubric, _ = decode_markdown(read_authored(root, f'tutor/{order[-1]}.rubric.md'))
     k, n = map(int, rubric['pass'].split(' of '))
     return course, lessons, {v['id']: v for v in checks}, (k, n)
+
+
+def catalogue_summary(root: Path, *, candidate: str = CURRENT) -> Mapping[str, object]:
+    course, _ = _course_header(root, candidate)
+    return {key: course[key] for key in ('name', 'description', 'version', 'license', 'compatibility', 'spec') if key in course}
+
+
+def _starter_base(candidate):
+    return 'assets/starter' if candidate == CURRENT else 'starter'
+
+
+def _resource_role(root, source, candidate):
+    if candidate == CURRENT and source.is_relative_to((root / 'tutor').resolve()):
+        raise ContractError('req-resource-roles: tutor material is not learner source')
+    if candidate == CURRENT and source.is_relative_to((root / 'scripts/fixtures').resolve()):
+        raise ContractError('req-resource-roles: check fixtures are not learner source')
+
+
+def _project_source(root, selection, candidate):
+    name = _starter_base(candidate) if selection == 'starter' else selection[2:]
+    source = authored_path(root, name, rule='req-project-field' if selection == 'starter' else 'req-local-materialisation')
+    _resource_role(root, source, candidate)
+    if not source.is_dir():
+        raise ContractError('req-project-field: project source must be a directory')
+    try:
+        for child in source.rglob('*'):
+            _resource_role(root, child.resolve(), candidate)
+        entries, files = walk_source(source)
+    except (OSError, RuntimeError) as error:
+        raise ContractError('req-project-field: unreadable or unsafe project source') from error
+    if not (files if selection == 'starter' else entries):
+        raise ContractError('req-project-field: project source must be non-empty')
+    return source
+
+
+def resolve_project(root: Path, selection: str | None, *, candidate: str = CURRENT) -> Path | None:
+    course, _ = _course_header(root, candidate)
+    options = course.get('project', 'own')
+    options = options if isinstance(options, list) else [options]
+    if selection is None or selection not in options:
+        raise ContractError('req-project-selection: supply an explicitly selected project option')
+    if selection == 'own':
+        return None
+    if selection == 'starter' or selection.startswith('./'):
+        return _project_source(root, selection, candidate)
+    raise ContractError('req-project-selection: remote source is unavailable offline')
+
+
+def starter_sources(root: Path, *, lesson_id: str | None = None, candidate: str = CURRENT) -> Mapping[str, bytes]:
+    _, body = _course_header(root, candidate)
+    if lesson_id is None:
+        source = _project_source(root, 'starter', candidate)
+        result = {}
+        def collect(directory, prefix=''):
+            for path in sorted(directory.iterdir()):
+                name = prefix + path.name
+                if path.is_dir():
+                    collect(path, name + '/')
+                elif path.is_file():
+                    result[name] = path.read_bytes()
+        try:
+            collect(source)
+        except (OSError, RuntimeError) as error:
+            raise ContractError('req-starter-files: unreadable starter source') from error
+        return result
+    _, parts = sections(body)
+    if lesson_id not in ordered_lessons(parts.get('Lessons', [])):
+        raise ContractError('req-starter-files: unknown lesson ' + lesson_id)
+    try:
+        lesson, _ = decode_markdown(read_authored(root, f'lessons/{lesson_id}.md'))
+    except (OSError, UnicodeError) as error:
+        raise ContractError('req-starter-files: unreadable lesson') from error
+    errors = [f for f in validate_frontmatter('lesson', lesson, candidate=candidate) if f.severity == 'error']
+    if errors:
+        raise ContractError('req-starter-files: invalid lesson')
+    result = {}
+    for name in lesson.get('starter', []):
+        base = authored_path(root, _starter_base(candidate), rule='req-starter-files')
+        source = authored_path(root, _starter_base(candidate) + '/' + name, rule='req-starter-files')
+        _resource_role(root, source, candidate)
+        if not source.is_relative_to(base) or not source.is_file():
+            raise ContractError('req-starter-files: entry must be a contained file')
+        try:
+            result[name] = source.read_bytes()
+        except OSError as error:
+            raise ContractError('req-starter-files: unreadable starter source') from error
+    return result
+
+
+def copy_starter(files: Mapping[str, bytes], destination: Path) -> None:
+    destination = Path(destination)
+    targets = []
+    try:
+        for name, payload in files.items():
+            _path_check(name)
+            if Path(name).is_absolute() or re.match(r'^[A-Za-z]:', name) or not isinstance(payload, bytes):
+                raise ValueError('invalid starter entry')
+            path = destination / name
+            if path.exists() or path.is_symlink():
+                raise ValueError('destination collision: ' + name)
+            for parent in path.parents:
+                if parent == destination.parent:
+                    break
+                if parent.is_symlink() or parent.exists() and not parent.is_dir():
+                    raise ValueError('unsafe destination parent')
+            if any(name.startswith(other + '/') or other.startswith(name + '/') for other in files if other != name):
+                raise ValueError('overlapping starter entries')
+            targets.append((path, payload))
+        # Probe absent names on their actual filesystem: case folding and other
+        # aliases cannot be inferred portably from strings or Path.resolve().
+        probes = {}
+        for path, _ in targets:
+            anchor = path.parent
+            while not anchor.exists():
+                anchor = anchor.parent
+            state = anchor.stat()
+            key = (state.st_dev, state.st_ino)
+            if key not in probes:
+                probes[key] = (anchor, [])
+            probes[key][1].append(path.relative_to(anchor))
+        for anchor, names in probes.values():
+            with tempfile.TemporaryDirectory(prefix='.agent-courses-copy-', dir=anchor) as temporary:
+                for name in names:
+                    probe = Path(temporary) / name
+                    probe.parent.mkdir(parents=True, exist_ok=True)
+                    # Exclusive placeholders detect both leaf and ancestor
+                    # aliases before any learner destination receives payloads.
+                    with probe.open('xb'):
+                        pass
+    except (ContractError, OSError, ValueError) as error:
+        raise ContractError('req-starter-copy: ' + str(error)) from error
+    for path, payload in targets:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(payload)
 
 
 COURSE_HEADINGS = ('Outcome', 'Lessons', 'Before you start', 'Project')
@@ -439,7 +646,7 @@ def check_quiz_key(key, options):
             raise ContractError(f'quiz answer {answer!r} is not one of {count} option positions')
 
 
-def check_course(root: Path) -> list[Finding]:
+def check_course(root: Path, *, candidate: str = CURRENT) -> list[Finding]:
     """Check authored syntax and relationships; never execute a course command.
 
     Each fault is reported once: as a schema finding when one file's shape is wrong,
@@ -466,8 +673,14 @@ def check_course(root: Path) -> list[Finding]:
         except (ContractError, OSError, UnicodeError) as error:
             report(rule, name, str(error))
             return None, ''
-        shaped = validate_frontmatter(kind, data)
-        findings.extend(Finding(f.rule, f'{root / name}:{f.path}', f.message, f.severity) for f in shaped)
+        if kind == 'course':
+            try:
+                _candidate_guard(root, data, candidate)
+            except ContractError as error:
+                report(str(error).split(':')[0], name, str(error))
+                return None, body
+        shaped = validate_frontmatter(kind, data, candidate=candidate)
+        findings.extend(Finding(f.rule, str(root / name) + (':' + f.path if f.path else ''), f.message, f.severity) for f in shaped)
         if any(f.severity == 'error' for f in shaped):
             return None, body
         return data, body
@@ -544,18 +757,12 @@ def check_course(root: Path) -> list[Finding]:
             report('req-rubric', rubric_path, 'criteria count differs from denominator')
 
     def check_project_source(option):
-        starter = option == 'starter'
-        name = 'starter' if starter else option[2:]
-        rule = 'req-project-field' if starter else 'req-local-materialisation'
+        rule = 'req-project-field' if option == 'starter' else 'req-local-materialisation'
         try:
-            source = authored_path(root, name, rule=rule)
-            if not source.is_dir():
-                raise ContractError('source must be a non-empty directory')
-            entries, files = walk_source(source)
-            if not (files if starter else entries):
-                raise ContractError('source must be a non-empty directory')
+            _project_source(root, option, candidate)
         except (ContractError, OSError, RuntimeError) as error:
-            report(rule, 'COURSE.md', str(error))
+            actual = 'req-resource-roles' if str(error).startswith('req-resource-roles:') else rule
+            report(actual, 'COURSE.md', str(error))
 
     def check_baseline_link(source, relative, end):
         """Check a project link against a local source as the course holds it."""
@@ -607,19 +814,23 @@ def check_course(root: Path) -> list[Finding]:
 
     checks = {}
     checks_known = True
-    if present('checks/checks.yaml'):
+    declaration_path = 'COURSE.md' if candidate == CURRENT else 'checks/checks.yaml'
+    fixture_base = 'scripts/fixtures' if candidate == CURRENT else 'checks/fixtures'
+    if candidate == CURRENT:
+        checks = {check['id']: check for check in course.get('checks', [])}
+    elif present('checks/checks.yaml'):
         declared, _ = load('checks/checks.yaml', 'checks', markdown=False)
         checks_known = declared is not None
         checks = {check['id']: check for check in declared or []}
     for check_id, check in checks.items():
         if check.get('kind', 'command') == 'command':
             for outcome in ('pass', 'fail'):
-                if not (root / 'checks/fixtures' / check_id / outcome).is_dir():
-                    report('req-check-rules', 'checks/checks.yaml', f'{check_id}: missing {outcome} project fixture')
+                if not (root / fixture_base / check_id / outcome).is_dir():
+                    report('req-check-rules', declaration_path, f'{check_id}: missing {outcome} project fixture')
             if unquoted_expansion(check['run']):
-                report('req-command-path', 'checks/checks.yaml',
+                report('req-command-path', declaration_path,
                        f'{check_id}: write the course folder expansion in double quotes', 'warning')
-    if present('feedback.yaml'):
+    if candidate != CURRENT and present('feedback.yaml'):
         load('feedback.yaml', 'feedback', markdown=False)
 
     calls_seen, objectives_seen, used = set(), set(), set()
@@ -671,12 +882,12 @@ def check_course(root: Path) -> list[Finding]:
             if explain_back_elsewhere or check_elsewhere:
                 report('req-objective-ids-unique', path,
                        'objective evidence must be a same-lesson check or final explain-back')
-        for target in lesson.get('starter', []):
+        if lesson.get('starter'):
             try:
-                if not authored_path(root, 'starter/' + target, rule='req-starter-files').is_file():
-                    raise ContractError('starter entry must be a file')
-            except ContractError as error:
-                report('req-starter-files', path, str(error))
+                starter_sources(root, lesson_id=name, candidate=candidate)
+            except (ContractError, OSError, RuntimeError) as error:
+                rule = 'req-resource-roles' if str(error).startswith('req-resource-roles:') else 'req-starter-files'
+                report(rule, path, str(error))
         if len(lesson_parts.get('Quiz', [])) == 1:
             check_quiz(name, path, lesson_parts['Quiz'][0])
         if stage == 'demonstrate':
@@ -687,12 +898,12 @@ def check_course(root: Path) -> list[Finding]:
             report('req-final-demonstrate', 'COURSE.md', 'last lesson must be the only demonstrate lesson')
         if references_known:
             for check_id in sorted(checks.keys() - used):
-                report('req-check-declaration', 'checks/checks.yaml', check_id + ': check is unused', 'warning')
+                report('req-check-declaration', declaration_path, check_id + ': check is unused', 'warning')
     # A lesson listing an undeclared check shows the declarations are incomplete, so fixtures are not judged unused.
-    if checks_known and references_known and (root / 'checks/fixtures').is_dir():
-        for folder in sorted((root / 'checks/fixtures').iterdir()):
+    if checks_known and references_known and (root / fixture_base).is_dir():
+        for folder in sorted((root / fixture_base).iterdir()):
             if folder.is_dir() and folder.name not in checks:
-                report('req-check-rules', f'checks/fixtures/{folder.name}', 'fixtures for an undeclared check', 'warning')
+                report('req-check-rules', f'{fixture_base}/{folder.name}', 'fixtures for an undeclared check', 'warning')
 
     options = course.get('project', 'own')
     options = options if isinstance(options, list) else [options]
@@ -817,13 +1028,26 @@ def course_digest(root: Path) -> str:
     return _digest_entries(_capture(root))
 
 
+@dataclass(frozen=True)
+class RetainedCourse:
+    """Caller-supplied interpretation context; this value does not authenticate provenance."""
+    root: Path
+    candidate: str
+
+
 def _retained(identity, roots):
     """Validate metadata from the same captured bytes used for hashing."""
     if not re.fullmatch(r'sha256:[0-9a-f]{64}',identity):
         raise ContractError('req-record-replay-data: malformed identity '+identity)
     if identity not in roots:
         raise ContractError('req-record-replay-data: missing retained source '+identity)
-    root=Path(roots[identity])
+    retained = roots[identity]
+    if not isinstance(retained, RetainedCourse):
+        raise ContractError('req-record-replay-data: missing retained candidate provenance for ' + identity + '; supply the original installation candidate')
+    if retained.candidate not in CANDIDATES:
+        raise ContractError('req-record-replay-data: unsupported retained candidate provenance for ' + identity + '; supply the original installation candidate')
+    root=Path(retained.root)
+    candidate=retained.candidate
     try:
         if any(p.is_symlink() for p in [root,*root.parents]):
             raise ContractError('symlink archive component')
@@ -843,11 +1067,17 @@ def _retained(identity, roots):
                     path.symlink_to(payload.decode())
                 else:
                     path.mkdir(exist_ok=True)
-            errors=[f for f in check_course(frozen) if f.severity=='error']
+            errors=[f for f in check_course(frozen, candidate=candidate) if f.severity=='error']
             if errors:
+                if errors[0].rule == 'req-format-identifier':
+                    raise ContractError('invalid rc.2 format identifier')
+                if errors[0].rule == 'req-mixed-declarations':
+                    raise ContractError('mixed declarations')
                 raise ContractError('; '.join(f.rule+': '+f.message for f in errors))
-            return course_metadata(frozen)
+            return course_metadata(frozen, candidate=candidate)
     except (OSError,ContractError,UnicodeError) as error:
+        if str(error) in ('invalid rc.2 format identifier', 'mixed declarations'):
+            raise ContractError('req-record-replay-data: ' + str(error) + ' for ' + identity) from error
         raise ContractError('req-record-replay-data: '+identity+': '+str(error)) from error
 
 
@@ -889,7 +1119,7 @@ def _project_option(project):
     return project['source'] if project['kind'] in ('git','local') else project['kind']
 
 
-def replay(events: Sequence[Mapping], snapshot_roots: Mapping[str, Path], *,
+def replay(events: Sequence[Mapping], snapshot_roots: Mapping[str, RetainedCourse], *,
            receipt_status: Callable[[int, Mapping, int], str]) -> Mapping:
     """Internal deterministic oracle over complete protected synthetic history.
 
@@ -1134,11 +1364,16 @@ def check_repository(root: Path):
         context=schema_registry(root)
     except Exception as error:
         return [Finding('schema-registry',str(root/'schemas'),str(error),'error')]
+    manifest_candidate=json.loads((root/'schemas/manifest.json').read_text())['candidate']
+    contexts={manifest_candidate:context}
     cases_path=root/'fixtures/schema/cases.json'
     try:
         cases=json.loads(cases_path.read_text())
         for case in cases:
-            result=_validate(case['kind'],case['data'],context)
+            candidate=case.get('candidate',manifest_candidate)
+            if candidate not in contexts:
+                contexts[candidate]=schema_registry(root,candidate)
+            result=_validate(case['kind'],case['data'],contexts[candidate])
             errors=[f for f in result if f.severity=='error']
             if case['outcome']=='rejected':
                 valid=any(matches_expected(f, case['finding']) for f in errors)
@@ -1151,7 +1386,20 @@ def check_repository(root: Path):
     for result in identity_vectors(root):
         if result['status']!='passed':
             findings.append(Finding(result['rule'],result['case'],str(result),'error' if result['status']=='failed' else 'warning'))
-    findings+=check_course(root/'examples/quickstart')
+    inventory_path=root/'examples/manifest.json'
+    if not inventory_path.is_file():
+        findings.append(Finding('example-inventory',str(inventory_path),'reviewed example inventory is required','error'))
+    else:
+        try:
+            inventory=json.loads(inventory_path.read_bytes())
+            for entry in inventory['courses']:
+                source=authored_path(root,entry['path'],rule='example-inventory')
+                if course_digest(source) != entry['identity']:
+                    findings.append(Finding('example-identity',str(source),'reviewed example identity mismatch','error'))
+                else:
+                    findings+=check_course(source,candidate=entry['candidate'])
+        except (OSError,ValueError,KeyError) as error:
+            findings.append(Finding('example-inventory',str(inventory_path),str(error),'error'))
     return findings
 
 
@@ -1159,13 +1407,17 @@ def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path,default=ROOT)
     parser.add_argument('--example',type=Path)
+    parser.add_argument('--candidate', choices=CANDIDATES, default=None)
     args=parser.parse_args(argv)
+    explicit = list(argv) if argv is not None else sys.argv[1:]
+    if args.candidate is not None and any(value == '--root' or value.startswith('--root=') for value in explicit):
+        parser.error('--candidate cannot override --root inventory provenance')
     if not args.root.is_dir():
         parser.error('--root must be an existing repository directory')
     if args.example is not None and not args.example.is_dir():
         parser.error('--example must be an existing course directory')
     try:
-        findings=check_course(args.example) if args.example else check_repository(args.root)
+        findings=check_course(args.example, candidate=args.candidate or CURRENT) if args.example else check_repository(args.root)
     except (OSError,ValueError) as error:
         findings=[Finding('contract-input',str(args.example or args.root),str(error),'error')]
     for finding in findings:

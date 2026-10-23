@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentcourses.io/schemas/1.0.0-rc.2/lock.schema.json",
+  "title": "Agent Courses lock",
+  "type": "object",
+  "properties": {
+    "spec": {
+      "const": "1.0"
+    },
+    "courses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "version": {
+            "$ref": "https://agentcourses.io/schemas/1.0.0-rc.2/course.schema.json#/$defs/version"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "const": "local"
+              },
+              {
+                "$ref": "https://agentcourses.io/schemas/1.0.0-rc.2/course.schema.json#/$defs/source"
+              }
+            ]
+          },
+          "commit": {
+            "$ref": "https://agentcourses.io/schemas/1.0.0-rc.2/course.schema.json#/$defs/commit"
+          },
+          "identity": {
+            "$ref": "https://agentcourses.io/schemas/1.0.0-rc.2/course.schema.json#/$defs/identity"
+          }
+        },
+        "required": [
+          "name",
+          "version",
+          "source",
+          "identity"
+        ],
+        "additionalProperties": true,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "source": {
+                  "const": "local"
+                }
+              },
+              "required": [
+                "source"
+              ]
+            },
+            "then": {
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "commit"
+                    ]
+                  }
+                ]
+              }
+            },
+            "else": {
+              "required": [
+                "commit"
+              ]
+            }
+          },
+          {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "generation"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "required": [
+    "spec",
+    "courses"
+  ],
+  "additionalProperties": true,
+  "allOf": [
+    {
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "generation"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

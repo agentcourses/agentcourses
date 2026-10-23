@@ -1,51 +1,59 @@
 {
-  "candidate": "1.0.0-rc.1",
+  "candidate": "1.0.0-rc.2",
   "dialect": "https://json-schema.org/draft/2020-12/schema",
   "releases": [
     {
-      "candidate": "1.0.0-rc.1",
+      "candidate": "1.0.0-rc.2",
       "schemas": [
         {
-          "id": "https://agentcourses.io/schemas/1.0.0-rc.1/course.schema.json",
-          "path": "schemas/course.schema.json",
-          "sha256": "a125b195673ed922b3485503047210822b4a7a4a75dc58180276e8c532305750"
+          "id": "https://agentcourses.io/schemas/1.0.0-rc.2/course.schema.json",
+          "path": "schemas/1.0.0-rc.2/course.schema.json",
+          "sha256": "09461f1e3bae33ee27d3faa0e33d2216fd342c11c2ac122a1f9334942794fc78"
         },
         {
-          "id": "https://agentcourses.io/schemas/1.0.0-rc.1/lesson.schema.json",
-          "path": "schemas/lesson.schema.json",
-          "sha256": "3cbc63f39b432a1aa140a12b13e788370788568460d937160946a85cb43d75cf"
+          "id": "https://agentcourses.io/schemas/1.0.0-rc.2/lesson.schema.json",
+          "path": "schemas/1.0.0-rc.2/lesson.schema.json",
+          "sha256": "09ee7e333e45ad76157375d1fdef0d165617551bc672cf192fd6603e7cbe0ffd"
         },
         {
-          "id": "https://agentcourses.io/schemas/1.0.0-rc.1/checks.schema.json",
-          "path": "schemas/checks.schema.json",
-          "sha256": "4e2275e9dcbcc1019f2e510ab388bab99d9aa223d653d958f1f1d3b86a5fd380"
+          "id": "https://agentcourses.io/schemas/1.0.0-rc.2/checks.schema.json",
+          "path": "schemas/1.0.0-rc.2/checks.schema.json",
+          "sha256": "13424349a1daf7f2bdeb640ae38ca1a0724effd4d505a485b51ef02408cdd7ae"
         },
         {
-          "id": "https://agentcourses.io/schemas/1.0.0-rc.1/feedback.schema.json",
-          "path": "schemas/feedback.schema.json",
-          "sha256": "682665aa91613baa85abb4a33d817a0b030433e59fc0462f0296c53145ef46ab"
+          "id": "https://agentcourses.io/schemas/1.0.0-rc.2/feedback.schema.json",
+          "path": "schemas/1.0.0-rc.2/feedback.schema.json",
+          "sha256": "8f661c710360737c6857f93a822a0827d1357f05974d951c9b974ae640f0b463"
         },
         {
-          "id": "https://agentcourses.io/schemas/1.0.0-rc.1/lock.schema.json",
-          "path": "schemas/lock.schema.json",
-          "sha256": "d113718d3a98a35fc5be0a7558361f8eb1d2d025f5b50cd0edcd0500540de378"
+          "id": "https://agentcourses.io/schemas/1.0.0-rc.2/lock.schema.json",
+          "path": "schemas/1.0.0-rc.2/lock.schema.json",
+          "sha256": "1cd760c9ea1abbc8ae35e8197d78cd831a02d9aa8da351b5311971836583aa9f"
         },
         {
-          "id": "https://agentcourses.io/schemas/1.0.0-rc.1/record.schema.json",
-          "path": "schemas/record.schema.json",
-          "sha256": "670617d6c58a2457d7ec98a26c52a227f9621d0f43e7660fba4ca63513b09b1f"
+          "id": "https://agentcourses.io/schemas/1.0.0-rc.2/record.schema.json",
+          "path": "schemas/1.0.0-rc.2/record.schema.json",
+          "sha256": "0b38c94fafd2232bb31b0f7200f668b4a8702f30c79f27187dcc0a014e5cd124"
         },
         {
-          "id": "https://agentcourses.io/schemas/1.0.0-rc.1/event.schema.json",
-          "path": "schemas/event.schema.json",
-          "sha256": "b41698122f5be8c6f202c8f481471aeccefffd2c4a7751e9bd6dbd2520665bde"
+          "id": "https://agentcourses.io/schemas/1.0.0-rc.2/event.schema.json",
+          "path": "schemas/1.0.0-rc.2/event.schema.json",
+          "sha256": "f0bae78424fdafd2ad49fcac2545648f6e38594aac78a0cf7cdbbda608c343ab"
         },
         {
-          "id": "https://agentcourses.io/schemas/1.0.0-rc.1/rubric.schema.json",
-          "path": "schemas/rubric.schema.json",
-          "sha256": "79814a230fb245dedb3af91a258f0d518754fc1df3e2be6d5c1d1b952f028838"
+          "id": "https://agentcourses.io/schemas/1.0.0-rc.2/rubric.schema.json",
+          "path": "schemas/1.0.0-rc.2/rubric.schema.json",
+          "sha256": "5d729dc08d04505e19709e04c7a1122605f944ec80310edc4f60228e1091d4b3"
         }
       ]
+    }
+  ],
+  "retained": [
+    {
+      "candidate": "1.0.0-rc.1",
+      "manifest_path": "schemas/history/1.0.0-rc.1/manifest.json",
+      "source_commit": "f39cbea910c475f76d87ae186184f1c1d1150f34",
+      "status": "retained-unfrozen"
     }
   ]
 }

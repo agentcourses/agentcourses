@@ -22,7 +22,7 @@ An open format for courses that an AI agent teaches in your own project.
 
 > [!NOTE]
 > Agent Courses `1.0.0-rc.2` is a pre-release specification, open for review.
-> Repository checks cover existing schemas, fixtures and replay rules. Current-format schema and consumer support is still being implemented.
+> Repository checks validate current-format courses, schemas, fixtures and controlled replay rules from a checkout.
 > No runner or host is qualified yet.
 > A public validator, reference library and conformance suite are future work.
 
@@ -78,7 +78,7 @@ To build one, start with [adding course support](https://agentcourses.io/impleme
 - **[Documentation](https://agentcourses.io/)**: the overview and guides.
 - **[Specification](https://agentcourses.io/specification/)**: the full format, composed from the [canonical sources](spec/format.md).
 - **[Author quickstart](https://agentcourses.io/authors/quickstart/)**: write and check a first course.
-- **[Schema inventory](schemas/manifest.json)**: exact available schema bytes; current-format declarations await implementation.
+- **[Schema inventory](schemas/manifest.json)**: current candidate schema identifiers, source paths and exact checksums.
 
 ## Open development
 

@@ -6,12 +6,12 @@ description: Write a small course and try its check against passing and failing 
 import { Steps, Aside } from '@astrojs/starlight/components';
 import ExampleCode from '../../../components/ExampleCode.astro';
 
-A course is a folder of Markdown files, a few check programs and one rubric. This guide builds the smallest complete one, a course named `quickstart` that teaches a learner to build a one-file agent and explain it. The course page below declares the current format, checks and lesson order. The lesson and rubric includes supply teaching material; the program and fixtures let you try the command contract directly.
+A course is a folder of Markdown files, a few check programs and one rubric. This guide builds a complete worked example, a course named `quickstart` that teaches a learner to build a one-file agent and explain it. The course page below declares the current format, checks and lesson order. The lesson and rubric includes supply teaching material; the program and fixtures let you try the command contract directly.
 
 The course you write is addressed to the tutor, the agent that teaches it. Only each lesson's `## Goal` is read to the learner as written. The [course format](/specification/#format--lesson-headings) lists the headings a runner looks for.
 
 <Aside type="caution" title="What you can run today">
-The fixture commands below use Python locally. Schema and whole-course consumer support for the current declarations is still being implemented. The repository harness is an internal proof tool and does not yet validate courses written by this guide. There is no installable package yet, and the `/learn` command is not released.
+The fixture commands below use Python locally. The internal checkout reader validates the current course structure, declarations and references. Follow the checkout setup before using it. There is no installable package yet, and the `/learn` command is not released.
 </Aside>
 
 ## Before you start
@@ -174,7 +174,13 @@ Folder names matter: the folder name must equal the course's `name`, so the fold
 
 9. ### Review the course
 
-   Compare your frontmatter, lesson list, check references and rubric with the [format rules](/specification/#format--markdown-only-constraints). Current-format schema and whole-course validation are not available yet. No command here claims to validate the entire course.
+   Compare your frontmatter, lesson list, check references and rubric with the [format rules](/specification/#format--markdown-only-constraints). To validate the authored course, follow the [contributor setup](https://github.com/agentcourses/agentcourses/blob/main/docs/CONTRIBUTING.md#set-up-and-run-the-checks), then run this from the repository checkout root. Replace the absolute path with your course folder:
+
+   ```sh
+   uv run --locked python tools/check_contracts.py --example /absolute/path/to/quickstart
+   ```
+
+   This checks current-format declarations, lesson relationships and resource paths. It does not run the check programs or qualify a runner. Try the fixtures separately below.
 
 10. ### Try the check against both fixtures
 

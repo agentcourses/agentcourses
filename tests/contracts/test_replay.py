@@ -9,6 +9,7 @@ import shutil
 import pytest
 
 from tools import check_contracts as c
+from conftest import legacy_retained
 
 S1 = 'sha256:c35480cb14f89d9e89719faa2452a5b494d58ba2f80cb3fe26abd2d0346f4ca4'
 S2 = 'sha256:727fef18c5013d7ce206e0f8253218857e433f673af14129278e6bb097b927a6'
@@ -54,7 +55,7 @@ def verified(index, event, generation):
 
 
 def run(events, roots, verifier=verified):
-    result=c.replay(events, roots,receipt_status=verifier)
+    result=c.replay(events, {identity: value if isinstance(value,c.RetainedCourse) else legacy_retained(value) for identity,value in roots.items()},receipt_status=verifier)
     assert not [f for f in c.validate_frontmatter('record',result) if f.severity=='error']
     return result
 
@@ -65,7 +66,7 @@ def roots(course,tmp_path):
     shutil.copytree(course,new)
     p=new/'COURSE.md';p.write_text(p.read_text().replace('"1.0.0"','"1.1.0"'))
     p=new/'checks/checks.yaml';p.write_text(p.read_text().replace('final_check.py"','final_check.py" --strict'))
-    return {S1:course,S2:new}
+    return {S1:legacy_retained(course),S2:legacy_retained(new)}
 
 
 def upgrade(source=S1,target=S2,version='1.1.0'):
@@ -173,15 +174,15 @@ def test_replay_unused_old_occurrence_and_fresh(roots):
 @pytest.mark.parametrize('fault',['missing','tampered','name','structure','rubric','symlink'])
 def test_replay_required_source_stops(roots,fault,tmp_path):
     if fault=='missing':del roots[S1]
-    if fault=='tampered':(roots[S1]/'lessons/intro.md').write_text('changed')
+    if fault=='tampered':(roots[S1].root/'lessons/intro.md').write_text('changed')
     if fault in ['name','structure','rubric']:
-        p=roots[S1]/('COURSE.md' if fault=='name' else 'lessons/finish.md' if fault=='structure' else 'tutor/finish.rubric.md')
+        p=roots[S1].root/('COURSE.md' if fault=='name' else 'lessons/finish.md' if fault=='structure' else 'tutor/finish.rubric.md')
         p.write_text(p.read_text().replace('name: sample-course','name: wrong') if fault=='name' else p.read_text().replace('choose-check','choose-tool') if fault=='structure' else p.read_text().replace('2 of 3','2 of 4'))
         # Independently changed inputs must pass identity before their malformed structure is refused.
-        identity=c.course_digest(roots[S1]);roots[identity]=roots.pop(S1)
+        identity=c.course_digest(roots[S1].root);roots[identity]=roots.pop(S1)
         ev=dict(start(),snapshot=identity)
     elif fault=='symlink':
-        link=tmp_path/'alias';link.symlink_to(roots[S1],target_is_directory=True);roots[S1]=link
+        link=tmp_path/'alias';link.symlink_to(roots[S1].root,target_is_directory=True);roots[S1]=legacy_retained(link)
     with pytest.raises(c.ContractError):run([ev if fault in ['name','structure','rubric'] else start()],roots)
 
 
@@ -272,7 +273,7 @@ def test_replay_stable_metadata_internal_link_and_exclusion(course):
 
 
 def test_replay_incompatible_project_and_verifier_loss(roots):
-    root=roots[S2];path=root/'COURSE.md';path.write_text(path.read_text().replace('license: Apache-2.0','license: Apache-2.0\nproject: ./examples/app'))
+    root=roots[S2].root;path=root/'COURSE.md';path.write_text(path.read_text().replace('license: Apache-2.0','license: Apache-2.0\nproject: ./examples/app'))
     source=root/'examples/app';source.mkdir(parents=True);(source/'README.md').write_text('Local source\n')
     identity=c.course_digest(root)
     with pytest.raises(c.ContractError,match='incompatible'):
@@ -280,3 +281,15 @@ def test_replay_incompatible_project_and_verifier_loss(roots):
     def lost(*args):raise c.ContractError('receipt authority lost')
     with pytest.raises(c.ContractError,match='authority lost'):
         run(opening(),roots,lost)
+
+
+def test_replay_reads_both_candidates(course):
+    from test_candidates import prepare, retained, start, OLD, NEW, exact
+    exact(prepare(course),set(),case='replay-reads-both-candidates new input')
+    ev=start(course)
+    result=c.replay([ev],{ev['snapshot']:retained(course,NEW)},receipt_status=verified)
+    assert result['generation']==1 and result['consent']==[]
+    old=c.ROOT/'tests/contracts/fixtures/rc1/quickstart'
+    assert old.is_dir()
+    oldev=dict(ev,course='quickstart',snapshot=c.course_digest(old))
+    assert c.replay([oldev],{oldev['snapshot']:retained(old,OLD)},receipt_status=verified)['generation']==1
