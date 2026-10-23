@@ -7,7 +7,7 @@ A runner turns an authored folder into lessons against the learner's project. Th
 
 ## Discover and catalogue
 
-Discover installed courses under `.agents/courses/` ([record locations](/specification/#records--files)). Treat an installed course as a folder rooted at a regular `COURSE.md`, with the folder name matching the course name. Ignore unlisted paths. Read frontmatter for catalogue entries, the complete course page at start and individual lessons only when they begin. Load checks, references and tutor material when their tasks need them ([course shape](/specification/#format--course-shape), [loading layout](/specification/#format--folder-layout)).
+Discover installed courses under `.agents/courses/` ([record locations](/specification/#records--files)). Treat an installed course as a folder rooted at a regular `COURSE.md`, with the folder name matching the course name. Ignore unlisted paths. Validate the format before returning only the [catalogue summary fields](/specification/#format--catalogue-summary); read the complete course page at start and individual lessons only when they begin. Read central check declarations from `COURSE.md`; load programs from `scripts/`, learner resources from `assets/` and private tutor material when their tasks need them ([course shape](/specification/#format--course-shape), [loading layout](/specification/#format--folder-layout)).
 
 Validate the structure and cross-file relationships before teaching. A schema can check one file's shape, but cannot prove heading order, referenced files or every relationship. Unknown keys follow the contract's warning policy rather than becoming new capabilities. See [constraints beyond schemas](/specification/#format--markdown-only-constraints) and [unknown keys](/specification/#format--unknown-keys).
 
@@ -61,14 +61,14 @@ Skipping records skipped work, never passed work, and settles nothing. Follow th
 
 ## Keep personal evidence local
 
-Records and operation evidence contain no call answers, conversations, project contents, answer hashes, credentials or learner/machine identifiers. Keep them local and excluded from Git. Host prompt histories are outside this promise. Feedback is optional, declared separately and sent only after showing the exact allowed payload and receiving explicit consent for its named destination. Refusal or withdrawal never changes evidence or progress ([privacy](/specification/#records--privacy), [feedback payloads](/specification/#consent--payload-fields), [consent](/specification/#consent--consent-rules)).
+Records and operation evidence contain no call answers, conversations, project contents, answer hashes, credentials or learner/machine identifiers. Keep them local and excluded from Git. Host prompt histories are outside this promise. Feedback is optional, declared in `COURSE.md` frontmatter `feedback` and sent only after showing the exact allowed payload and receiving explicit consent for its named destination. Refusal or withdrawal never changes evidence or progress ([privacy](/specification/#records--privacy), [feedback payloads](/specification/#consent--payload-fields), [consent](/specification/#consent--consent-rules)).
 
 ## Inspect what exists today
 
-From a checkout with the README's pinned tools installed, this internal command checks repository examples:
+After following the [contributor setup](https://github.com/agentcourses/agentcourses/blob/main/docs/CONTRIBUTING.md#set-up-and-run-the-checks), run this internal command from the checkout root to check repository examples:
 
 ```sh
 uv run --locked python tools/check_contracts.py --root .
 ```
 
-It is not a public validator, runner conformance suite or host qualification test. Inspect the [contract sources](https://github.com/agentcourses/agentcourses/tree/main/spec), [schema manifest](https://github.com/agentcourses/agentcourses/blob/main/schemas/manifest.json) and [example traces](https://github.com/agentcourses/agentcourses/tree/main/examples) alongside its results. The [conformance guide](/implementers/conformance/) explains the remaining qualification gaps and proposed tooling names.
+It does not yet validate current-format central declarations. Current-format schema and consumer support is still being implemented. It is not a public validator, runner conformance suite or host qualification test. Inspect the [contract sources](https://github.com/agentcourses/agentcourses/tree/main/spec), [schema manifest](https://github.com/agentcourses/agentcourses/blob/main/schemas/manifest.json) and [example traces](https://github.com/agentcourses/agentcourses/tree/main/examples) alongside its results. The [conformance guide](/implementers/conformance/) explains the remaining qualification gaps and proposed tooling names.

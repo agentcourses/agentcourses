@@ -1,8 +1,193 @@
 # Agent Courses 1.0: course format
 
-This page defines what a course is: its folder, its entry file, its lessons and the project it runs in. It is the normative source for structure. Teaching behaviour, checks and evidence are in [the execution contract](execution.md). Learner feedback is in [the consent contract](consent.md). Every rule here is listed in [the requirement register](requirements.md). Record files, receipts and course identity are not defined here; a later contract owns them.
+This page defines what a course is: its folder, its entry file, its lessons and the project it runs in. It is the normative source for structure. Teaching behaviour, checks and evidence are in [the execution contract](execution.md). Learner feedback is in [the consent contract](consent.md). The [record contract](records.md) defines progress and receipts; [identity](identity.md) pins authored course bytes.
 
-This is a candidate. Wording marked **Proposed** is a drafting choice that waits for the owner's review on the pull request; a passing check or an independent review does not approve it.
+The current pre-release format is `1.0.0-rc.2`. The public validator, reference library and runner conformance suite are not released. No runner or host is qualified by this specification.
+
+## Current format <a id="candidate-interpretation"></a>
+
+A course places its identity, checks and optional feedback in `COURSE.md` frontmatter.
+Lessons live in `lessons/`, private assessment in `tutor/`, programs in `scripts/` and learner resources in `assets/`.
+The [baseline course](#baseline-course) shows the complete declaration shape.
+
+### Case inputs <a id="candidate-baseline"></a>
+
+The **candidate baseline** means the [baseline course](#baseline-course).
+The **minimal candidate baseline** removes `final-check`, its script and fixtures, the lesson check reference and the check-based objective.
+It retains the explain-back objective, final rubric and lessons.
+It omits `checks` and `feedback`, and still requires `format`.
+
+### Resource case inputs <a id="candidate-resource-baseline"></a>
+
+The **candidate resource baseline** extends the [extended baseline](#baseline-course) with these additions:
+
+- Set course `project: own` and add `starter: [plan/README.md]` to `make` frontmatter.
+- Add `assets/notes.md` with UTF-8 bytes `Read the project notes.\n`.
+- Add `assets/starter/plan/README.md` with UTF-8 bytes `Write your project plan here.\n`.
+- Add `assets/starter/src/main.py` with UTF-8 bytes `# Begin your implementation here.\n`.
+
+Here `\n` denotes one LF byte, not a literal backslash and letter.
+The lesson order is `intro`, `make`, `finish`; central checks are `final-check` and `agent-runs`.
+Both checks are referenced, `make` has no objectives or calls, and `finish` keeps its rubric and objectives.
+Feedback is omitted. The starter files are a skeleton, never a finished answer.
+Unless a case changes selection, use `own` and resolve only `make`'s listed starter file.
+
+The **candidate provenance baseline** adds the [feedback object](consent.md#feedback-hooks) as central `feedback` and sets `project: [own, starter]`.
+Whole-project and lesson-source assertions use separate fresh editable destinations.
+The former explicitly selects `starter` and expects both starter files; the latter selects `own` and expects only `plan/README.md`.
+
+### Format identifier <a id="format-identifier"></a>
+
+<a id="candidate-cases"></a>
+<a id="case-provenance-new-context-match"></a>
+<a id="case-provenance-new-context-mismatch"></a>
+<a id="case-provenance-new-context-missing"></a>
+<a id="case-provenance-new-context-unknown"></a>
+<a id="case-provenance-old-checks-extension"></a>
+<a id="case-provenance-old-feedback-extension"></a>
+<a id="case-provenance-old-format-absent"></a>
+<a id="case-provenance-old-format-arbitrary"></a>
+<a id="case-provenance-old-format-boolean"></a>
+<a id="case-provenance-old-format-empty"></a>
+<a id="case-provenance-old-format-list"></a>
+<a id="case-provenance-old-format-mapping"></a>
+<a id="case-provenance-old-format-new-value"></a>
+<a id="case-provenance-old-format-null"></a>
+<a id="case-provenance-old-format-number"></a>
+
+`COURSE.md` MUST carry the exact YAML string `format: "1.0.0-rc.2"`, even without checks or feedback.
+An absent, empty, unsupported or non-string value produces only `req-format-identifier` at `COURSE.md`.
+Validate it before declaration values, check references and other dependent checks.
+`format` identifies the interpretation rules. Authored `version` identifies the author's course release.
+Optional `spec: "1.0"` identifies the supported major/minor contract family and defaults to `1.0`.
+Neither field substitutes for `format`.
+
+A reader selects its supported format before interpreting authored metadata.
+For retained snapshots, [trusted installation provenance](records.md#candidate-provenance) establishes that context; authored values and digests cannot establish it.
+
+### Identifier boundary cases <a id="identifier-boundaries"></a>
+
+| Case | Baseline and change | Judged as | Outcome | Deciding rule |
+| --- | --- | --- | --- | --- |
+| <a id="case-format-minimal-accepted"></a>Minimal identified course | Minimal candidate baseline | Course syntax | Accepted | Exact `format` string is present despite omitted declarations |
+| <a id="case-format-minimal-missing-rejected"></a>Missing identifier | Minimal baseline without `format` | Course syntax | Rejected | Only `req-format-identifier` |
+| <a id="case-format-version-independent-accepted"></a>Independent course version | Baseline with `version: "2.3.4"` and `spec: "1.0"` | Course syntax | Accepted | Course version and contract family do not change the required format |
+| <a id="case-format-spec-substitute-rejected"></a>Spec cannot substitute | Minimal baseline without `format`, with `spec: "1.0"` | Course syntax | Rejected | Only `req-format-identifier` |
+| <a id="case-format-normal-null-rejected"></a>Null identifier | Minimal baseline with `format: null` | Course syntax | Rejected | Only `req-format-identifier` |
+| <a id="case-format-normal-number-rejected"></a>Numeric identifier | Minimal baseline with `format: 42` | Course syntax | Rejected | Only `req-format-identifier` |
+| <a id="case-format-normal-boolean-rejected"></a>Boolean identifier | Minimal baseline with `format: true` | Course syntax | Rejected | Only `req-format-identifier` |
+| <a id="case-format-normal-list-rejected"></a>List identifier | Minimal baseline with `format: [private-extension]` | Course syntax | Rejected | Only `req-format-identifier` |
+| <a id="case-format-normal-mapping-rejected"></a>Mapping identifier | Minimal baseline with `format: {private-extension: true}` | Course syntax | Rejected | Only `req-format-identifier` |
+| <a id="case-format-normal-empty-rejected"></a>Empty identifier | Minimal baseline with `format: ""` | Course syntax | Rejected | Only `req-format-identifier` |
+| <a id="case-format-normal-unknown-rejected"></a>Unsupported identifier | Minimal baseline with `format: private-extension` | Course syntax | Rejected | Only `req-format-identifier` |
+
+### Central declarations <a id="central-declarations"></a>
+
+`checks` is an optional list of the [typed check entries](execution.md#check-declarations).
+Omitted or empty means no checks.
+Lessons continue to reference central check identifiers rather than redeclare them.
+`feedback` is an optional [feedback object](consent.md#candidate-feedback); absence declares no collection, while explicit null is invalid.
+Neither declaration grants execution permission or feedback consent.
+Rubrics and quiz keys stay in `tutor/` and never move into frontmatter.
+
+Either separate declaration file, `checks/checks.yaml` or `feedback.yaml`, makes a course invalid.
+After accepting the discriminator, a reader MUST report only `req-mixed-declarations` when either or both files are present.
+This applies even to empty files, identical declarations and a course with neither central field.
+Reject presence before validating nested declarations or dependent references.
+Ordinary unknown extension keys still follow [the existing ignore-and-warn rule](#unknown-keys).
+This rule applies inside central check entries and the feedback object too.
+Known nested fields retain their existing type and value constraints.
+
+### Central declaration cases <a id="central-declaration-cases"></a>
+
+| Case | Baseline and change | Judged as | Outcome | Deciding rule |
+| --- | --- | --- | --- | --- |
+| <a id="case-central-checks-accepted"></a>Central typed checks | Candidate baseline | Course syntax | Accepted | Central `final-check` resolves from the lesson; no findings |
+| <a id="case-central-omitted-accepted"></a>Declarations omitted | Minimal candidate baseline | Course syntax | Accepted | No checks or feedback collection |
+| <a id="case-central-empty-accepted"></a>Empty checks and feedback | Minimal baseline with `checks: []` and `feedback: {}` | Course syntax | Accepted | Empty checks means none; the valid empty feedback object enables no hook |
+| <a id="case-central-checks-null-rejected"></a>Null checks | Minimal baseline with `checks: null` | Course syntax | Rejected | Only `schema-course`; checks must be a list |
+| <a id="case-central-checks-type-rejected"></a>Non-list checks | Minimal baseline with `checks: {id: final-check}` | Course syntax | Rejected | Only `schema-course`; checks must be a list |
+| <a id="case-central-feedback-null-rejected"></a>Null feedback | Minimal baseline with `feedback: null` | Course syntax | Rejected | Only `schema-course`; feedback must be an object |
+| <a id="case-central-feedback-type-rejected"></a>Non-object feedback | Minimal baseline with `feedback: []` | Course syntax | Rejected | Only `schema-course`; feedback must be an object |
+| <a id="case-central-checks-duplicate-rejected"></a>Duplicate central check ids | Candidate baseline with a second identical complete `final-check` entry | Course syntax | Rejected | Only `req-check-declaration`; compare ids rather than whole entries |
+| <a id="case-central-check-shape-rejected"></a>Invalid nested check | Candidate baseline with only `final-check.timeout` changed to 301 | Course syntax | Rejected | Only `schema-course`; the existing timeout bound is unchanged |
+| <a id="case-central-extension-warning"></a>Ordinary extension | Minimal baseline with `difficulty: easy` | Advisory lint | Accepted with a warning | Only the ordinary unknown-key warning; extensions remain permitted |
+| <a id="case-mixed-checks-equal-rejected"></a>Equal separate checks | Candidate baseline plus `checks/checks.yaml` containing its central list | Course syntax | Rejected | Only `req-mixed-declarations`; equality does not remove file presence |
+| <a id="case-mixed-checks-empty-rejected"></a>Empty separate checks | Minimal baseline plus an empty `checks/checks.yaml` | Course syntax | Rejected | Only `req-mixed-declarations` despite omitted central checks |
+| <a id="case-mixed-feedback-empty-rejected"></a>Empty separate feedback | Minimal baseline with `feedback: {}` plus empty `feedback.yaml` | Course syntax | Rejected | Only `req-mixed-declarations` |
+| <a id="case-mixed-feedback-equal-rejected"></a>Equal separate feedback | Minimal baseline with `feedback: {rating: at-end}` and `feedback.yaml` containing `rating: at-end` | Course syntax | Rejected | Only `req-mixed-declarations` |
+| <a id="case-mixed-both-rejected"></a>Both separate files | Minimal baseline plus both empty separate files | Course syntax | Rejected | Exactly one `req-mixed-declarations` finding |
+| <a id="case-mixed-precedence-rejected"></a>Mixed before dependent checks | Candidate baseline plus empty `checks/checks.yaml`; central checks set to null | Course syntax | Rejected | Only `req-mixed-declarations`; suppress nested and unresolved-reference findings |
+
+### Four resource roles <a id="resource-roles"></a>
+
+Authored resources use these course-root-relative paths:
+
+| Role | Path and base |
+| --- | --- |
+| Lessons | `lessons/<lesson-id>.md`; lesson filenames remain stable identifiers |
+| Tutor-only assessment | `tutor/<lesson-id>.rubric.md` and existing quiz keys and guidance |
+| Command programs | `scripts/<program>`; commands name course files through `AGENT_COURSE_DIR` |
+| Command fixtures | `scripts/fixtures/<check-id>/{pass,fail}/`; each directory is one test project root |
+| Learner resources | `assets/<resource>`, including reading, images and data |
+| Starter material | `assets/starter/`; whole-project and lesson selection share this base |
+
+Do not create empty optional folders.
+Relative Markdown links remain course-root-relative, even inside lessons.
+A lesson links `assets/notes.md`, never `../assets/notes.md`.
+Existing containment, target-existence and tutor-only disclosure rules remain binding.
+Loading an asset never permits exposing tutor material.
+
+`project: starter` selects all files under `assets/starter/`, which must exist and contain at least one file.
+A lesson's `starter: [plan/README.md]` selects `assets/starter/plan/README.md`, copied as `plan/README.md`.
+Lesson paths keep the existing path syntax, existence and containment rules relative to that base.
+Other explicit local sources retain `./<course-root-relative-path>` syntax and the existing non-empty-directory rules.
+The selected directory remains source material for a separate editable project.
+[Project choice](#project-selection) remains explicit for a list of alternatives; absence never chooses its first item.
+
+Fixture material under `scripts/fixtures/` MUST NOT be selected as a learner project or starter source.
+Selecting that directory or any descendant, including through a resolved link, fails only `req-resource-roles` when otherwise valid.
+Apply existing containment and safe-source checks before any copy.
+[Starter preparation](execution.md#candidate-starters) validates every target before writing and refuses collisions without overwriting.
+
+### Resource role cases <a id="resource-role-cases"></a>
+
+These cases use the complete [candidate resource baseline](#candidate-resource-baseline), with `own` selected unless the row changes it.
+Each row starts afresh; it does not inherit another row's changes.
+
+| Case | Baseline and change | Judged as | Outcome | Deciding rule |
+| --- | --- | --- | --- | --- |
+| <a id="case-resource-program-accepted"></a>Program and fixtures | Resource baseline unchanged; command uses `scripts/final_check.py` with its passing and failing fixture projects | Course syntax | Accepted | Program and fixtures use their course-root bases |
+| <a id="case-resource-markdown-accepted"></a>Course-root resource link | Add `[Notes](assets/notes.md)` to the resource baseline's `make.md` body | Course syntax | Accepted | Target exists from the course root |
+| <a id="case-resource-markdown-relative-rejected"></a>Lesson-relative resource link | Add `[Notes](../assets/notes.md)` to `make.md`; the asset exists at its baseline path | Course syntax | Rejected | Existing course-link containment rule; resolving from the course root escapes |
+| <a id="case-resource-project-starter-accepted"></a>Whole starter source | Set `project: starter`; resolve its source | Project start | Accepted | Source is both baseline files under `assets/starter/`, with their exact bytes |
+| <a id="case-resource-lesson-starter-accepted"></a>Lesson subset | Resource baseline unchanged; resolve `make`'s `starter: [plan/README.md]` | Course syntax | Accepted | Source is `assets/starter/plan/README.md`; target is plan/README.md |
+| <a id="case-resource-old-base-rejected"></a>Wrong lesson starter base | Move only assets/starter/plan/README.md to assets/other/plan/README.md; keep make's selector unchanged | Course syntax | Rejected | `req-starter-files`; declared starter base has no selected file |
+| <a id="case-resource-local-accepted"></a>Explicit local source | `project: ./assets/starter`; directory is non-empty and contained | Project start | Accepted | Explicit source syntax still resolves from the installed course root |
+| <a id="case-resource-fixture-project-rejected"></a>Fixture selected as project | `project: ./scripts/fixtures/final-check/pass`; source is otherwise valid | Course syntax | Rejected | Only `req-resource-roles`; a check fixture is not learner source |
+| <a id="case-resource-fixture-starter-rejected"></a>Fixture selected as lesson starter | Replace assets/starter with a link to scripts/fixtures/final-check/pass; change make's starter list to [agent.py]; keep project: own | Course syntax | Rejected | Only `req-resource-roles`; a contained fixture remains assessment material |
+| <a id="case-resource-selection-accepted"></a>Learner selects starter | `project: [own, starter]`; learner explicitly selects starter | Project start | Accepted | Resolve assets/starter only after selection |
+| <a id="case-resource-selection-missing-rejected"></a>Missing learner selection | Set project: [own, starter]; no learner answer; runner selects own | Project start | Rejected | `req-project-selection`; no default is allowed |
+
+### Catalogue summary <a id="catalogue-summary"></a>
+
+Catalogue output MUST contain only `name`, `description`, `version`, `license`, `compatibility` and `spec`, when present.
+Return the fields actually authored; do not insert an omitted optional field into this summary.
+Candidate selection is reader metadata, outside the catalogue's model context.
+The reader validates the expected candidate before returning a summary.
+Parsing frontmatter never requires exposing all parsed fields to the tutor or learner.
+Exclude `format`, `checks`, `feedback`, `project`, `metadata`, teaching bodies and tutor files from that context.
+Do not read tutor files to build the summary.
+
+### Catalogue cases <a id="catalogue-cases"></a>
+
+| Case | Baseline and change | Judged as | Outcome | Deciding rule |
+| --- | --- | --- | --- | --- |
+| <a id="case-catalogue-summary-accepted"></a>Summary allow-list | Candidate baseline with `compatibility: Python 3.12` and `spec: "1.0"` | Runner behaviour | Accepted | Exactly name, description, version, license, compatibility and spec are returned with authored values; zero tutor-file reads |
+| <a id="case-catalogue-optional-accepted"></a>Absent optional summary fields | Minimal candidate with license omitted | Runner behaviour | Accepted | Exactly name, description and version are returned; optional fields are not synthesised |
+| <a id="case-catalogue-private-rejected"></a>Declarations leak into catalogue | Candidate baseline; summary also returns checks, feedback or teaching text | Runner behaviour | Rejected | `req-catalogue-summary`; only the six permitted authored fields enter catalogue context |
+| <a id="case-catalogue-tutor-rejected"></a>Tutor loaded for catalogue | Candidate baseline; reader opens tutor/finish.rubric.md while building the summary | Runner behaviour | Rejected | `req-catalogue-summary`; tutor files are excluded |
+| <a id="case-catalogue-identifier-rejected"></a>Unidentified catalogue input | Minimal candidate without format | Runner behaviour | Rejected | Only `req-format-identifier`; no summary is returned |
 
 ## Reading this page <a id="reading-this-page"></a>
 
@@ -28,7 +213,7 @@ Each rejected case changes one thing. If a case could fail for two reasons, the 
 
 ### The baseline course <a id="baseline-course"></a>
 
-Most cases start from this complete accepted course, `sample-course`. A case names only its change.
+The baseline is `sample-course`, a current course with one command check and an explain-back. Case tables change only the fields they name.
 
 ```text
 sample-course/
@@ -36,8 +221,7 @@ sample-course/
 ├── lessons/
 │   ├── intro.md
 │   └── finish.md
-├── checks/
-│   ├── checks.yaml
+├── scripts/
 │   ├── final_check.py
 │   └── fixtures/final-check/{pass,fail}/agent.py
 └── tutor/
@@ -48,10 +232,17 @@ sample-course/
 
 ```markdown
 ---
+format: "1.0.0-rc.2"
 name: sample-course
 description: Build a one-file agent and explain it. For beginners.
 version: "1.0.0"
 license: Apache-2.0
+checks:
+  - id: final-check
+    run: python "$AGENT_COURSE_DIR/scripts/final_check.py"
+    verify: agent.py defines an agent
+    timeout: 30
+    network: false
 ---
 
 # Sample course
@@ -112,9 +303,9 @@ You can show the agent works and say why.
 Explain which tool your agent calls and why you chose it.
 ```
 
-`checks/checks.yaml` declares one command check, `final-check`, with `run: python "$AGENT_COURSE_DIR/checks/final_check.py"`, a `verify` sentence, `timeout: 30` and `network: false`. `tutor/finish.rubric.md` has `pass: 2 of 3` and three criteria.
+`COURSE.md` declares `final-check` in its `checks` list. Its program lives at `scripts/final_check.py`, with passing and failing projects under `scripts/fixtures/final-check/{pass,fail}/`. `tutor/finish.rubric.md` has `pass: 2 of 3` and three criteria.
 
-The **extended baseline** adds a build lesson. It adds `lessons/make.md` as item 2, between the two baseline items, and one observe check in `checks/checks.yaml`:
+The **extended baseline** adds a build lesson. It adds `lessons/make.md` as item 2, between the two baseline items, and one observe check in the course frontmatter `checks` list:
 
 ```markdown
 ---
@@ -138,7 +329,7 @@ Ask the learner how to start the agent, then create `agent.py` with them.
   verify: agent.py exists and defines an agent
 ```
 
-The extended baseline has no objectives in `make.md`, no calls in it and no `starter/`. Both baselines are accepted and report nothing.
+The extended baseline has no objectives in `make.md`, no calls in it and no `assets/starter/`. Both baselines are accepted and report nothing.
 
 ### Licence and attribution <a id="licence"></a>
 
@@ -149,9 +340,9 @@ This specification, its schemas and its examples are licensed under Apache-2.0. 
 | Case | Baseline and change | Judged as | Outcome | Deciding rule |
 | --- | --- | --- | --- | --- |
 | <a id="case-licence-example-accepted"></a>Specification example is Apache-2.0 | Baseline, unchanged: `license: Apache-2.0` | Candidate wording | Accepted | Every example course here declares Apache-2.0 |
-| <a id="case-licence-example-historical-rejected"></a>Specification example keeps the historical licence | Baseline with `license: CC-BY-4.0`, offered as a specification example | Candidate wording | Rejected | The value is not Apache-2.0, and this is a specification example |
+| <a id="case-licence-example-historical-rejected"></a>Specification example keeps a different licence | Baseline with `license: CC-BY-4.0`, offered as a specification example | Candidate wording | Rejected | The value is not Apache-2.0, and this is a specification example |
 | <a id="case-licence-author-own-accepted"></a>An author's own course | Baseline with `license: MIT` in an author's own course, not offered as a specification example | Course syntax | Accepted | `license` is any SPDX identifier; the Apache-2.0 rule covers specification examples only |
-| <a id="case-licence-attribution-removed-rejected"></a>Attribution removed | The paragraph above with the sentence about the 13 October 2026 proposal deleted | Candidate wording | Rejected | The historical attribution must be kept |
+| <a id="case-licence-attribution-removed-rejected"></a>Attribution removed | The paragraph above with the sentence about the 13 October 2026 proposal deleted | Candidate wording | Rejected | The source attribution must be kept |
 
 ### What this version leaves out <a id="scope-exclusions"></a>
 
@@ -181,7 +372,7 @@ Two groups of things are not in this candidate.
 | <a id="case-conforming-claim-rejected"></a>Claims conformance | A runner states "Conforming Runner, Agent Courses 1.0" | Candidate wording | Rejected | The candidate defines no conformance class and no suite exists |
 | <a id="case-stable-claim-rejected"></a>Claims a stable runner | A runner states "Stable Agent Courses 1.0 runner" | Candidate wording | Rejected | A stable release waits for launch qualification |
 | <a id="case-home-accepted"></a>Home | The candidate names agentcourses.io as its home | Candidate wording | Accepted | The owner chose agentcourses.io |
-| <a id="case-home-superseded-rejected"></a>Superseded home | The candidate names `agentcourses.dev` as the official home | Candidate wording | Rejected | That proposed home was replaced by the owner's choice |
+| <a id="case-home-superseded-rejected"></a>Superseded home | The candidate names `agentcourses.dev` as the official home | Candidate wording | Rejected | The official home is `agentcourses.io` |
 | <a id="case-package-availability-accepted"></a>Package names | The candidate says name availability is left to release-time checking | Candidate wording | Accepted | No evidence of availability exists, so none is claimed |
 | <a id="case-package-availability-rejected"></a>Claims availability | The candidate says the package names are free on the registries | Candidate wording | Rejected | The claim has no evidence; it stays ⚠️ unverified |
 | <a id="case-host-adoption-accepted"></a>Host adoption | The candidate says host agreement on the folder layout is external work and qualifies no host | Candidate wording | Accepted | No contract rule changes with the answer |
@@ -228,37 +419,32 @@ A course is a directory with a `COURSE.md` at its root. Everything else is optio
 
 ### Layout <a id="folder-layout"></a>
 
+Each optional folder has one resource role. Keep declarations in `COURSE.md`; omit optional folders that the course does not use.
+
 ```text
 build-your-first-agent/
-├── COURSE.md              # required: identity, then the page a learner reads first
-├── lessons/               # one Markdown file per lesson; the file name is the lesson id
-│   ├── install.md
-│   ├── add-a-tool.md
-│   └── explain-it.md
-├── checks/
-│   ├── checks.yaml        # what each check verifies and how to run it
+├── COURSE.md              # identity, checks, feedback, outcome and lesson order
+├── lessons/               # one Markdown file per lesson, named by lesson id
+├── tutor/                 # private rubrics, quiz keys and teaching guidance
+│   └── explain-it.rubric.md
+├── scripts/               # command check programs
 │   ├── tool_is_registered.py
 │   └── fixtures/tool-is-registered/{pass,fail}/
-├── tutor/                 # tutor-only: rubrics, quiz keys, misconceptions, persona
-│   └── explain-it.rubric.md
-├── starter/               # files that seed a starter project or a lesson
-├── references/            # optional reading the tutor may load
-├── assets/                # images and data, linked by relative path
-└── feedback.yaml          # optional: the feedback this course may ask for
+└── assets/                # reading, images, data and starter material
+    └── starter/           # skeleton files copied into the learner's project
 ```
 
 | Path | Seen by the learner | Loaded by the runner |
 | --- | --- | --- |
-| `COURSE.md` | Yes | At catalogue time (frontmatter), then at course start |
+| `COURSE.md` | The course page; each feedback question before it is asked | Summary fields at catalogue time; full page at start; declarations when needed |
 | `lessons/` | Only the `## Goal` text, verbatim | When the lesson starts |
-| `checks/` | The command, before it first runs | When a check is run |
 | `tutor/` | Never verbatim | When judging, hinting, remedying or setting the tutor's voice |
-| `starter/` | Copied into their project | At the start, or when a lesson asks for it |
-| `references/` | On request | When a question needs it |
-| `assets/` | When a link needs it | When a link needs it |
-| `feedback.yaml` | Each question, before it is asked | When a hook fires |
+| `scripts/` | The command, before it first runs | When a check is run; fixtures are assessment inputs |
+| `assets/` | On request or when a link needs it | When the question or link needs it |
+| `assets/starter/` | Copied into their project | At the start, or when a lesson asks for it |
 
-An unlisted file or folder is ignored by runners. A course MUST NOT place a finished answer in `starter/`, and `tutor/` MUST NOT be linked from `COURSE.md` or from a lesson's `## Goal`.
+An unlisted file or folder is ignored by runners. A course MUST NOT place a finished answer in `assets/starter/`.
+`tutor/` MUST NOT be linked from `COURSE.md` or from a lesson's `## Goal`.
 
 #### Folder cases <a id="example-folder"></a>
 
@@ -285,8 +471,8 @@ A lesson's id is its file name without `.md` and nothing else. A lesson file has
 | <a id="case-id-doubled-hyphen-rejected"></a>Doubled hyphen | Baseline with the folder and `name` both renamed `add--tool` | Course syntax | Rejected | The two names agree; hyphens must be single between runs |
 | <a id="case-id-edge-hyphen-rejected"></a>Leading or trailing hyphen | Baseline with the folder and `name` both renamed `-add` and, separately, `add-` | Course syntax | Rejected | The two names agree; neither end may be a hyphen |
 | <a id="case-id-too-long-rejected"></a>65 characters | Baseline with the folder and `name` both renamed to `a` followed by 64 `b` characters | Course syntax | Rejected | The two names agree; length 65 exceeds 64 |
-| <a id="case-id-reserved-check-rejected"></a>Reserved word as a command check id | Baseline `checks.yaml` gains a complete command check `id: explain-back` with `run`, `verify`, `timeout` and `network`, plus `checks/fixtures/explain-back/pass/agent.py` and `fail/agent.py` that give exit 0 and exit 1; no lesson lists it | Course syntax | Rejected | Declaration and fixtures are otherwise valid, so only the id decides: `explain-back` is reserved for every id kind |
-| <a id="case-id-reserved-observe-rejected"></a>Reserved word as an observe check id | Baseline `checks.yaml` gains `id: explain-back` with `kind: observe` and `verify`; no lesson lists it | Course syntax | Rejected | The reservation applies to observe checks as well |
+| <a id="case-id-reserved-check-rejected"></a>Reserved word as a command check id | Baseline the course `checks` list gains a complete command check `id: explain-back` with `run`, `verify`, `timeout` and `network`, plus `scripts/fixtures/explain-back/pass/agent.py` and `fail/agent.py` that give exit 0 and exit 1; no lesson lists it | Course syntax | Rejected | Declaration and fixtures are otherwise valid, so only the id decides: `explain-back` is reserved for every id kind |
+| <a id="case-id-reserved-observe-rejected"></a>Reserved word as an observe check id | Baseline the course `checks` list gains `id: explain-back` with `kind: observe` and `verify`; no lesson lists it | Course syntax | Rejected | The reservation applies to observe checks as well |
 | <a id="case-id-reserved-lesson-rejected"></a>Reserved word as a lesson id | Extended baseline with `lessons/make.md` renamed `lessons/explain-back.md` and its list link updated | Course syntax | Rejected | A lesson id is its file name, and that is reserved |
 | <a id="case-id-reserved-call-rejected"></a>Reserved word as a call id | Baseline with the call `choose-tool` renamed `explain-back` | Course syntax | Rejected | The reservation applies to call ids |
 | <a id="case-id-reserved-objective-rejected"></a>Reserved word as an objective id | Baseline with the objective `agent-explained` renamed `explain-back`; its `by` stays `explain-back` | Course syntax | Rejected | The reservation applies to objective ids |
@@ -296,15 +482,19 @@ A lesson's id is its file name without `.md` and nothing else. A lesson file has
 
 ## COURSE.md <a id="course-file"></a>
 
-`COURSE.md` has YAML frontmatter that identifies the course, then a Markdown page. It begins with a line of three hyphens and ends the frontmatter with another such line. Frontmatter MUST be a YAML mapping.
+`COURSE.md` has YAML frontmatter that identifies the course, then a Markdown page.
+It begins with a line of three hyphens and ends the frontmatter with another such line. Frontmatter MUST be a YAML mapping.
 
 ### Frontmatter fields <a id="course-frontmatter"></a>
 
 | Field | Required | Rule |
 | --- | --- | --- |
+| `format` | Yes | Exactly the YAML string `"1.0.0-rc.2"`. See [format identification](#format-identifier). |
+| `checks` | No | A list of [typed checks](execution.md#check-declarations); omitted or empty means none. |
+| `feedback` | No | A [feedback object](consent.md#feedback-hooks); omitted means no collection. |
 | `name` | Yes | A kebab id equal to the folder name. Stable across versions. |
 | `description` | Yes | A string of 1 to 1,024 characters. What the learner builds and who it is for. |
-| `version` | Yes | A string holding a Semantic Versioning 2.0.0 version, such as `1.2.0` or `1.0.0-rc.1`. Build metadata after `+` is not allowed. It MUST be a YAML string, so quote it. |
+| `version` | Yes | A string holding a Semantic Versioning 2.0.0 version, such as `1.2.0` or `2.0.0-beta.1`. Build metadata after `+` is not allowed. It MUST be a YAML string, so quote it. |
 | `license` | No | An SPDX identifier, or the name of a licence file in the course folder. |
 | `compatibility` | No | A string of 1 to 500 characters naming the tools, hosts, accounts and costs the learner needs. |
 | `project` | No | See [the project field](#project-field). Omitted means `own`. |
@@ -336,7 +526,7 @@ A runner MUST refuse a course whose `spec` major version it does not support. A 
 
 ### Unknown keys <a id="unknown-keys"></a>
 
-A runner MUST ignore a key it does not know in `COURSE.md` frontmatter, lesson frontmatter, a check entry, a call entry, an objective entry and `feedback.yaml`. An authoring validator SHOULD report such a key as a warning, never an error, so a typo is caught and a course written for a later 1.x minor still runs. Schemas for these files MUST allow additional properties. A key that is known but has the wrong type or value is an error. Extensions belong in `metadata`.
+A runner MUST ignore a key it does not know in `COURSE.md` frontmatter, lesson frontmatter, a check entry, a call entry, an objective entry and the `feedback` object. An authoring validator SHOULD report such a key as a warning, never an error, so a typo is caught and a course written for a later 1.x minor still runs. Schemas for these files MUST allow additional properties. A key that is known but has the wrong type or value is an error. Extensions belong in `metadata`.
 
 #### Unknown-key cases <a id="example-unknown-keys"></a>
 
@@ -382,10 +572,11 @@ The `## Lessons` section contains exactly one ordered list. Each item contains e
 
 #### Example course page <a id="example-course-valid"></a>
 
-A second accepted page, with a richer `project` list. The lessons it links are not shown here; stages are shown in [the baseline course](#baseline-course) and in the [stage cases](#example-stages).
+A course-page fragment with a richer `project` list. Its starter choice assumes a non-empty `assets/starter/` folder. The lessons it links are not shown here; stages are shown in [the baseline course](#baseline-course) and in the [stage cases](#example-stages).
 
 ```markdown
 ---
+format: "1.0.0-rc.2"
 name: build-your-first-agent
 description: Build a typed agent with one tool and structured output, in your
   own repository. For Python developers new to agent frameworks.
@@ -410,7 +601,7 @@ You'll build an agent that answers with a typed object, then explain how it work
 3. [Explain what you built](lessons/explain-it.md)
 ```
 
-Outcome: accepted. The learner picks `own` or `starter` before lesson one.
+The learner picks `own` or `starter` before lesson one.
 
 #### Lesson list cases <a id="example-lesson-list"></a>
 
@@ -421,7 +612,7 @@ Outcome: accepted. The learner picks `own` or `starter` before lesson one.
 | <a id="case-list-missing-file-rejected"></a>Missing file | Baseline with a third item linking `lessons/extra.md`, which does not exist | Course syntax | Rejected | A listed file must exist |
 | <a id="case-list-unlisted-rejected"></a>Unlisted file | Baseline plus a valid `lessons/extra.md` that no item links | Course syntax | Rejected | A lesson file must appear in the list |
 | <a id="case-list-second-list-rejected"></a>Second ordered list | Baseline with a second ordered list added under `## Lessons`, after the first list and a paragraph; its one item links `lessons/intro.md` | Course syntax | Rejected | The section contains exactly one ordered list. That item also repeats `intro.md`; any item would break a per-item rule, so the list-count rule is the one under test |
-| <a id="case-list-outside-target-rejected"></a>Target outside lessons | Baseline with a third item linking `references/notes.md`, which exists | Course syntax | Rejected | The link target must be `lessons/<id>.md` |
+| <a id="case-list-outside-target-rejected"></a>Target outside lessons | Baseline with a third item linking `assets/notes.md`, which exists | Course syntax | Rejected | The link target must be `lessons/<id>.md` |
 | <a id="case-list-empty-rejected"></a>No lessons | Baseline with the ordered list removed from `## Lessons` | Course syntax | Rejected | A course has at least one lesson |
 
 ## Lessons <a id="lessons"></a>
@@ -458,11 +649,11 @@ Moving on without passing is always allowed and is always recorded as skipped, n
 | --- | --- | --- |
 | `title` | Yes | A non-empty string. |
 | `stage` | Yes | One of `understand`, `practise`, `build`, `demonstrate`. |
-| `checks` | `practise` and `build`; optional in `demonstrate`; not allowed in `understand` | A list. In `practise` and `build` it has at least one item. In `understand` it MUST be omitted or empty. Each item is a check id from `checks/checks.yaml`, or a mapping `{id: <check id>, required: false}`. An item is required unless it says `required: false`. No id appears twice. |
+| `checks` | `practise` and `build`; optional in `demonstrate`; not allowed in `understand` | A list. In `practise` and `build` it has at least one item. In `understand` it MUST be omitted or empty. Each item is a check id from the course frontmatter `checks` list, or a mapping `{id: <check id>, required: false}`. An item is required unless it says `required: false`. No id appears twice. |
 | `minutes` | No | A positive integer: an honest estimate for a first-time learner. |
 | `calls` | No | A list of calls. See [calls](#calls). Omitted means none. |
 | `objectives` | No | A list of objectives. See [objectives](#objectives). Omitted means none. |
-| `starter` | No | A list of paths under `starter/`. See [starter files](#starter-files). |
+| `starter` | No | A list of paths under `assets/starter/`. See [starter files](#starter-files). |
 
 A `demonstrate` lesson MAY list checks; its required checks must pass before its explain-back is judged. An `understand` lesson declares no checks. Because an objective needs a check or an explain-back, an `understand` lesson can declare no objective, and it settles nothing. It may still declare calls.
 
@@ -531,11 +722,11 @@ The cases that make a lesson invalid are in these rows. Each is a separate case 
 
 | Case | Baseline and change | Judged as | Outcome | Deciding rule |
 | --- | --- | --- | --- | --- |
-| <a id="case-lesson-fields-accepted"></a>Valid fields | Extended baseline `make.md` with `minutes: 12` added, `checks: [agent-runs]` kept, and no `calls` or `objectives` | Course syntax | Accepted | Minutes is a positive integer, the check id exists in `checks.yaml`, and optional `calls` and `objectives` may be absent |
+| <a id="case-lesson-fields-accepted"></a>Valid fields | Extended baseline `make.md` with `minutes: 12` added, `checks: [agent-runs]` kept, and no `calls` or `objectives` | Course syntax | Accepted | Minutes is a positive integer, the check id exists in the course `checks` list, and optional `calls` and `objectives` may be absent |
 | <a id="case-lesson-optional-check-accepted"></a>Optional check mapping | Extended baseline `make.md` with `checks: [{id: agent-runs, required: false}]` | Course syntax | Accepted | A mapping with `required: false` is a valid item |
 | <a id="case-lesson-minutes-zero-rejected"></a>Zero minutes | Extended baseline `make.md` with `minutes: 0` | Course syntax | Rejected | `minutes` must be positive |
 | <a id="case-lesson-check-repeated-rejected"></a>Repeated check id | Extended baseline `make.md` with `checks: [agent-runs, agent-runs]` | Course syntax | Rejected | No id appears twice |
-| <a id="case-lesson-check-unknown-rejected"></a>Unknown check id | Extended baseline `make.md` with `checks: [no-such-check]` | Course syntax | Rejected | Every id a lesson lists MUST exist in `checks/checks.yaml` |
+| <a id="case-lesson-check-unknown-rejected"></a>Unknown check id | Extended baseline `make.md` with `checks: [no-such-check]` | Course syntax | Rejected | Every id a lesson lists MUST exist in the course frontmatter `checks` list |
 | <a id="case-lesson-field-type-rejected"></a>Wrong field types | Extended baseline `make.md` with `minutes: "12"`, separately `minutes: 1.5`, and separately `calls: choose-tool` | Course syntax | Rejected | `minutes` must be a whole number and `calls` must be a list |
 | <a id="case-lesson-checks-missing-rejected"></a>Required checks missing | Extended baseline `make.md` with its `checks` line deleted | Course syntax | Rejected | A `build` lesson has at least one check |
 | <a id="case-lesson-title-rejected"></a>No title | Extended baseline `make.md` without `title` | Course syntax | Rejected | `title` is required |
@@ -570,7 +761,7 @@ A heading repeated, a required heading missing and `## Explain back` outside the
 
 #### Tutor-addressed lesson cases <a id="example-tutor-addressed"></a>
 
-These cases apply [the amendment that writes lessons to the tutor](requirements.md#amendment-matrix). The runner rules are in [Building together](execution.md#build-duties).
+These cases apply the rule that lessons address the tutor. The runner rules are in [Building together](execution.md#build-duties).
 
 | Case | Baseline and change | Judged as | Outcome | Deciding rule |
 | --- | --- | --- | --- | --- |
@@ -614,15 +805,15 @@ An objective id MUST be unique across the whole course, not only within its less
 
 ### Starter files <a id="starter-files"></a>
 
-A lesson's `starter` list names files under `starter/` that the lesson adds to an `own` or reference project, never over an existing file. Each path is relative to `starter/`, uses `/`, and has no empty, `.` or `..` segment. A path that does not exist is invalid. A starter project receives all of `starter/` at the start, so these entries add nothing to it. When a target file already exists, the runner asks the learner and never overwrites it.
+A lesson's `starter` list names files under `assets/starter/` that the lesson adds to an `own` or reference project, never over an existing file. Each path is relative to `assets/starter/`, uses `/`, and has no empty, `.` or `..` segment. A path that does not exist is invalid. A starter project receives all of `assets/starter/` at the start, so these entries add nothing to it. Validate all selected sources and targets before writing. If any target exists, refuse the whole copy and ask for another destination or selection. Never overwrite an existing file.
 
 #### Starter cases <a id="example-starter-links"></a>
 
-These cases start from the extended baseline with `starter/plan/README.md` added and `make.md` declaring `starter: [plan/README.md]`.
+These cases start from the extended baseline with `assets/starter/plan/README.md` added and `make.md` declaring `starter: [plan/README.md]`.
 
 | Case | Baseline and change | Judged as | Outcome | Deciding rule |
 | --- | --- | --- | --- | --- |
-| <a id="case-starter-accepted"></a>Existing source, absent destination | The course above; the learner's project has no `plan/README.md`; the runner adds it | Course syntax, then runner behaviour | Accepted | `starter/plan/README.md` exists and the destination is absent, so the file is added |
+| <a id="case-starter-accepted"></a>Existing source, absent destination | The course above; the learner's project has no `plan/README.md`; the runner adds it | Course syntax, then runner behaviour | Accepted | `assets/starter/plan/README.md` exists and the destination is absent, so the file is added |
 | <a id="case-starter-missing-rejected"></a>Missing source | `starter: [plan/MISSING.md]`, which does not exist | Course syntax | Rejected | A path that does not exist is invalid |
 | <a id="case-starter-traversal-rejected"></a>Traversing source | `starter: [../outside.md]` | Course syntax | Rejected | A `..` segment is not allowed |
 | <a id="case-starter-absolute-rejected"></a>Absolute source | `starter: [/etc/hosts]` | Course syntax | Rejected | A leading slash makes an empty first segment |
@@ -636,31 +827,31 @@ These cases use the extended baseline. `make.md` asks the learner to write `plan
 
 | Case | Baseline and change | Judged as | Outcome | Deciding rule |
 | --- | --- | --- | --- | --- |
-| <a id="case-starter-answer-accepted"></a>Starter holds only a skeleton | `starter/plan/README.md` reads "# Plan" and "TODO: list your three steps"; `make.md` lists `plan/README.md` in `starter` | Course syntax | Accepted | The starter file is a skeleton; the three steps the lesson asks the learner to write are absent |
-| <a id="case-starter-answer-finished-rejected"></a>Starter holds the finished answer | `starter/plan/README.md` reads "# Plan", "1. Install", "2. Add a tool" and "3. Run the check"; nothing else changes | Course syntax | Rejected | The file already contains the three steps the lesson asks the learner to write, so it is a finished answer, and a course MUST NOT place one in `starter/` |
+| <a id="case-starter-answer-accepted"></a>Starter holds only a skeleton | `assets/starter/plan/README.md` reads "# Plan" and "TODO: list your three steps"; `make.md` lists `plan/README.md` in `starter` | Course syntax | Accepted | The starter file is a skeleton; the three steps the lesson asks the learner to write are absent |
+| <a id="case-starter-answer-finished-rejected"></a>Starter holds the finished answer | `assets/starter/plan/README.md` reads "# Plan", "1. Install", "2. Add a tool" and "3. Run the check"; nothing else changes | Course syntax | Rejected | The file already contains the three steps the lesson asks the learner to write, so it is a finished answer, and a course MUST NOT place one in `assets/starter/` |
 
 ## Links inside a course <a id="links"></a>
 
 A link inside `COURSE.md` or a lesson is one of three kinds:
 
-- A relative path to a file inside the course folder. **Proposed:** every such path is written from the course root, the folder holding `COURSE.md`, whichever file contains the link. A lesson links `references/notes.md`, not `../references/notes.md`. After resolving `.` and `..` the path MUST stay inside the course folder. Absolute paths, backslashes and links that leave the folder are invalid.
+- A relative path to a file inside the course folder. **Proposed:** every such path is written from the course root, the folder holding `COURSE.md`, whichever file contains the link. A lesson links `assets/notes.md`, not `../assets/notes.md`. After resolving `.` and `..` the path MUST stay inside the course folder. Absolute paths, backslashes and links that leave the folder are invalid.
 - A `project:` link to a file in the learner's project. See [project links](#project-links).
 - An `https:` URL.
 
 Links to `tutor/` files are not allowed in `COURSE.md` or in `## Goal`. A lesson link whose target does not exist is invalid. A `tutor/` link in a section addressed to the tutor, such as `## Build`, is allowed.
 
-The course-root base is this candidate's proposal. The historical proposal says lessons link to course files with relative paths and does not name a base; ordinary Markdown tools resolve from the linking file, so an authoring tool that does so must be told this rule. The same base applies to the lesson list, to `starter` paths (relative to `starter/`) and to rubric and quiz names. It does not apply to `project:` links, which are relative to the project root, or to local project references, which are relative to the installed course root ([local project folders](#local-projects)).
+Course links use the course root as their base, even when written in a lesson. Authoring tools must apply this base explicitly. The same base applies to the lesson list, to `starter` paths (relative to `assets/starter/`) and to rubric and quiz names. It does not apply to `project:` links, which are relative to the project root, or to local project references, which are relative to the installed course root ([local project folders](#local-projects)).
 
 #### Link cases <a id="example-links"></a>
 
-These cases use the extended baseline with `references/notes.md`, `assets/flow.png` and `tutor/finish.rubric.md` present.
+These cases use the extended baseline with `assets/notes.md`, `assets/flow.png` and `tutor/finish.rubric.md` present.
 
 | Case | Baseline and change | Judged as | Outcome | Deciding rule |
 | --- | --- | --- | --- | --- |
-| <a id="case-link-course-file-accepted"></a>Existing course file | `make.md` links `[Notes](references/notes.md)`; from the course root that is `references/notes.md`, which exists | Course syntax | Accepted | The path is read from the course root, the target exists and it stays inside the course folder |
+| <a id="case-link-course-file-accepted"></a>Existing course file | `make.md` links `[Notes](assets/notes.md)`; from the course root that is `assets/notes.md`, which exists | Course syntax | Accepted | The path is read from the course root, the target exists and it stays inside the course folder |
 | <a id="case-link-next-lesson-accepted"></a>Lesson link in the page | `COURSE.md` links `[Next](lessons/make.md)` | Course syntax | Accepted | The target `lessons/make.md` exists from the course root |
 | <a id="case-link-asset-accepted"></a>Asset | `make.md` links `[Diagram](assets/flow.png)` | Course syntax | Accepted | `assets/flow.png` exists from the course root |
-| <a id="case-link-file-relative-rejected"></a>Written from the linking file | `make.md` links `[Notes](../references/notes.md)`, the form ordinary Markdown tools resolve from `lessons/` | Course syntax | Rejected | From the course root, `..` leaves the course folder, so the rule rejects it even though `references/notes.md` exists |
+| <a id="case-link-file-relative-rejected"></a>Written from the linking file | `make.md` links `[Notes](../assets/notes.md)`, the form ordinary Markdown tools resolve from `lessons/` | Course syntax | Rejected | From the course root, `..` leaves the course folder, so the rule rejects it even though `assets/notes.md` exists |
 | <a id="case-link-https-accepted"></a>HTTPS URL | `make.md` links `[Docs](https://example.com/guide)` | Course syntax | Accepted | `https:` URLs are allowed |
 | <a id="case-link-http-rejected"></a>HTTP URL | `make.md` links `[Doc](http://example.com/guide)` | Course syntax | Rejected | Only `https:` URLs are allowed |
 | <a id="case-link-tutor-in-build-accepted"></a>Tutor file from Build | `make.md` `## Build` links `[Rubric](tutor/finish.rubric.md)` | Course syntax | Accepted | The target exists from the course root, and `## Build` is addressed to the tutor |
@@ -681,24 +872,24 @@ The value is one *option* or a list of options. An option is `own`, `starter` or
 | Option | The learner works in |
 | --- | --- |
 | `own` | The project they already have open |
-| `starter` | A new folder the runner creates from `starter/` |
+| `starter` | A new folder the runner creates from `assets/starter/` |
 | A Git reference (`gh:` or `git+https://`) | A checkout of that repository at its pinned commit |
 | A local folder (`./path`) | **Proposed:** an editable copy, made in the workspace, of a folder inside the installed course. See [local project folders](#local-projects) |
 
-A scalar value is a list of one. An omitted field is the list `[own]`. A list MUST hold at least one option, MUST NOT repeat an option, and MAY mix kinds and hold several references. `starter` is valid only when `starter/` exists and holds at least one file. A mapping, an empty string, an empty list or a value that is not an option is invalid.
+A scalar value is a list of one. An omitted field is the list `[own]`. A list MUST hold at least one option, MUST NOT repeat an option, and MAY mix kinds and hold several references. `starter` is valid only when `assets/starter/` exists and holds at least one file. A mapping, an empty string, an empty list or a value that is not an option is invalid.
 
 #### Option shape cases <a id="example-project-options"></a>
 
 | Case | Baseline and change | Judged as | Outcome | Deciding rule |
 | --- | --- | --- | --- | --- |
 | <a id="case-options-omitted-accepted"></a>Omitted | Baseline, with no `project` key | Course syntax | Accepted | An omitted field means `[own]` |
-| <a id="case-options-scalar-starter-accepted"></a>Scalar starter | Baseline with `project: starter` and `starter/README.md` present | Course syntax | Accepted | A scalar is a list of one, and `starter/` exists with a file |
-| <a id="case-options-mixed-accepted"></a>Mixed list | Baseline with `starter/README.md` and `project: [own, starter, gh:example-co/payments@v3.4.0, ./examples/app]`, with `examples/app` present | Course syntax | Accepted | The list is non-empty, repeats nothing and may mix kinds |
+| <a id="case-options-scalar-starter-accepted"></a>Scalar starter | Baseline with `project: starter` and `assets/starter/README.md` present | Course syntax | Accepted | A scalar is a list of one, and `assets/starter/` exists with a file |
+| <a id="case-options-mixed-accepted"></a>Mixed list | Baseline with `assets/starter/README.md` and `project: [own, starter, gh:example-co/payments@v3.4.0, ./examples/app]`, with `examples/app` present | Course syntax | Accepted | The list is non-empty, repeats nothing and may mix kinds |
 | <a id="case-options-empty-rejected"></a>Empty list | `project: []` | Course syntax | Rejected | A list MUST hold at least one option |
 | <a id="case-options-duplicate-rejected"></a>Repeated option | `project: [own, own]` | Course syntax | Rejected | A list MUST NOT repeat an option |
 | <a id="case-options-mapping-rejected"></a>Mapping | `project: {kind: own}` | Course syntax | Rejected | A mapping is not an option |
 | <a id="case-options-unknown-rejected"></a>Not an option | `project: Own` | Course syntax | Rejected | Options are case-sensitive, and `Own` is not `own` |
-| <a id="case-options-starter-empty-rejected"></a>Starter without files | `project: starter` and no `starter/` folder | Course syntax | Rejected | `starter` needs `starter/` holding at least one file |
+| <a id="case-options-starter-empty-rejected"></a>Starter without files | `project: starter` and no `assets/starter/` folder | Course syntax | Rejected | `starter` needs `assets/starter/` holding at least one file |
 
 ### Selecting a project <a id="project-selection"></a>
 
@@ -709,7 +900,7 @@ If the list has one option, that option is used and nothing is asked. If it has 
 
 #### Project selection cases <a id="example-project-selection"></a>
 
-These cases use the baseline with `starter/README.md` present.
+These cases use the baseline with `assets/starter/README.md` present.
 
 | Case | Baseline and change | Judged as | Outcome | Deciding rule |
 | --- | --- | --- | --- | --- |
@@ -729,7 +920,7 @@ The runner records the chosen *kind* and a *path*. The path is the project root 
 | Kind | Base | Path |
 | --- | --- | --- |
 | `own` | The workspace root, where the learner started the runner | `.`, or the sub-folder the learner chose as their project, such as `services/api` |
-| `starter` | The workspace root | The new folder the runner created from `starter/`, such as `work/app`. Its name is the course name unless the learner chooses another. An existing non-empty folder is never reused; the runner asks for another name. |
+| `starter` | The workspace root | The new folder the runner created from `assets/starter/`, such as `work/app`. Its name is the course name unless the learner chooses another. An existing non-empty folder is never reused; the runner asks for another name. |
 | A Git reference | The root of the checkout | The folder after `#`, or `.` when there is none |
 | A local folder (**proposed**) | The workspace root | The editable destination folder the copy was made in, such as `work/local-app`. It is never the source folder, such as `examples/app`. |
 
@@ -756,7 +947,7 @@ The exact field names and shape of a record belong to the record contract; this 
 
 ### Local project folders (proposed) <a id="local-projects"></a>
 
-**Proposed.** These semantics wait for the owner's review. The historical proposal accepts `./relative/path` as a local folder and says nothing more, so the following is this candidate's choice and not a recorded decision. A local folder is any ordinary directory inside the installed course, with no Git metadata needed. It is source material, never the place the learner works.
+A local folder is any ordinary directory inside the installed course, with no Git metadata needed. It is source material, never the place the learner works.
 
 1. A local `project` reference resolves relative to the installed course root, never the shell's current directory or an enclosing Git checkout. A local course-install reference still resolves relative to the directory the runner was run from, and installing creates its own read-only course snapshot.
 2. The source MUST be a present, non-empty directory inside the installed course snapshot. No Git repository, remote or commit is required, and a runner MUST NOT fabricate one.
@@ -767,7 +958,7 @@ The exact field names and shape of a record belong to the record contract; this 
 7. Checks and tutor edits use the destination as the project root. `AGENT_COURSE_PROJECT` names it. `AGENT_COURSE_DIR` keeps naming the read-only installed course.
 8. The recorded path is the destination relative to the workspace root, such as `work/local-app`, under the [path rules](#project-path).
 9. The source is fixed by the installed course snapshot. There is no separate Git pin and no lookup of enclosing Git history. Changing the author's original folder later cannot change the installed snapshot or touch an existing learner workspace.
-10. Resume uses the existing workspace and the original snapshot, and MUST NOT copy the source again. Taking a newer snapshot requires an explicit upgrade by the learner. How an upgrade treats an existing workspace is not defined here; it MUST NOT overwrite the workspace silently.
+10. Resume uses the existing workspace and the original snapshot, and MUST NOT copy the source again. Taking a newer snapshot requires an explicit upgrade by the learner. The [record contract](records.md#upgrade-projection) defines upgrade preparation and recovery. An upgrade MUST NOT overwrite the learner's workspace.
 11. Representing the source identity, comparing payloads and storing the workspace binding are record work. These rules choose no field and no hash.
 
 Source and destination for the cases below: the installed snapshot holds `examples/app/README.md` (40 lines) and `examples/app/src/main.py`, and has no `.git`. The workspace root holds no `work/` folder.
@@ -799,13 +990,13 @@ Source and destination for the cases below: the installed snapshot holds `exampl
 
 #### Explicit upgrade cases <a id="example-upgrade"></a>
 
-These cases use the local-folder course installed with workspace `work/local-app`, where the learner has edited `src/main.py`. The author has since published a newer snapshot. This contract defines nothing else about an upgrade.
+These cases use the local-folder course installed with workspace `work/local-app`, where the learner has edited `src/main.py`. The author has since published a newer snapshot. The [record contract](records.md#upgrade-projection) defines compatibility, progress archives and durable transitions.
 
 | Case | Baseline and change | Judged as | Outcome | Deciding rule |
 | --- | --- | --- | --- | --- |
 | <a id="case-upgrade-preserved-accepted"></a>Upgrade leaves the workspace alone | The learner explicitly asks to upgrade; the runner takes the newer snapshot as the installed course and leaves every file of `work/local-app`, including the edited `src/main.py`, byte for byte as it was | Runner behaviour | Accepted | The upgrade was explicit, and the workspace was not overwritten |
-| <a id="case-upgrade-permission-accepted"></a>Upgrade asks first | The learner explicitly asks to upgrade; before changing any file in `work/local-app` the runner asks, the learner says no, and the runner changes nothing in the workspace | Runner behaviour | Accepted | The runner obtained permission and, refused, left the workspace unchanged |
-| <a id="case-upgrade-silent-overwrite-rejected"></a>Upgrade overwrites silently | The learner explicitly asks to upgrade; the runner copies the newer snapshot over `work/local-app` without asking, replacing the edited `src/main.py` | Runner behaviour | Rejected | An upgrade MUST NOT overwrite the workspace silently |
+| <a id="case-upgrade-permission-accepted"></a>Upgrade asks first | The learner explicitly asks to upgrade; the runner explains that the course upgrade keeps the editable workspace unchanged, and changes no workspace files | Runner behaviour | Accepted | The learner requested the content upgrade; the editable workspace stays unchanged |
+| <a id="case-upgrade-silent-overwrite-rejected"></a>Upgrade overwrites silently | The learner explicitly asks to upgrade; the runner copies the newer snapshot over `work/local-app` without asking, replacing the edited `src/main.py` | Runner behaviour | Rejected | An upgrade MUST NOT overwrite the workspace |
 | <a id="case-upgrade-unrequested-rejected"></a>Snapshot changes without a request | The learner has not asked to upgrade; the runner takes the newer snapshot as the installed course on resume and changes no workspace file | Runner behaviour | Rejected | Taking a newer snapshot requires an explicit upgrade by the learner |
 
 ### The reference grammar <a id="reference-grammar"></a>
@@ -1026,10 +1217,10 @@ A schema validates one file's structure. The rules below need the Markdown body 
 - A lesson id equals its file name, and files that name a lesson use that id ([names and ids](#names-and-ids), [lessons](#lessons)).
 - Call ids and objective ids are unique across all lessons ([calls](#calls), [objectives](#objectives)).
 - An objective's `by` names a check in the same lesson, or `explain-back` in the final lesson ([objectives](#objectives)).
-- Every check id in a lesson exists in `checks/checks.yaml` ([execution contract](execution.md#check-declarations)).
+- Every check id in a lesson exists in the course frontmatter `checks` list ([execution contract](execution.md#check-declarations)).
 - A rubric exists for the final lesson and its criteria count equals its pass denominator ([rubric grammar](execution.md#rubric-grammar)).
 - Every relative link, written from the course root, stays in the course folder, `tutor/` is not linked from learner-visible text and `project:` links follow the line-range grammar ([links](#links), [line ranges](#line-ranges)).
-- A `starter` project requires a non-empty `starter/` ([project field](#project-field)).
+- A `starter` project requires a non-empty `assets/starter/` ([project field](#project-field)).
 - A local folder reference names a present, non-empty directory with no escaping link, cycle or special file ([local project folders](#local-projects)).
 
 #### File-shape versus whole-course cases <a id="example-markdown-only"></a>

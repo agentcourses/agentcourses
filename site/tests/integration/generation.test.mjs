@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
-import { writeFileSync, appendFileSync, rmSync } from 'node:fs';
-import { fixture, cli, read, rules, git, initialise, commit } from './support.mjs';
+import { writeFileSync, appendFileSync, rmSync, readdirSync } from 'node:fs';
+import { fixture, cli, read, rules, git, initialise, commit, root } from './support.mjs';
 const page = 'site/src/content/docs/specification.mdx';
 const generate = (dir) => cli('generate.mjs', dir);
 const check = (dir) => cli('check-generated.mjs', dir);
@@ -140,3 +140,26 @@ for (const input of ['current', 'historical']) for (const [label, transform] of 
     }
   });
 }
+
+// Public articles teach today's format. Learner progress history and explicit
+// course-content upgrades remain valid subjects and are deliberately allowed.
+test('public documentation describes only the current course format', () => {
+  function markdown(directory) {
+    return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+      const path = join(directory, entry.name);
+      return entry.isDirectory() ? markdown(path) : /\.mdx?$/.test(path) ? [path] : [];
+    });
+  }
+  const pages = [...markdown(join(root, 'site/src/content/docs')), ...markdown(join(root, 'spec')).filter((path) => !path.endsWith('/requirements.md')), join(root, 'README.md')];
+  const stale = /1\.0\.0-rc\.1|\bmigrat(?:ion|e|ed|ing)\b|historical (?:baseline|layout|trace|context|feedback)|Historically|candidate-migration|checks\/checks\.yaml[^\n]*(?:declares|as a list)|file="(?:checks\/|feedback\.yaml)/i;
+  const findings = pages.filter((path) => stale.test(read(path).replace(/<a id="[^"]*"><\/a>/g, ''))).map((path) => path.slice(root.length));
+  assert.deepEqual(findings, [], 'every public source, including the generated reference, must teach the current format');
+  const format = read(join(root, 'spec/format.md'));
+  assert.match(format, /format: "1\.0\.0-rc\.2"/);
+  assert.match(format, /assets\/starter\//);
+  assert.match(format, /scripts\/fixtures\//);
+  assert.match(format, /\| `checks` \| No \|/);
+  assert.match(format, /\| `feedback` \| No \|/);
+  assert.ok(/explicit upgrade request/.test(read(join(root, 'spec/records.md'))), 'learner course-content upgrades remain documented');
+  assert.ok(read(join(root, 'spec/records.md')).includes('`history`'), 'learner progress history remains documented');
+});

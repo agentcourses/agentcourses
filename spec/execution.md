@@ -1,8 +1,68 @@
 # Agent Courses 1.0: execution contract
 
-This page defines how a runner teaches a lesson, runs checks, gathers evidence and settles objectives. It assumes the folder and lesson rules in [the format contract](format.md). Learner feedback is in [the consent contract](consent.md). The record files, call events, receipts and course identity are defined by a later contract; this page states only the rules a runner must follow whatever those files look like. Each rule is listed in [the requirement register](requirements.md).
+This page defines how a runner teaches a lesson, runs checks, gathers evidence and settles objectives. It assumes the folder and lesson rules in [the format contract](format.md). Learner feedback is in [the consent contract](consent.md). The [record contract](records.md) defines progress files, call events and receipts; the [identity contract](identity.md) defines pinned course bytes.
 
-The words MUST, MUST NOT, SHOULD and MAY are used as in [the format contract](format.md#rules-and-advice). A paragraph labelled **Advice** never makes a course or a runner invalid. Examples are cases, built as [the format contract's case tables](format.md#case-tables) describe, starting from [the baseline course](format.md#baseline-course). Wording marked **Proposed** waits for the owner's review on the pull request.
+The words MUST, MUST NOT, SHOULD and MAY are used as in [the format contract](format.md#rules-and-advice). A paragraph labelled **Advice** never makes a course or a runner invalid. Examples are cases, built as [the format contract's case tables](format.md#case-tables) describe, starting from [the baseline course](format.md#baseline-course).
+
+## Declarations and preparation <a id="candidate-execution"></a>
+
+A runner reads declarations from `COURSE.md` after [candidate identification](format.md#format-identifier).
+Declarations grant neither command permission nor evidence or settlement.
+Learner call ownership, tutor privacy and explain-back silence retain their existing rules.
+
+The [typed check fields](#check-declarations) occur in the central `checks` list.
+Omitted or empty means no checks; null and non-lists fail `schema-course`.
+Invalid nested shapes also fail `schema-course`; duplicate check ids fail `req-check-declaration`.
+Every lesson check reference must resolve to a central identifier under the existing required/optional reference rules.
+Command programs use `scripts/<program>` through `AGENT_COURSE_DIR`.
+The working directory stays the editable learner project, with both environment variables unchanged.
+Command fixtures live at `scripts/fixtures/<check-id>/{pass,fail}/`.
+Each directory remains one project root, with the same exit-code expectations and optional sibling cases.
+The existing [check safety cases](#example-check-safety) and [fixture cases](#example-fixtures) apply to these paths.
+Observe checks still need no program or fixtures.
+
+### Starter preparation <a id="candidate-starters"></a>
+
+Project selection precedes preparation.
+A list of project alternatives needs an explicit learner selection; absence or an invalid selection must refuse source resolution.
+Do not choose the first alternative.
+A single offered option retains the existing automatic-selection rule.
+For `starter`, resolve all files under `assets/starter/` before preparing the editable destination.
+For a lesson, resolve only its listed files from that same base; an omitted list returns no files.
+A whole starter project already receives those files, so a lesson never recopies or replaces them.
+
+Before copying any file, validate every source and destination, including resolved containment, safe file type and collisions.
+Missing, escaping or non-file source entries refuse the operation.
+Destination paths must be contained within the editable destination after resolving links.
+If any selected target already exists, refuse the entire copy, keep all existing bytes and ask for another destination or selection.
+Do not partially add earlier files before finding a later collision.
+Lesson additions never replace files, even after asking about a collision.
+Validate every target before writing and never overwrite an existing file.
+No copy executes project code.
+Resume keeps the existing workspace; it never recopies source material.
+
+### Starter copy cases <a id="candidate-starter-cases"></a>
+
+Each case starts afresh from the [candidate resource baseline](format.md#candidate-resource-baseline), with `own` selected and an empty editable `work/app` destination.
+Unless changed below, the selected lesson is `make` and its source is `assets/starter/plan/README.md`.
+
+The **collision input** is a copy operation with selected files `a.txt` and `z.txt`, holding UTF-8 bytes `new a\n` and `new z\n`.
+Its destination already holds `z.txt` with bytes `old z\n` and unrelated `keep.txt` with bytes `keep\n`; `a.txt` is absent.
+These byte strings use the same LF notation as the resource baseline.
+This input exercises copying already selected files, independently of course loading.
+
+| Case | Baseline and change | Judged as | Outcome | Deciding rule |
+| --- | --- | --- | --- | --- |
+| <a id="case-candidate-copy-project-accepted"></a>Project starter copy | Set project: starter; select both baseline starter files for the fresh destination work/app | Project start | Accepted | Both files are copied with paths relative to assets/starter before lesson one |
+| <a id="case-candidate-copy-lesson-accepted"></a>Lesson starter subset | Resource baseline unchanged; own is selected, make lists plan/README.md and its target is absent | Runner behaviour | Accepted | Only assets/starter/plan/README.md is copied as plan/README.md |
+| <a id="case-candidate-copy-omitted-accepted"></a>No lesson additions | Remove only make's starter list; keep the listed lesson and both central checks | Runner behaviour | Accepted | No sources and no writes |
+| <a id="case-candidate-copy-collision-accepted"></a>Collision refused atomically | Collision input unchanged; runner refuses before writing | Runner behaviour | Accepted | Both existing files stay byte-identical; a.txt is never created |
+| <a id="case-candidate-copy-partial-rejected"></a>Partial copy before collision | Collision input; runner writes a.txt then refuses z.txt | Runner behaviour | Rejected | `req-starter-files`; every target must be validated before any write |
+| <a id="case-candidate-copy-overwrite-rejected"></a>Lesson overwrites | Add work/app/plan/README.md with bytes old plan\n; runner replaces it with the selected baseline source | Runner behaviour | Rejected | `req-starter-files`; lesson additions never replace existing files |
+| <a id="case-candidate-copy-missing-rejected"></a>Missing selected source | Change only make's starter list to [plan/MISSING.md]; that file is absent | Course syntax | Rejected | `req-starter-files`; every selected source must exist |
+| <a id="case-candidate-copy-nonfile-rejected"></a>Directory as lesson file | Change only make's starter list to [plan]; the baseline plan directory exists | Course syntax | Rejected | `req-starter-files`; lesson entries must be files |
+| <a id="case-candidate-copy-escape-rejected"></a>Target link escapes | Add work/app/plan as a link to an existing empty directory outside work/app; retain the selected baseline source | Runner behaviour | Rejected | `req-starter-files`; validate resolved target containment before any write |
+| <a id="case-candidate-copy-source-escape-rejected"></a>Source link escapes | Replace only assets/starter/plan/README.md with a link to the existing assets/notes.md, outside the starter base; keep make's selector | Course syntax | Rejected | `req-starter-files`; source must remain inside its starter base |
 
 ## Who does what <a id="who-does-what"></a>
 
@@ -120,7 +180,7 @@ Before the first lesson the runner prepares the project root in a fixed order. T
 1. Check the `project` syntax. A malformed value stops the course.
 2. If the list holds two or more options, wait for the learner's choice. A runner MUST NOT choose for them.
 3. For a Git reference, resolve the pin and check its `project:` links against the immutable checkout. For a local folder (**proposed**), check the source and its `project:` links against the selected subtree of the installed course snapshot. A failure rejects this project's start.
-4. For a local folder (**proposed**), obtain an editable destination from the learner or embedding application, refuse a non-empty destination, then copy the source into it. The runner MUST NOT run project code while copying. For `starter`, create the new folder from `starter/` under the same non-reuse rule.
+4. For a local folder (**proposed**), obtain an editable destination from the learner or embedding application, refuse a non-empty destination, then copy the source into it. The runner MUST NOT run project code while copying. For `starter`, create the new folder from `assets/starter/` under the same non-reuse rule.
 5. Begin lesson one with the destination as the project root.
 
 On resume the runner uses the existing project root and the original snapshot. It MUST NOT copy a local source again or move a pin. At every open of a `project:` link it resolves against the editable project root and warns when it cannot.
@@ -267,17 +327,20 @@ A check is a small program, or an inspection, that looks at the learner's projec
 
 ### Check declarations <a id="check-declarations"></a>
 
-Checks are declared in `checks/checks.yaml` as a list of mappings.
+Checks are declared as a list of mappings in `COURSE.md` frontmatter `checks`.
+Omit the field or use `checks: []` when no checks are needed.
+This fragment belongs inside the course frontmatter:
 
 ```yaml
-- id: tool-is-registered
-  run: python "$AGENT_COURSE_DIR/checks/tool_is_registered.py"
-  verify: The agent registers at least one tool the model can call
-  timeout: 30
-  network: false
-- id: output-type-is-used
-  kind: observe
-  verify: agent.py sets an output type on the agent and uses its fields
+checks:
+  - id: tool-is-registered
+    run: python "$AGENT_COURSE_DIR/scripts/tool_is_registered.py"
+    verify: The agent registers at least one tool the model can call
+    timeout: 30
+    network: false
+  - id: output-type-is-used
+    kind: observe
+    verify: agent.py sets an output type on the agent and uses its fields
 ```
 
 | Field | Required | Rule |
@@ -291,12 +354,12 @@ Checks are declared in `checks/checks.yaml` as a list of mappings.
 
 #### Check declaration cases <a id="example-check-declarations"></a>
 
-These cases start from the baseline `checks.yaml`, with `final-check` as the command check and the extended baseline's observe check `agent-runs`.
+These cases start from the baseline the course `checks` list, with `final-check` as the command check and the extended baseline's observe check `agent-runs`.
 
 | Case | Baseline and change | Judged as | Outcome | Deciding rule |
 | --- | --- | --- | --- | --- |
 | <a id="case-check-shape-accepted"></a>Valid shapes | `final-check` with `run`, `verify`, `timeout: 1`, then `timeout: 300`, then no `timeout` (which means 60), and `network: true`; `agent-runs` with `kind: observe` and `verify` only | Course syntax | Accepted | A command has `run` and `verify`, an observe has `verify` only, the timeout is a whole number from 1 to 300 or omitted, and `network` is boolean |
-| <a id="case-check-id-duplicate-rejected"></a>Repeated check id | `checks.yaml` lists `final-check` twice, each entry complete with `run`, `verify`, `timeout` and `network`; the one set of `final-check` fixtures exists | Course syntax | Rejected | Check ids are unique among checks. Both entries are otherwise valid, so only the repeat decides. Finding it means comparing the `id` property after parsing, because two entries with other differing fields are still different as whole items |
+| <a id="case-check-id-duplicate-rejected"></a>Repeated check id | the course `checks` list lists `final-check` twice, each entry complete with `run`, `verify`, `timeout` and `network`; the one set of `final-check` fixtures exists | Course syntax | Rejected | Check ids are unique among checks. Both entries are otherwise valid, so only the repeat decides. Finding it means comparing the `id` property after parsing, because two entries with other differing fields are still different as whole items |
 | <a id="case-check-run-missing-rejected"></a>Command without run | `final-check` without `run` | Course syntax | Rejected | A command check MUST have `run` |
 | <a id="case-check-verify-missing-rejected"></a>Check without verify | `final-check` without `verify` | Course syntax | Rejected | `verify` is required |
 | <a id="case-check-observe-run-rejected"></a>Observe with run | `agent-runs` with a `run` line added | Course syntax | Rejected | An observe check MUST NOT have `run` |
@@ -304,7 +367,7 @@ These cases start from the baseline `checks.yaml`, with `final-check` as the com
 | <a id="case-check-timeout-high-rejected"></a>Timeout 301 | `final-check` with `timeout: 301` | Course syntax | Rejected | The timeout is at most 300 |
 | <a id="case-check-timeout-fraction-rejected"></a>Fractional timeout | `final-check` with `timeout: 1.5` | Course syntax | Rejected | The timeout is a whole number |
 | <a id="case-check-network-type-rejected"></a>Network not boolean | `final-check` with `network: "yes"` | Course syntax | Rejected | `network` is a boolean |
-| <a id="case-check-unlisted-warning"></a>Declared but unused | `checks.yaml` declares a complete command check `spare-check` with `run`, `verify`, `pass/` and `fail/` fixtures, and no lesson lists it | Advisory lint | Accepted with a warning | A check that no lesson lists is allowed, and a validator warns |
+| <a id="case-check-unlisted-warning"></a>Declared but unused | the course `checks` list declares a complete command check `spare-check` with `run`, `verify`, `pass/` and `fail/` fixtures, and no lesson lists it | Advisory lint | Accepted with a warning | A check that no lesson lists is allowed, and a validator warns |
 
 ### Where a command runs <a id="check-paths"></a>
 
@@ -321,12 +384,12 @@ These cases use `run` lines for the baseline course installed at `/home/ana/cour
 
 | Case | Baseline and change | Judged as | Outcome | Deciding rule |
 | --- | --- | --- | --- | --- |
-| <a id="case-cwd-project-accepted"></a>Project is the working directory | `own` project in `/home/ana/work`; `run: python "$AGENT_COURSE_DIR/checks/final_check.py"`; the runner starts it with working directory `/home/ana/work`, `AGENT_COURSE_DIR=/home/ana/courses/sample-course` and `AGENT_COURSE_PROJECT=/home/ana/work` | Runner behaviour | Accepted | The working directory is the project root; the course script is reached through the variable |
+| <a id="case-cwd-project-accepted"></a>Project is the working directory | `own` project in `/home/ana/work`; `run: python "$AGENT_COURSE_DIR/scripts/final_check.py"`; the runner starts it with working directory `/home/ana/work`, `AGENT_COURSE_DIR=/home/ana/courses/sample-course` and `AGENT_COURSE_PROJECT=/home/ana/work` | Runner behaviour | Accepted | The working directory is the project root; the course script is reached through the variable |
 | <a id="case-cwd-local-accepted"></a>Local folder working directory | `project: ./examples/app` copied to `work/local-app`; the same `run` line; working directory and `AGENT_COURSE_PROJECT` are `/home/ana/work/work/local-app`; `AGENT_COURSE_DIR` stays `/home/ana/courses/sample-course` | Runner behaviour | Accepted | The project root is the editable copy, and the installed course stays read-only |
 | <a id="case-cwd-relative-project-accepted"></a>Relative path means the project | `run: test -f agent.py` | Course syntax | Accepted | It tests `agent.py` in the project root, because relative means project |
 | <a id="case-cwd-course-as-cwd-rejected"></a>Course folder as working directory | The runner starts `final-check` with working directory `/home/ana/courses/sample-course` | Runner behaviour | Rejected | A command runs with the project root as its working directory |
-| <a id="case-cwd-unquoted-warning"></a>Unquoted expansion | `run: python $AGENT_COURSE_DIR/checks/final_check.py` | Advisory lint | Accepted with a warning | Quoting is advice; it works until the course path contains a space |
-| <a id="case-cwd-relative-course-script-error"></a>Relative course script | `run: python checks/final_check.py` | Runner behaviour | Accepted with a warning | A validator may warn after finding `checks/final_check.py` in the course; at run time the interpreter looks in the project, cannot find the file and exits 2, so the runner reports a broken check, not a runtime failure of the learner |
+| <a id="case-cwd-unquoted-warning"></a>Unquoted expansion | `run: python $AGENT_COURSE_DIR/scripts/final_check.py` | Advisory lint | Accepted with a warning | Quoting is advice; it works until the course path contains a space |
+| <a id="case-cwd-relative-course-script-error"></a>Relative course script | `run: python scripts/final_check.py` | Runner behaviour | Accepted with a warning | A validator may warn after finding `scripts/final_check.py` in the course; at run time the interpreter looks in the project, cannot find the file and exits 2, so the runner reports a broken check, not a runtime failure of the learner |
 | <a id="case-cwd-source-edit-rejected"></a>Check run against the source | `project: ./examples/app`; the runner uses `examples/app` in the installed course as `AGENT_COURSE_PROJECT` | Runner behaviour | Rejected | The project root of a local folder is the destination copy, not the source |
 
 ### Showing the command <a id="command-display"></a>
@@ -337,7 +400,7 @@ Before the first run of each distinct `run` string in a project, the runner MUST
 
 | Case | Baseline and change | Judged as | Outcome | Deciding rule |
 | --- | --- | --- | --- | --- |
-| <a id="case-display-before-accepted"></a>Shown first | Before the first run the runner shows `python "$AGENT_COURSE_DIR/checks/final_check.py"`, the working directory and both variable values, and waits | Runner behaviour | Accepted | The exact command, directory and variables precede the first run |
+| <a id="case-display-before-accepted"></a>Shown first | Before the first run the runner shows `python "$AGENT_COURSE_DIR/scripts/final_check.py"`, the working directory and both variable values, and waits | Runner behaviour | Accepted | The exact command, directory and variables precede the first run |
 | <a id="case-display-after-rejected"></a>Shown afterwards | The runner runs the command first and shows it afterwards | Runner behaviour | Rejected | It MUST be shown before the first run |
 | <a id="case-display-declined-accepted"></a>Declined | The learner declines; the runner records not run and settles nothing from that check | Runner behaviour | Accepted | A declined check is not run |
 | <a id="case-display-declined-failed-rejected"></a>Declined recorded as failed | The learner declines; the runner records the check as failed | Runner behaviour | Rejected | Declined is neither passed nor failed |
@@ -358,7 +421,7 @@ A runner:
 
 | Case | Baseline and change | Judged as | Outcome | Deciding rule |
 | --- | --- | --- | --- | --- |
-| <a id="case-host-python-accepted"></a>Permitted script | `run: python "$AGENT_COURSE_DIR/checks/a.py"` where the host permits Python | Runner behaviour | Accepted | A host-permitted executable may be used |
+| <a id="case-host-python-accepted"></a>Permitted script | `run: python "$AGENT_COURSE_DIR/scripts/a.py"` where the host permits Python | Runner behaviour | Accepted | A host-permitted executable may be used |
 | <a id="case-host-gradle-accepted"></a>Any language | `run: ./gradlew test` where the host permits that tool | Runner behaviour | Accepted | No language list applies |
 | <a id="case-host-denied-accepted"></a>Denied command | `run: ./gradlew test` where the host permission prompt is declined; recorded as not run | Runner behaviour | Accepted | A command the host refuses is not run, and nothing settles |
 | <a id="case-host-workaround-rejected"></a>Work around a refusal | The host refuses the command and the runner runs it through another tool | Runner behaviour | Rejected | A runner MUST NOT work around a refusal by another route |
@@ -423,11 +486,11 @@ These cases use `final-check` exiting 1 with the JSON line `{"check":"final-chec
 - **Deterministic.** The same project gives the same result. It compares meaning, not exact text.
 - **Helpful on failure.** Every `fail` names a path and a fix a beginner can act on.
 - **Quiet.** No secrets, environment dumps or file contents in the output.
-- **Proven.** Every command check has fixtures: `checks/fixtures/<id>/pass/` and `checks/fixtures/<id>/fail/`. Each of those two directories is itself one project root, the directory the check is run in, with the two variables set. A course MAY add further cases as sibling directories named `pass-<kebab id>` or `fail-<kebab id>`, each also a project root. A directory is never a container of several projects. An observe check has no program and needs no fixtures.
+- **Proven.** Every command check has fixtures: `scripts/fixtures/<id>/pass/` and `scripts/fixtures/<id>/fail/`. Each of those two directories is itself one project root, the directory the check is run in, with the two variables set. A course MAY add further cases as sibling directories named `pass-<kebab id>` or `fail-<kebab id>`, each also a project root. A directory is never a container of several projects. An observe check has no program and needs no fixtures.
 
 #### Check safety cases <a id="example-check-safety"></a>
 
-These cases judge the program of `final-check`, run against `checks/fixtures/final-check/fail/` where `agent.py` registers no tool.
+These cases judge the program of `final-check`, run against `scripts/fixtures/final-check/fail/` where `agent.py` registers no tool.
 
 | Case | Baseline and change | Judged as | Outcome | Deciding rule |
 | --- | --- | --- | --- | --- |
@@ -444,7 +507,7 @@ A fixture directory is one project root. The validator runs the check once for e
 Most cases use the baseline check `final-check`, which exits 0 when `agent.py` at the working directory registers a tool and 1 otherwise. The nesting cases use `src-agent`, a second check that exits 0 when `src/agent.py` at the working directory registers a tool and 1 otherwise.
 
 ```text
-checks/fixtures/final-check/
+scripts/fixtures/final-check/
 ├── pass/                 # one project root: agent.py registers a tool
 │   └── agent.py
 ├── pass-two-tools/       # an extra passing project root
@@ -456,12 +519,12 @@ checks/fixtures/final-check/
 | Case | Baseline and change | Judged as | Outcome | Deciding rule |
 | --- | --- | --- | --- | --- |
 | <a id="case-fixture-layout-accepted"></a>Separate project roots | The tree above, run as `final-check` with working directory `pass/` (exit 0), `pass-two-tools/` (exit 0) and `fail/` (exit 1) | Course syntax | Accepted | Each of `pass/` and `fail/` is one project root holding project files, and the runs give the stated results |
-| <a id="case-fixture-nested-accepted"></a>One project with nested source | `checks/fixtures/src-agent/pass/src/agent.py` registers a tool; `checks/fixtures/src-agent/fail/src/agent.py` registers nothing; the check runs once in `pass/` (exit 0) and once in `fail/` (exit 1) | Course syntax | Accepted | `src/agent.py` is at each fixture root's `src/`, so each directory is one project root whose code is in a sub-folder |
-| <a id="case-fixture-container-rejected"></a>A container of two projects | `checks/fixtures/src-agent/pass/` holds `a/src/agent.py` and `b/src/agent.py`, both registering a tool, and no top-level `src/`; `fail/src/agent.py` is as in the nested case. The author expects the check to run inside `a/` and `b/` | Course syntax | Rejected | The check runs once with working directory `pass/`, where `src/agent.py` does not exist, so it exits 1 on the passing fixture. Neither `a/` nor `b/` is ever run. The only difference from the nested case is that `src/` is one level too deep |
+| <a id="case-fixture-nested-accepted"></a>One project with nested source | `scripts/fixtures/src-agent/pass/src/agent.py` registers a tool; `scripts/fixtures/src-agent/fail/src/agent.py` registers nothing; the check runs once in `pass/` (exit 0) and once in `fail/` (exit 1) | Course syntax | Accepted | `src/agent.py` is at each fixture root's `src/`, so each directory is one project root whose code is in a sub-folder |
+| <a id="case-fixture-container-rejected"></a>A container of two projects | `scripts/fixtures/src-agent/pass/` holds `a/src/agent.py` and `b/src/agent.py`, both registering a tool, and no top-level `src/`; `fail/src/agent.py` is as in the nested case. The author expects the check to run inside `a/` and `b/` | Course syntax | Rejected | The check runs once with working directory `pass/`, where `src/agent.py` does not exist, so it exits 1 on the passing fixture. Neither `a/` nor `b/` is ever run. The only difference from the nested case is that `src/` is one level too deep |
 | <a id="case-fixture-fail-missing-rejected"></a>No failing root | The `final-check` tree with `fail/` removed | Course syntax | Rejected | A failing project is required |
 | <a id="case-fixture-empty-accepted"></a><a id="case-fixture-empty-rejected"></a>Empty failing root | The `final-check` tree with `fail/agent.py` removed, leaving an empty `fail/` directory; the check runs there | Course syntax | Accepted | The check is run once with working directory `fail/`. There is no `agent.py`, so it exits 1, which is the required failing result. The contract sets no minimum number of files. The first anchor is kept stable for existing links; the outcome is accepted. |
 | <a id="case-fixture-fail-passes-rejected"></a>The failing fixture passes | The `final-check` tree with `fail/agent.py` registering a tool, so the check exits 0 in `fail/` | Course syntax | Rejected | The failing root must give the failing exit, and here it exits 0 |
-| <a id="case-fixture-undeclared-warning"></a>Fixtures for an undeclared id | The `final-check` tree plus `checks/fixtures/other-check/pass/agent.py`, with no check `other-check` declared | Advisory lint | Accepted with a warning | The folder is unused and a validator warns |
+| <a id="case-fixture-undeclared-warning"></a>Fixtures for an undeclared id | The `final-check` tree plus `scripts/fixtures/other-check/pass/agent.py`, with no check `other-check` declared | Advisory lint | Accepted with a warning | The folder is unused and a validator warns |
 | <a id="case-fixture-pass-fails-rejected"></a>The passing fixture fails | The `final-check` tree with `pass/agent.py` registering no tool, so the check exits 1 in `pass/` | Course syntax | Rejected | The check has a bug, or the fixture is wrong, so its own fixtures reject it |
 
 ### Observe checks <a id="observe-checks"></a>
@@ -626,7 +689,7 @@ A course is code someone else wrote, running in the learner's project. A runner 
 - **Referenced projects are untrusted code.** A runner MUST NOT run install scripts, Git hooks or package scripts from a referenced project, or from a copied local folder, without first showing the exact command.
 - **Starter files never overwrite.** If a target exists, the runner asks the learner.
 - **Third-party courses are untrusted** until the learner or their organisation trusts the publisher.
-- **Pins.** A runner resolves a Git reference once, records the commit it found, reuses that snapshot, and MUST refuse a different payload claiming the same name and version. A local folder has no Git pin: the installed course snapshot is its source, and it does not change unless the learner explicitly upgrades. The exact bytes that define a payload are defined with course identity, in a later contract.
+- **Pins.** A runner resolves a Git reference once, records the commit it found, reuses that snapshot, and MUST refuse a different payload claiming the same name and version. A local folder has no Git pin: the installed course snapshot is its source, and it does not change unless the learner explicitly upgrades. The [identity contract](identity.md) defines the exact pinned bytes.
 - **Credentials.** A runner uses the learner's own Git credentials. A reference MUST NOT contain credentials, and a runner MUST NOT record one.
 - **Existing checkout.** A runner SHOULD reuse a checkout with a matching remote and tell the learner which commit the course expects and how far theirs is from it.
 

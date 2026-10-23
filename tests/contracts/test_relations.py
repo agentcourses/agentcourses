@@ -233,7 +233,7 @@ def register():
     """Map each course-folder case to the requirements listing it, and each requirement to its enforcer."""
     judged, warned = {}, set()
     for name in SPEC_TABLES:
-        for line in (ROOT / 'spec' / name).read_text().splitlines():
+        for line in (ROOT / 'tests/contracts/fixtures/historical' / name).read_text().splitlines():
             match = re.match(r'\| <a id="(case-[^"]+)"></a>', line)
             if match:
                 cells = [cell.strip() for cell in line.strip().strip('|').split(' | ')]
@@ -243,7 +243,7 @@ def register():
                     warned.add(f'{name}#{match[1]}')
     cases, enforcers = {}, {}
     section = ''
-    for line in (ROOT / 'spec/requirements.md').read_text().splitlines():
+    for line in (ROOT / 'tests/contracts/fixtures/historical/requirements.md').read_text().splitlines():
         if line.startswith('## '):
             section = line
         match = re.match(r'\| <a id="(req-[^"]+)"></a>', line)
@@ -730,6 +730,30 @@ RUNNER = 'judged on what a runner does when it resolves or starts a project, not
 RECORD = 'the recorded project path lives in learner records, which the record and event schema cases cover'
 RUNS_CHECK = 'needs the check program run against its fixtures; course validation never runs a course command'
 NOT_BUILT = {
+    # This sweep uses the original quickstart and reader; these named cases need rc.2 interpretation.
+    F + 'central-checks-null-rejected': 'needs the rc.2 course schema: checks is an ignored extension in the original reader',
+    F + 'central-checks-type-rejected': 'needs rc.2 list validation: the original reader does not type-check central checks',
+    F + 'central-feedback-null-rejected': 'needs the rc.2 course schema: feedback is an ignored extension in the original reader',
+    F + 'central-feedback-type-rejected': 'needs rc.2 object validation: the original reader does not type-check central feedback',
+    F + 'central-checks-duplicate-rejected': 'needs central check-id comparison; the original reader compares checks/checks.yaml entries only',
+    F + 'central-check-shape-rejected': 'needs nested rc.2 check validation reported as schema-course; the original reader validates the separate checks file',
+    F + 'central-extension-warning': 'needs an identified rc.2 baseline; the original reader additionally warns about its format and central fields',
+    F + 'mixed-checks-equal-rejected': 'needs rc.2 rejection of a present checks/checks.yaml even when equal; the original reader uses that file',
+    F + 'mixed-checks-empty-rejected': 'needs rc.2 presence rejection of empty checks/checks.yaml; the original reader has no mixed-layout rule',
+    F + 'mixed-feedback-empty-rejected': 'needs rc.2 presence rejection of empty feedback.yaml; the original reader has no mixed-layout rule',
+    F + 'mixed-feedback-equal-rejected': 'needs rc.2 rejection of a present feedback.yaml even when equal; the original reader uses that file',
+    F + 'mixed-both-rejected': 'needs one rc.2 mixed-layout finding for both old files; the original reader treats them as declaration sources',
+    F + 'mixed-precedence-rejected': 'needs rc.2 mixed-layout rejection before nested validation; the original reader has neither central loading nor that early boundary',
+    F + 'resource-fixture-project-rejected': 'needs rc.2 fixture-role exclusion under scripts/fixtures; the original reader accepts contained local project sources',
+    F + 'resource-fixture-starter-rejected': 'needs the rc.2 assets/starter base and resolved fixture-role exclusion; the original reader uses starter/',
+    F + 'resource-markdown-relative-rejected': 'needs the otherwise valid rc.2 resource baseline; applying it to the original reader adds unrelated declaration and starter findings',
+    F + 'resource-old-base-rejected': 'needs assets/starter as the rc.2 lesson base; starter/ is the valid base for this historical sweep',
+    F + 'resource-selection-missing-rejected': RUNNER + '; this case also requires the rc.2 assets/starter source',
+    E + 'candidate-copy-missing-rejected': 'needs rc.2 lesson resolution from assets/starter; the original reader searches starter/',
+    E + 'candidate-copy-nonfile-rejected': 'needs the rc.2 resource baseline so only its selected directory fails; the original reader searches starter/',
+    E + 'candidate-copy-source-escape-rejected': 'needs containment relative to the rc.2 assets/starter base; the original reader validates the historical starter base',
+    C + 'candidate-feedback-duplicate-rejected': 'needs central feedback question-id comparison; the original reader compares feedback.yaml questions only',
+    C + 'candidate-feedback-range-rejected': 'needs nested rc.2 feedback validation reported as schema-course; the original reader validates feedback.yaml',
     F + 'starter-answer-finished-rejected': 'needs a person to judge whether a starter file is a finished answer',
     F + 'version-rename-patch-rejected': 'needs two versions of a course to compare',
     F + 'version-rename-patch-warning': 'needs two versions of a course to compare',

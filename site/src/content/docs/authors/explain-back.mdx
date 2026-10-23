@@ -57,10 +57,6 @@ A `## Quiz` is a short list of questions that catches a misconception early. A w
 
 ## What you can run today
 
-From the checkout root of the [agentcourses/agentcourses repository](https://github.com/agentcourses/agentcourses), set up as [the quickstart](/authors/quickstart/) describes, the internal harness checks a course folder, including that its rubric exists for the final lesson and its criteria count equals its pass denominator:
+Check the rubric against the [rubric grammar](/specification/#execution--rubric-grammar): it must exist for the final lesson, and its criteria count must equal the pass denominator. Review the prompt and rubric together using the rules above. The [quickstart's fixture commands](/authors/quickstart/) exercise a check program only; they do not validate the course or judge an explain-back.
 
-```sh
-uv run --locked python tools/check_contracts.py --example /path/to/your-course
-```
-
-It does not judge an explain-back. No public `validate` command is available yet, and judging belongs to a runner that has the `judge` capability.
+Current-format schema and whole-course validation are not available yet. No public `validate` command is released, and judging belongs to a runner that has the `judge` capability.
