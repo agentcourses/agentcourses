@@ -1,8 +1,26 @@
 # Agent Courses 1.0: pinned course identity
 
-This page defines how a runner turns a course folder into one short identity string. The string pins the exact bytes a learner installed. Two runners given the same folder produce the same string, and a different folder produces a different one. The page fixes every choice that could make two implementations disagree: which entries count, how they are ordered, how text is read and how the bytes are framed before hashing. The record files that store the string are defined in [the record contract](records.md). Every rule here is listed in [the requirement register](requirements.md).
+This page defines how a runner turns a course folder into one short identity string. The string pins the exact bytes a learner installed. Two runners given the same folder produce the same string, and a different folder produces a different one. The page fixes every choice that could make two implementations disagree: which entries count, how they are ordered, how text is read and how the bytes are framed before hashing. The record files that store the string are defined in [the record contract](records.md).
 
-This is a candidate. Wording marked **Proposed** is a drafting choice that waits for the owner's review on the pull request; a passing check or an independent review does not approve it. Identity says which bytes were installed. It does not say who published them or whether they are safe, and it qualifies no runner.
+This is a pre-release specification. Identity proves which bytes were installed. It does not identify the publisher or establish safety, and it qualifies no runner.
+
+## Snapshot identity <a id="candidate-identity"></a>
+
+Identity computation is independent of course interpretation and does not select an interpreter.
+[Trusted installation provenance](records.md#candidate-provenance) selects the interpretation before retained metadata is read.
+Changing authored paths or frontmatter produces a different identity.
+Preserve retained snapshots and published schema bytes exactly; never mutate or relabel them to repair a mismatch.
+An explicit learner upgrade may select a separate snapshot under the [upgrade rules](records.md#upgrade-projection).
+A matching digest or protected transition binding is insufficient to infer original installation provenance.
+
+### Snapshot cases <a id="candidate-identity-cases"></a>
+
+| Case | Baseline and change | Judged as | Outcome | Deciding rule |
+| --- | --- | --- | --- | --- |
+| <a id="case-candidate-identity-retained-accepted"></a>Retained snapshot | Retain the exact trace tree with trusted installation provenance | Identity computation | Accepted | Its bytes reproduce its digest |
+| <a id="case-candidate-identity-migration-accepted"></a>Changed course content | Make a separate copy and change its frontmatter | Identity computation | Accepted | Different included bytes produce a distinct digest |
+| <a id="case-candidate-identity-rewrite-rejected"></a>Retained snapshot rewritten | Change a retained tree without a new snapshot | Pin check | Rejected | The existing pin refuses changed bytes |
+| <a id="case-candidate-identity-inferred-rejected"></a>Digest used as provenance | A retained tree matches its digest but trusted installation provenance is missing | Retained interpretation | Rejected | `req-record-replay-data`; byte identity cannot establish interpretation |
 
 ## Reading this page <a id="reading"></a>
 
@@ -49,7 +67,7 @@ Four exact rules remove names from the walk. Nothing else is excluded, and an ex
 3. The name `.agents` directly under the root, with everything under it. It holds runner state: learner records, the course lock and installed courses.
 4. The name `_site` directly under the root, with everything under it. It is the folder generated pages are written to.
 
-Rules 3 and 4 apply only at the root. A folder with the same name deeper in the tree is course content. A course MUST NOT use `_site` or `.agents` at its root for content, because that content would never be pinned. **Proposed:** the four rules and the root-only limit on the last two.
+Rules 3 and 4 apply only at the root. A folder with the same name deeper in the tree is course content. A course MUST NOT use `_site` or `.agents` at its root for content, because that content would never be pinned.
 
 ## Paths <a id="identity-paths"></a>
 
@@ -79,7 +97,7 @@ A file is *text* when its bytes are valid UTF-8 and contain no zero byte. Otherw
 
 A text file is hashed after one change: each two-byte pair carriage return then line feed (`0D 0A`) is replaced by the single byte line feed (`0A`), scanning from the start, once. A lone carriage return is kept. The bytes `0D 0D 0A` therefore become `0D 0A`. A byte order mark is content and is kept. Unicode normalisation is not applied to contents, so a word written with a combined accent and the same word written with a combining accent are different.
 
-**Proposed:** reading CRLF as LF lets Git on a platform that converts line endings produce the same identity as another platform, so a team's lock does not break on a checkout. The cost is that a course cannot pin a deliberate CRLF-only difference in a text file. A checkout filter that rewrites other bytes, such as a content filter, gives a different identity, and the runner refuses it as a mismatch instead of repairing it.
+Reading CRLF as LF lets Git on a platform that converts line endings produce the same identity as another platform, so a team's lock does not break on a checkout. The cost is that a course cannot pin a deliberate CRLF-only difference in a text file. A checkout filter that rewrites other bytes, such as a content filter, gives a different identity, and the runner refuses it as a mismatch instead of repairing it.
 
 ## Ordering <a id="identity-ordering"></a>
 

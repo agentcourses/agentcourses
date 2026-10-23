@@ -1,4 +1,4 @@
-"""Complete authored inputs from the public worked trace."""
+"""Immutable authored inputs from the internal retained-snapshot proof."""
 from pathlib import Path
 import re
 import sys
@@ -12,7 +12,7 @@ sys.path.insert(0, str(ROOT))
 @pytest.fixture
 def course(tmp_path):
     root = tmp_path / 'sample-course'
-    section = (ROOT / 'spec/records.md').read_text().split('<details><summary>Exact authored files for sample-course</summary>')[1].split('</details>')[0]
+    section = (ROOT / 'tests/contracts/fixtures/historical/records.md').read_text().split('<details><summary>Exact authored files for sample-course</summary>')[1].split('</details>')[0]
     for name, payload in re.findall(r'`([^`]+)`:\n\n```[^\n]*\n(.*?)```', section, re.S):
         path = root / name
         path.parent.mkdir(parents=True, exist_ok=True)

@@ -1,22 +1,22 @@
 ---
 title: Quickstart
-description: Copy a small tested course, check it and see what a pass and a fail look like.
+description: Write a small course and try its check against passing and failing projects.
 ---
 
 import { Steps, Aside } from '@astrojs/starlight/components';
 import ExampleCode from '../../../components/ExampleCode.astro';
 
-A course is a folder of Markdown files, a few check programs and one rubric. This guide builds the smallest complete one, a course named `quickstart` that teaches a learner to build a one-file agent and explain it. Every file below is rendered from the example course that the agentcourses/agentcourses repository tests, so what you copy is what was proven.
+A course is a folder of Markdown files, a few check programs and one rubric. This guide builds the smallest complete one, a course named `quickstart` that teaches a learner to build a one-file agent and explain it. The course page below declares the current format, checks and lesson order. The lesson and rubric includes supply teaching material; the program and fixtures let you try the command contract directly.
 
 The course you write is addressed to the tutor, the agent that teaches it. Only each lesson's `## Goal` is read to the learner as written. The [course format](/specification/#format--lesson-headings) lists the headings a runner looks for.
 
 <Aside type="caution" title="What you can run today">
-The commands in this guide run from a checkout of the [agentcourses/agentcourses repository](https://github.com/agentcourses/agentcourses), using its locked Python tools. They are an internal proof harness, not a public validator or a qualified runner. There is no installable package yet, and the `/learn` command is not released.
+The fixture commands below use Python locally. Schema and whole-course consumer support for the current declarations is still being implemented. The repository harness is an internal proof tool and does not yet validate courses written by this guide. There is no installable package yet, and the `/learn` command is not released.
 </Aside>
 
 ## Before you start
 
-Clone the [agentcourses/agentcourses repository](https://github.com/agentcourses/agentcourses) and install the Python and uv versions named in [its README](https://github.com/agentcourses/agentcourses#install-and-check). The top of that clone is the **checkout root**. Run every command marked **checkout root** from there. Choose any empty directory for the course itself. It is your course folder, and it is separate from the project a learner works in. Where this guide says "the course folder", use that directory.
+Install Python 3.12 to try the check program. Choose any empty directory for the course itself. It is your course folder, and it is separate from the project a learner works in. Where this guide says "the course folder", use that directory.
 
 Folder names matter: the folder name must equal the course's `name`, so the folder here is called `quickstart` ([course shape](/specification/#format--course-shape)).
 
@@ -27,7 +27,7 @@ Folder names matter: the folder name must equal the course's `name`, so the fold
    Run this in your chosen empty directory, which will hold the course folder.
 
    ```sh
-   mkdir -p quickstart/lessons quickstart/tutor quickstart/checks/fixtures/final-check/pass quickstart/checks/fixtures/final-check/fail
+   mkdir -p quickstart/lessons quickstart/tutor quickstart/scripts/fixtures/final-check/pass quickstart/scripts/fixtures/final-check/fail
    ```
 
    The layout is described in [the course layout](/specification/#format--folder-layout).
@@ -36,7 +36,39 @@ Folder names matter: the folder name must equal the course's `name`, so the fold
 
    Save this as `quickstart/COURSE.md` in the course folder. Its frontmatter names the course; its body is the page a learner reads first.
 
-   <ExampleCode example="quickstart" file="COURSE.md" lang="markdown" />
+   ```markdown
+   ---
+   format: "1.0.0-rc.2"
+   name: quickstart
+   description: Build a one-file agent and explain it. For beginners.
+   version: "1.0.0"
+   license: Apache-2.0
+   project: [own]
+   checks:
+     - id: final-check
+       run: python "$AGENT_COURSE_DIR/scripts/final_check.py"
+       verify: agent.py defines an agent
+       timeout: 30
+       network: false
+     - id: agent-runs
+       kind: observe
+       verify: agent.py exists and defines an agent
+   ---
+
+   # Build a small agent
+
+   You'll build a small agent.
+
+   ## Outcome
+
+   `agent.py`: an agent that passes `final-check`.
+
+   ## Lessons
+
+   1. [Meet the agent](lessons/intro.md)
+   2. [Make the agent](lessons/make.md)
+   3. [Finish and explain](lessons/finish.md)
+   ```
 
    The `project: [own]` line means the learner works in the project they already have open. See [the project field](/specification/#format--project-field) for the other options.
 
@@ -58,27 +90,67 @@ Folder names matter: the folder name must equal the course's `name`, so the fold
 
    Together the lessons show two habits worth copying. The `choose-tool` call in `intro.md` and the `choose-check` call in `finish.md` are decisions only the learner makes ([calls](/specification/#format--calls)). The `make` lesson's `## Build` section is an instruction to the tutor, not to the learner.
 
-4. ### Declare the check
+4. ### Read the check declarations
 
-   Save this as `quickstart/checks/checks.yaml` in the course folder. It declares one command check and one observe check ([check declarations](/specification/#execution--check-declarations)).
+   The course page already includes the following `checks` field. Keep it inside `COURSE.md` frontmatter; it declares one command check and one observe check ([check declarations](/specification/#execution--check-declarations)).
 
-   <ExampleCode example="quickstart" file="checks/checks.yaml" lang="yaml" />
+   ```yaml
+   checks:
+     - id: final-check
+       run: python "$AGENT_COURSE_DIR/scripts/final_check.py"
+       verify: agent.py defines an agent
+       timeout: 30
+       network: false
+     - id: agent-runs
+       kind: observe
+       verify: agent.py exists and defines an agent
+   ```
 
 5. ### Write the check program
 
-   Save this as `quickstart/checks/final_check.py` in the course folder. A check runs with the learner's project as its working directory, so it reads `agent.py` by a relative path. It reads the file without running it.
+   Save this as `quickstart/scripts/final_check.py` in the course folder. A check runs with the learner's project as its working directory, so it reads `agent.py` by a relative path. It reads the file without running it.
 
-   <ExampleCode example="quickstart" file="checks/final_check.py" lang="python" />
+   ```python
+   """Check that the fixture project declares an agent without importing its code."""
+   import ast
+   import json
+   from pathlib import Path
+
+   path = Path('agent.py')
+   try:
+       tree = ast.parse(path.read_text(encoding='utf-8'))
+       passed = any(
+           isinstance(node, (ast.Assign, ast.AnnAssign))
+           and any(isinstance(target, ast.Name) and target.id == 'agent'
+                   for target in (node.targets if isinstance(node, ast.Assign) else [node.target]))
+           for node in tree.body
+       )
+   except (OSError, UnicodeError, SyntaxError):
+       passed = False
+   print(json.dumps({
+       'check': 'final-check',
+       'status': 'pass' if passed else 'fail',
+       'path': 'agent.py',
+       'line': 1,
+       'message': 'Agent declared.' if passed else 'No agent declaration found.',
+       'fix': 'Define an agent variable in agent.py.' if not passed else '',
+   }))
+   raise SystemExit(0 if passed else 1)
+   ```
 
 6. ### Add the fixtures
 
-   Every command check needs a project that passes and a project that fails ([rules every check follows](/specification/#execution--check-rules)). Save this as `quickstart/checks/fixtures/final-check/pass/agent.py` in the course folder:
+   Every command check needs a project that passes and a project that fails ([rules every check follows](/specification/#execution--check-rules)). Save this as `quickstart/scripts/fixtures/final-check/pass/agent.py` in the course folder:
 
-   <ExampleCode example="quickstart" file="checks/fixtures/final-check/pass/agent.py" lang="python" />
+   ```python
+   agent = object()
+   ```
 
-   Save this as `quickstart/checks/fixtures/final-check/fail/agent.py` in the course folder:
+   Save this as `quickstart/scripts/fixtures/final-check/fail/agent.py` in the course folder:
 
-   <ExampleCode example="quickstart" file="checks/fixtures/final-check/fail/agent.py" lang="python" />
+   ```python
+   value = None
+   ```
 
 7. ### Write the rubric
 
@@ -86,21 +158,23 @@ Folder names matter: the folder name must equal the course's `name`, so the fold
 
    <ExampleCode example="quickstart" file="tutor/finish.rubric.md" lang="markdown" />
 
-8. ### Add the optional feedback file
+8. ### Add optional feedback
 
-   Save this as `quickstart/feedback.yaml` in the course folder. It is optional, and it declares the only feedback the course may ask for ([declared only](/specification/#consent--declared-only)).
+   Add this field inside `COURSE.md` frontmatter, before its closing `---`. It declares the only feedback the course may ask for ([declared only](/specification/#consent--declared-only)). Omit it to ask for none. A declaration never grants consent.
 
-   <ExampleCode example="quickstart" file="feedback.yaml" lang="yaml" />
-
-9. ### Check the whole course
-
-   Run this at the **checkout root**, replacing the path with where your course folder is.
-
-   ```sh
-   uv run --locked python tools/check_contracts.py --example /path/to/quickstart
+   ```yaml
+   feedback:
+     rating: at-end
+     stuck: {after_failures: 3}
+     questions:
+       - id: next-step
+         ask: Which topic would you choose next?
+         options: [Tools, Checks]
    ```
 
-   A correct copy prints `contracts: 0 errors, 0 warnings` and exits zero.
+9. ### Review the course
+
+   Compare your frontmatter, lesson list, check references and rubric with the [format rules](/specification/#format--markdown-only-constraints). Current-format schema and whole-course validation are not available yet. No command here claims to validate the entire course.
 
 10. ### Try the check against both fixtures
 
@@ -108,10 +182,10 @@ Folder names matter: the folder name must equal the course's `name`, so the fold
 
     ```sh
     COURSE="$PWD/quickstart"
-    cd "$COURSE/checks/fixtures/final-check/pass"
-    AGENT_COURSE_DIR="$COURSE" AGENT_COURSE_PROJECT="$PWD" python3 "$COURSE/checks/final_check.py"; echo "exit $?"
-    cd "$COURSE/checks/fixtures/final-check/fail"
-    AGENT_COURSE_DIR="$COURSE" AGENT_COURSE_PROJECT="$PWD" python3 "$COURSE/checks/final_check.py"; echo "exit $?"
+    cd "$COURSE/scripts/fixtures/final-check/pass"
+    AGENT_COURSE_DIR="$COURSE" AGENT_COURSE_PROJECT="$PWD" python3 "$COURSE/scripts/final_check.py"; echo "exit $?"
+    cd "$COURSE/scripts/fixtures/final-check/fail"
+    AGENT_COURSE_DIR="$COURSE" AGENT_COURSE_PROJECT="$PWD" python3 "$COURSE/scripts/final_check.py"; echo "exit $?"
     ```
 
     The first project exits `0` and reports `pass`. The second exits `1` and reports `fail` with a path and a fix. The [checks guide](/authors/checks/) explains what each exit code means.
@@ -124,7 +198,7 @@ When a learner takes the course, each lesson follows the same loop: the tutor sa
 
 ## What is not available yet
 
-A public `validate`, `test` or `lint` command and a released `/learn` command are planned. They are **not available**, so nothing in this guide depends on them. Until they exist, the checkout commands above are the only tooling, and they run only from a clone of the agentcourses/agentcourses repository.
+A public `validate`, `test` or `lint` command and a released `/learn` command are planned. They are **not available**, so nothing in this guide depends on them. The fixture commands above test only the program's pass and fail behaviour. They do not qualify a course, runner or host.
 
 ## Next steps
 

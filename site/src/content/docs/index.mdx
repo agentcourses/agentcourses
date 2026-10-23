@@ -4,27 +4,58 @@ description: An open, folder-based course format for agents that teach against a
 ---
 
 import { Aside } from '@astrojs/starlight/components';
-import ExampleCode from '../../components/ExampleCode.astro';
 
 Agent Courses describes courses an agent can teach in a learner's own project. A course is a readable folder of Markdown, YAML and check programs. The tutor can type the edits; the learner owns the decisions. This site explains the 1.0 candidate and its repository examples so authors and runner builders can inspect the same contract.
 
 <Aside type="caution" title="Candidate, with runtime work still ahead">
-The candidate label is `1.0.0-rc.1`. Repository checks exercise schemas, examples and replay rules; they qualify no production runner or host. The public validator, reference library and runner conformance suite are future work. No package installation or live tutoring session is offered here. See [candidate and stable status](/specification/#records--candidate-and-stable).
+The candidate label is `1.0.0-rc.2`. Repository checks exercise schemas, examples and replay rules; they qualify no production runner or host. The public validator, reference library and runner conformance suite are future work. No package installation or live tutoring session is offered here. See [candidate and stable status](/specification/#records--candidate-and-stable).
 </Aside>
 
 ## A course you can read
 
 A course starts with `COURSE.md`: its identity, the outcome and an ordered lesson list. Lessons, checks and private tutor rubrics live beside it. The learner's editable project is separate from the installed course. The [course layout](/specification/#format--folder-layout) explains each folder and who may see its contents.
 
-This course page comes directly from the repository's tested `quickstart` example. The include displays source; it does not start a runner.
+This course page illustrates the current frontmatter and lesson order. Programs and fixtures live in `scripts/`; learner resources live in `assets/`, including `assets/starter/`. It does not start a runner.
 
-<ExampleCode example="quickstart" file="COURSE.md" lang="markdown" />
+```markdown
+---
+format: "1.0.0-rc.2"
+name: quickstart
+description: Build a one-file agent and explain it. For beginners.
+version: "1.0.0"
+license: Apache-2.0
+project: [own]
+checks:
+  - id: final-check
+    run: python "$AGENT_COURSE_DIR/scripts/final_check.py"
+    verify: agent.py defines an agent
+    timeout: 30
+    network: false
+  - id: agent-runs
+    kind: observe
+    verify: agent.py exists and defines an agent
+---
 
-Follow the [author quickstart](/authors/quickstart/) to copy every file and run the checkout-only checks. The [checks guide](/authors/checks/), [writing guidance](/authors/best-practices/) and [explain-back guide](/authors/explain-back/) explain the teaching material behind that page.
+# Build a small agent
+
+You'll build a small agent.
+
+## Outcome
+
+`agent.py`: an agent that passes `final-check`.
+
+## Lessons
+
+1. [Meet the agent](lessons/intro.md)
+2. [Make the agent](lessons/make.md)
+3. [Finish and explain](lessons/finish.md)
+```
+
+Follow the [author quickstart](/authors/quickstart/) to write every file and try the command fixtures locally. The [checks guide](/authors/checks/), [writing guidance](/authors/best-practices/) and [explain-back guide](/authors/explain-back/) explain the teaching material behind that page.
 
 ## Load only what is needed
 
-A runner reads course frontmatter for its catalogue, then the full course page when the learner starts. It loads a lesson when that lesson starts. Check files are loaded for checks; tutor rubrics are loaded for judgement, never shown verbatim. References are loaded when a question needs them. These are the [format's loading boundaries](/specification/#format--folder-layout), rather than an instruction to ingest every file at once.
+A runner validates the format, then exposes only the six [catalogue summary fields](/specification/#format--catalogue-summary). It reads the full course page when the learner starts. It loads a lesson when that lesson starts. Check files are loaded for checks; tutor rubrics are loaded for judgement, never shown verbatim. References are loaded when a question needs them. These are the [format's loading boundaries](/specification/#format--folder-layout), rather than an instruction to ingest every file at once.
 
 Lessons progress through `understand`, `build` and a final `demonstrate` stage. The [stage rules](/specification/#format--stages) define their allowed evidence. Each lesson follows the [teaching loop](/specification/#execution--teaching-loop): Goal, build together, learner calls, checks and review. The final lesson adds an explain-back after its checks. Explicit [learner gates](/specification/#execution--gates) control progress.
 
@@ -53,6 +84,6 @@ Courses and referenced projects are untrusted input. Course text cannot change h
 - Write a course with the [quickstart](/authors/quickstart/).
 - Inspect the [planned runners](/runners/) and their evidence limits.
 - Build a runner with the [support guide](/implementers/support/) and [conformance guide](/implementers/conformance/).
-- Read the [candidate specification](/specification/#format), whose canonical sources define the rules. The composed specification route arrives with site integration; its source fragments are already checked here.
+- Read the [candidate specification](/specification/#format), whose canonical sources define the rules. The specification is generated from those canonical sources.
 
 A course's own version, the format's `1.0` version and an implementation's release version are separate. The candidate label identifies the proposed specification snapshot, not an implementation release ([course versions](/specification/#format--course-versions), [candidate status](/specification/#records--status)).

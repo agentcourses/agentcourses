@@ -1,25 +1,57 @@
 # Agent Courses 1.0: consent contract
 
-This page defines the optional feedback a course may ask for and what must happen when a learner refuses. A course can ask; only the learner can agree. Refusing is always safe: the course carries on unchanged, and no account is needed at any point. The feedback fields below are a privacy-reviewed proposal and wait for the owner's review. Where the data goes, and the screen a platform shows, are outside this specification. The files that store consent are defined by a later record contract. Each rule is listed in [the requirement register](requirements.md); folder rules are in [the format contract](format.md) and teaching rules in [the execution contract](execution.md).
+This page defines the optional feedback a course may ask for and what must happen when a learner refuses. A course can ask; only the learner can agree. Refusing is always safe: the course carries on unchanged, and no account is needed at any point. Feedback uses only the bounded fields below. Where the data goes, and the screen a platform shows, are outside this specification. The [record contract](records.md#consent-record) defines how consent survives a closed session. The folder rules are in [the format contract](format.md) and teaching rules in [the execution contract](execution.md).
 
-The words MUST, MUST NOT, SHOULD and MAY are used as in [the format contract](format.md#rules-and-advice). Examples are cases, built as [the format contract's case tables](format.md#case-tables) describe. Every case below starts from [the baseline course](format.md#baseline-course), plus the `feedback.yaml` shown under hooks, unless it says otherwise.
+The words MUST, MUST NOT, SHOULD and MAY are used as in [the format contract](format.md#rules-and-advice). Examples are cases, built as [the format contract's case tables](format.md#case-tables) describe. Every case below starts from [the baseline course](format.md#baseline-course), plus the `feedback` object shown under hooks, unless it says otherwise.
+
+## Feedback declaration <a id="candidate-feedback"></a>
+
+Optional `COURSE.md` frontmatter `feedback` holds the feedback object.
+It is independently inspectable without exposing teaching bodies or tutor material.
+
+An absent `feedback` field declares no collection: ask nothing and send nothing.
+A present value must be an object; explicit null or another type fails `schema-course`.
+An empty object declares no hooks.
+Nested hook shapes and ranges stay unchanged; invalid nested values fail `schema-course`.
+Question ids remain unique; duplicates fail `req-closed-hooks`.
+Unknown extension keys remain ignored with the existing authoring warning.
+A separate root declaration file triggers early [mixed-declaration rejection](format.md#central-declarations).
+
+Declaration presence grants no consent.
+Every destination still needs the learner's explicit yes after seeing the question and payload.
+Refusal, silence and withdrawal never change evidence, course progress or settlement.
+Nothing here adds consent to a record or event merely because frontmatter contains feedback.
+The existing [consent record](records.md#consent-record) remains authoritative for recorded consent changes.
+
+### Candidate feedback cases <a id="candidate-feedback-cases"></a>
+
+These cases use the [minimal candidate baseline](format.md#candidate-baseline), with feedback omitted.
+
+| Case | Baseline and change | Judged as | Outcome | Deciding rule |
+| --- | --- | --- | --- | --- |
+| <a id="case-candidate-feedback-accepted"></a>Central feedback object | Add feedback: {rating: at-end}; learner explicitly agrees to named destination after disclosure | Runner behaviour | Accepted | Rating shape and per-destination consent govern the declared object |
+| <a id="case-candidate-feedback-absent-accepted"></a>Absent central feedback | Leave feedback omitted; ask nothing and send nothing | Runner behaviour | Accepted | Absence declares no collection |
+| <a id="case-candidate-feedback-absent-rejected"></a>Ask without central feedback | Leave feedback omitted; runner asks a rating question | Runner behaviour | Rejected | Existing declared-only rule forbids asking without a declaration |
+| <a id="case-candidate-feedback-consent-rejected"></a>Declaration treated as consent | Add feedback: {rating: at-end}; runner sends without learner agreement | Runner behaviour | Rejected | Existing consent rule; declarations never authorise sending |
+| <a id="case-candidate-feedback-duplicate-rejected"></a>Duplicate central question ids | feedback.questions contains two otherwise valid entries with id: provider, ask: Choose, options: [A, B] | Course syntax | Rejected | Only `req-closed-hooks`; compare question ids |
+| <a id="case-candidate-feedback-range-rejected"></a>Nested hook limit unchanged | feedback: {stuck: {after_failures: 11}} | Course syntax | Rejected | Only `schema-course`; existing upper bound is 10 |
 
 ## No feedback unless declared <a id="declared-only"></a>
 
-Feedback hooks live in an optional `feedback.yaml` at the course root, not in `COURSE.md`, so a privacy reviewer reads one short file. A course without `feedback.yaml` declares no collection. A runner MUST NOT ask a feedback question for such a course and MUST NOT send anything about it. Unknown keys in `feedback.yaml` are ignored, as [unknown keys](format.md#unknown-keys) describes.
+Feedback hooks live in the optional `feedback` object in `COURSE.md` frontmatter. A course without that object declares no collection. A runner MUST NOT ask a feedback question for such a course and MUST NOT send anything about it. Unknown keys inside the object are ignored and warned about, as [unknown keys](format.md#unknown-keys) describes.
 
 ## Hooks <a id="feedback-hooks"></a>
 
 There are three hooks. Each collects a closed set of fields and nothing else.
 
 ```yaml
-# feedback.yaml
-rating: per-lesson
-stuck: { after_failures: 3 }
-questions:
-  - id: provider
-    ask: Which model provider do you use most?
-    options: [Anthropic, OpenAI, Google, Other]
+feedback:
+  rating: per-lesson
+  stuck: { after_failures: 3 }
+  questions:
+    - id: provider
+      ask: Which model provider do you use most?
+      options: [Anthropic, OpenAI, Google, Other]
 ```
 
 | Hook | Declaration | Collects | Never collects |
@@ -36,16 +68,16 @@ A payload holds only the course name and version, the hook name and the fields i
 
 ### Why free text is not allowed <a id="free-text"></a>
 
-An earlier proposal allowed free text up to 280 characters. A short limit does not make text private: 280 characters can hold a name, a secret or a pasted line of code. This version collects only numbers and closed choices, so nothing the learner types freely is ever sent, and the length cap is no longer needed. Free text may return later only after a privacy review of exactly what it would hold.
+Free text can contain a name, a secret or a pasted line of code. Feedback collects only numbers and closed choices. A runner MUST NOT send typed answers, even if an unknown extension asks for them.
 
 ### Hook cases <a id="example-hooks"></a>
 
 | Case | Baseline and change | Judged as | Outcome | Deciding rule |
 | --- | --- | --- | --- | --- |
-| <a id="case-hooks-valid-accepted"></a>Valid declaration | The `feedback.yaml` above, unchanged | Course syntax | Accepted | `rating` is a known declaration, `after_failures` is 3, and one question has an id, an ask and four options |
-| <a id="case-hooks-boundaries-accepted"></a>Declaration boundary values | The `feedback.yaml` above with `rating: at-end`; `after_failures: 2` and, separately, `10`; and `stuck: {}`, whose omitted count means 3 | Course syntax | Accepted | `at-end` is a known declaration, and the stuck count is a whole number from 2 to 10 or omitted |
-| <a id="case-hooks-questions-bounds-accepted"></a>Question count and option count boundaries | The `feedback.yaml` above with exactly one question and, separately, five questions with distinct kebab ids; a question with 2 options and, separately, 8 options | Course syntax | Accepted | The list has 1 to 5 entries and each has 2 to 8 options |
-| <a id="case-hooks-text-bounds-accepted"></a>Text length boundaries | The `feedback.yaml` above with an `ask` of 1 character and, separately, 200 characters; an option of 1 character and, separately, 80 characters | Course syntax | Accepted | `ask` is 1 to 200 characters and each option is 1 to 80 |
+| <a id="case-hooks-valid-accepted"></a>Valid declaration | The `feedback` object above, unchanged | Course syntax | Accepted | `rating` is a known declaration, `after_failures` is 3, and one question has an id, an ask and four options |
+| <a id="case-hooks-boundaries-accepted"></a>Declaration boundary values | The `feedback` object above with `rating: at-end`; `after_failures: 2` and, separately, `10`; and `stuck: {}`, whose omitted count means 3 | Course syntax | Accepted | `at-end` is a known declaration, and the stuck count is a whole number from 2 to 10 or omitted |
+| <a id="case-hooks-questions-bounds-accepted"></a>Question count and option count boundaries | The `feedback` object above with exactly one question and, separately, five questions with distinct kebab ids; a question with 2 options and, separately, 8 options | Course syntax | Accepted | The list has 1 to 5 entries and each has 2 to 8 options |
+| <a id="case-hooks-text-bounds-accepted"></a>Text length boundaries | The `feedback` object above with an `ask` of 1 character and, separately, 200 characters; an option of 1 character and, separately, 80 characters | Course syntax | Accepted | `ask` is 1 to 200 characters and each option is 1 to 80 |
 | <a id="case-hooks-questions-zero-rejected"></a>No questions | `questions: []` with everything else as above | Course syntax | Rejected | The list has 0 entries, below 1 |
 | <a id="case-hooks-questions-six-rejected"></a>Six questions | Six questions with distinct kebab ids | Course syntax | Rejected | The list has 6 entries, above 5 |
 | <a id="case-hooks-ask-empty-rejected"></a>Empty ask | The question `provider` with `ask: ""` | Course syntax | Rejected | Length 0 is below 1 |
@@ -71,7 +103,7 @@ An earlier proposal allowed free text up to 280 characters. A short limit does n
 | <a id="case-hooks-stuck-reset-accepted"></a>A pass resets the count | `after_failures: 3`; `final-check` returns `fail`, `fail`, `pass`, `fail`, `fail`, then `fail` | Runner behaviour | Accepted | The pass resets the run to 0. After the fifth result the count is 2, so nothing fires; the sixth result makes 3 consecutive failures, and only then may the stuck hook fire |
 | <a id="case-hooks-stuck-reset-early-rejected"></a>A pass does not reset | `after_failures: 3`; `final-check` returns `fail`, `fail`, `pass`, `fail`, `fail`, `fail`; the runner counts failures cumulatively instead of resetting at the pass, so its counts are 1, 2, 2, 3 and it fires after the fourth result (3 failures in all) | Runner behaviour | Rejected | A failing run is counted only while no pass has intervened, so the fourth result is the first failure of a new run |
 | <a id="case-hooks-stuck-error-counted-rejected"></a>An error counted | `after_failures: 3`; `final-check` returns `fail`, `fail`, `error`, `fail` with no pass; the runner counts the `error` as a failure, so its counts are 1, 2, 3 and it fires after the third result, when only two failures have occurred | Runner behaviour | Rejected | An `error` result is the course's own fault and never counts |
-| <a id="case-hooks-feedback-key-warning"></a>Unknown key in the file | `feedback.yaml` with an extra top-level `theme: dark` | Course syntax | Accepted with a warning | Unknown keys in `feedback.yaml` are ignored and warned about |
+| <a id="case-hooks-feedback-key-warning"></a>Unknown key in feedback | the `feedback` object with an extra top-level `theme: dark` | Course syntax | Accepted with a warning | Unknown keys in the `feedback` object are ignored and warned about |
 
 #### Free-text cases <a id="example-free-text"></a>
 
@@ -104,15 +136,15 @@ These cases use a `questions` payload: course `sample-course`, version `1.0.0`, 
 - **Withdrawal.** The learner can withdraw at any time. Sending stops at once. The runner MUST NOT keep unsent payloads after a refusal or a withdrawal, and MUST discard any it holds. The change is recorded as a consent change.
 - **No account.** A feedback destination MUST NOT require the learner to sign up in order to start or finish a course. An account may be offered only after the learner has had value, and never required.
 
-Whether and where the learner's consent is stored is defined by the record contract, which is pending. Until it lands, a runner keeps consent only for the current session unless the record contract says otherwise.
+The [consent record](records.md#consent-record) stores grants, withdrawals and lesson refusals so they survive a closed session. It stores no feedback payload or answer.
 
 ### Refusal and consent cases <a id="example-refusal"></a>
 
-These cases use the `feedback.yaml` above, with two named destinations, `A` and `B`.
+These cases use the the `feedback` object above, with two named destinations, `A` and `B`.
 
 | Case | Baseline and change | Judged as | Outcome | Deciding rule |
 | --- | --- | --- | --- | --- |
-| <a id="case-declared-none-accepted"></a>No declaration | The course has no `feedback.yaml`; nothing is asked and nothing is sent | Runner behaviour | Accepted | A course without `feedback.yaml` declares no collection |
+| <a id="case-declared-none-accepted"></a>No declaration | The course has no `feedback` field; nothing is asked and nothing is sent | Runner behaviour | Accepted | A course without `feedback` declares no collection |
 | <a id="case-declared-asked-rejected"></a>Asks without a declaration | The same course; the runner asks for a rating after a lesson | Runner behaviour | Rejected | A runner MUST NOT ask a feedback question for such a course |
 | <a id="case-declared-sent-rejected"></a>Sends without a declaration | The same course; the runner sends a rating without asking | Runner behaviour | Rejected | A runner MUST NOT send anything about such a course |
 | <a id="case-consent-shown-accepted"></a>Payload shown first | The runner shows the question and the exact payload it would send to `A`, then asks | Runner behaviour | Accepted | The runner shows the question and exact payload before asking |
@@ -130,7 +162,7 @@ These cases use the `feedback.yaml` above, with two named destinations, `A` and 
 
 #### Coercion cases <a id="example-no-coercion"></a>
 
-In each case the learner declines every feedback hook of the baseline `feedback.yaml`. The runner's other behaviour is unchanged.
+In each case the learner declines every feedback hook of the baseline `feedback` object. The runner's other behaviour is unchanged.
 
 | Case | Baseline and change | Judged as | Outcome | Deciding rule |
 | --- | --- | --- | --- | --- |

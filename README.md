@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/agentcourses/agentcourses/actions/workflows/gates.yml"><img alt="make check" src="https://github.com/agentcourses/agentcourses/actions/workflows/gates.yml/badge.svg?branch=main"></a>
-  <img alt="Specification: 1.0 candidate" src="https://img.shields.io/badge/specification-1.0%20candidate-474745">
+  <img alt="Specification: 1.0.0-rc.2" src="https://img.shields.io/badge/specification-1.0.0--rc.2-474745">
   <a href="LICENSE"><img alt="Licence: Apache-2.0" src="https://img.shields.io/badge/licence-Apache--2.0-474745"></a>
 </p>
 
@@ -21,8 +21,8 @@
 An open format for courses that an AI agent teaches in your own project.
 
 > [!NOTE]
-> Agent Courses 1.0 is a candidate specification, open for review.
-> Repository checks cover its schemas, examples and replay rules.
+> Agent Courses `1.0.0-rc.2` is a pre-release specification, open for review.
+> Repository checks cover existing schemas, fixtures and replay rules. Current-format schema and consumer support is still being implemented.
 > No runner or host is qualified yet.
 > A public validator, reference library and conformance suite are future work.
 
@@ -34,13 +34,11 @@ The agent tutors and can type the edits; the learner owns the decisions.
 
 ```text
 my-course/
-├── COURSE.md          # required: identity, outcome and lesson order
+├── COURSE.md          # identity, checks, optional feedback, outcome and lesson order
 ├── lessons/           # one Markdown file per lesson
-├── checks/            # check programs, with pass and fail fixtures
-├── tutor/             # tutor-only: rubrics, quiz keys, misconceptions
-├── starter/           # files that seed the learner's project
-├── references/        # optional reading the tutor may load
-└── feedback.yaml      # optional: the feedback this course may ask for
+├── tutor/             # private rubrics, quiz keys and teaching guidance
+├── scripts/           # check programs and fixtures
+└── assets/            # reading, images, data and starter/ skeleton files
 ```
 
 ## Why Agent Courses?
@@ -60,7 +58,7 @@ The format makes a few commitments:
 A **runner** is the agent, or agent extension, that teaches a course.
 It loads only what each moment needs:
 
-1. **Catalogue:** it reads each `COURSE.md` frontmatter, just enough to list the course.
+1. **Catalogue:** it validates the format and exposes only name, description, version, licence, compatibility and spec when authored.
 2. **Start:** when the learner starts, it reads the full course page.
 3. **Teach:** it loads each lesson as it begins, check files when a check runs, and tutor rubrics when judging.
 
@@ -80,15 +78,13 @@ To build one, start with [adding course support](https://agentcourses.io/impleme
 - **[Documentation](https://agentcourses.io/)**: the overview and guides.
 - **[Specification](https://agentcourses.io/specification/)**: the full format, composed from the [canonical sources](spec/format.md).
 - **[Author quickstart](https://agentcourses.io/authors/quickstart/)**: write and check a first course.
-- **[Example course](examples/quickstart/COURSE.md)**: the tested course the quickstart builds.
-- **[Schemas](schemas/manifest.json)**: versioned JSON Schemas for courses, lessons, checks, feedback and records.
-- **[Changelog](CHANGELOG.md)**: what the current candidate contains.
+- **[Schema inventory](schemas/manifest.json)**: exact available schema bytes; current-format declarations await implementation.
 
 ## Open development
 
 Agent Courses is developed in the open, and the 1.0 candidate is open for review.
 Questions and proposals are welcome as [issues](https://github.com/agentcourses/agentcourses/issues).
-The [contributing guide](docs/CONTRIBUTING.md) explains how to propose changes, run the checks and prepare a runner listing.
+Use an issue to describe a concrete authoring or runner problem and the behaviour you need.
 
 ## Licence
 
