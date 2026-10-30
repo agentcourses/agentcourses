@@ -1,0 +1,14 @@
+---
+/** Renders a repository Markdown file from the `embeds` collection, such as the conformance protocol. */
+import { getEntry, render } from 'astro:content';
+
+interface Props {
+  /** The file's path from the repository root, such as `conformance/protocol.md`. */
+  file: string;
+}
+
+const entry = await getEntry('embeds', Astro.props.file);
+if (!entry) throw new Error(`${Astro.props.file} is not in the embeds collection`);
+const { Content } = await render(entry);
+---
+<Content />

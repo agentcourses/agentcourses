@@ -1,0 +1,30 @@
+{
+  "course": "phased",
+  "valid": true,
+  "phases": [
+    {
+      "title": "Basics",
+      "lessons": [
+        "one",
+        "two"
+      ]
+    },
+    {
+      "title": "Finish",
+      "lessons": [
+        "finish"
+      ]
+    }
+  ],
+  "lessons": [
+    {
+      "id": "one"
+    },
+    {
+      "id": "two"
+    },
+    {
+      "id": "finish"
+    }
+  ]
+}

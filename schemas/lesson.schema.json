@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentcourses.io/schemas/0.1/lesson.schema.json",
+  "title": "LESSON.md frontmatter",
+  "description": "Frontmatter of an Agent Courses 0.1 LESSON.md file. Unknown keys are allowed; validators warn about them.",
+  "type": "object",
+  "required": ["title"],
+  "properties": {
+    "title": { "type": "string", "minLength": 1 },
+    "stage": { "enum": ["understand", "practise", "build", "demonstrate"] },
+    "minutes": { "type": "integer", "minimum": 1 },
+    "checks": { "type": "array", "items": { "$ref": "#/$defs/check" } },
+    "calls": { "type": "array", "items": { "$ref": "#/$defs/call" } },
+    "objectives": { "type": "array", "items": { "$ref": "#/$defs/objective" } }
+  },
+  "$defs": {
+    "kebabId": {
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "not": { "const": "explain-back" }
+    },
+    "check": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "$ref": "#/$defs/kebabId" },
+        "kind": { "enum": ["command", "observe"] },
+        "run": { "type": "string", "minLength": 1 },
+        "scope": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "not": { "pattern": "(^/|^[A-Za-z]:|\\\\|(^|/)\\.\\.(/|$)|[*?\\[]|^[a-z][a-z0-9+.-]*:)" }
+          }
+        },
+        "verify": { "type": "string", "minLength": 1 },
+        "required": { "type": "boolean" },
+        "timeout": { "type": "integer", "minimum": 1, "maximum": 300 },
+        "network": { "type": "boolean" }
+      },
+      "if": { "properties": { "kind": { "const": "observe" } }, "required": ["kind"] },
+      "then": { "required": ["scope", "verify"], "not": { "required": ["run"] } },
+      "else": { "required": ["run"], "not": { "required": ["scope"] } }
+    },
+    "call": {
+      "type": "object",
+      "required": ["id", "ask"],
+      "properties": {
+        "id": { "$ref": "#/$defs/kebabId" },
+        "ask": { "type": "string", "minLength": 1 }
+      }
+    },
+    "objective": {
+      "type": "object",
+      "required": ["id", "text", "by"],
+      "properties": {
+        "id": { "$ref": "#/$defs/kebabId" },
+        "text": { "type": "string", "minLength": 1 },
+        "by": {
+          "description": "The id of a check in the same lesson, or explain-back.",
+          "type": "string",
+          "anyOf": [{ "const": "explain-back" }, { "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" }]
+        }
+      }
+    }
+  }
+}

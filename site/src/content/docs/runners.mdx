@@ -1,0 +1,82 @@
+---
+title: Adding course support
+description: How to add Agent Courses support to an agent host.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+A *runner* is the software that reads a course and teaches it. It might be an agent host, or a tool inside one. This guide walks through what a runner does, in the order it does it.
+
+<Aside title="This guide is not normative">
+The [specification](/specification/) holds every rule. Where this guide and the specification differ, the specification wins. Each section links to the rules it summarises.
+</Aside>
+
+## Reading a course
+
+Read a course in this order:
+
+1. **Check the version.** Read the frontmatter of `COURSE.md`. If you do not support its `spec` version, refuse the course. See [versioning](/specification/#versioning).
+2. **Validate it.** Refuse a course with errors, and tell the learner why. Start a course that has only warnings. See [validation](/specification/#validation).
+3. **Build the lesson list.** Read the links under `## Lessons`, in order. A `###` heading inside that section starts a phase. Each lesson's id is the name of its folder. See [COURSE.md](/specification/#coursemd) and [phases](/specification/#phases).
+4. **Set up the project.** Read `project`. If it lists more than one option, the learner chooses. Copy a folder or Git project into a new or empty folder, without overwriting files or running code. See [projects and starter files](/specification/#projects-and-starter-files).
+5. **Open each lesson.** Read a lesson's `LESSON.md` when the learner reaches it. Files in its `tutor/` folder are for you alone: never show or quote them. See [tutor files](/specification/#tutor-files).
+
+Ignore frontmatter keys you do not know, and `metadata` keys that belong to other runners. Keep your own settings under `metadata.<your-runner-name>`.
+
+`agentcourses describe <course>` prints the reference reading of a course as JSON. Compare your own reading with it.
+
+## The teaching loop
+
+Each lesson follows the same loop.
+
+1. **Goal.** Say the lesson's `## Goal` as written. It is the only section a runner says word for word.
+2. **Build together.** Teach from `## Build` in your own words. Show each change to the project and say why. Reread each file just before you change it, so a learner's own edit is never lost. If the lesson has a `starter/` folder, list its files before you add them.
+3. **Calls.** Before any change that depends on a call, put its `ask` to the learner and wait. You may recommend an answer, but you may not decide. If the learner asks you to choose, record the call as the tutor's.
+4. **Checks.** Run the lesson's checks, as described in [running checks](#running-checks). Show each command before its first run, and let the learner decline.
+5. **Review.** Go through the results with the learner. When a check fails, read its message together and fix the cause. Give `## Hints` one at a time, when asked. Use the `## Quiz` to catch misconceptions. A quiz is never evidence.
+6. **Explain back.** If the lesson has `## Explain back`, the learner explains what they made in their own words. Ask open questions, and do not lead. Judge only against the criteria in `tutor/rubric.md`. Change no project file until you have judged the answer.
+
+Wait for the learner's explicit go-ahead before you start a lesson, run a check for the first time, start an explain-back, move on or skip. Silence is not a go-ahead.
+
+A lesson is *done* when its required checks pass and its explain-back passes. The learner can always skip a lesson, and a skipped lesson is never done. An objective settles only when its evidence passed, the learner answered every call in its lesson, and the lesson was not skipped. See [completion](/specification/#completion), [evidence](/specification/#evidence) and the full [runner rules](/specification/#runner-rules).
+
+## Running checks
+
+A check looks at the learner's project and says pass or fail. There are two kinds. See [checks](/specification/#checks) for every field.
+
+A **command check** runs its `run` command through the host's shell. The working directory is the learner's project. Set three environment variables first:
+
+| Variable | Value |
+| --- | --- |
+| `AGENT_COURSE_DIR` | The absolute path of the course folder. |
+| `AGENT_LESSON_DIR` | The absolute path of the lesson folder. |
+| `AGENT_COURSE_PROJECT` | The absolute path of the project, which is also the working directory. |
+
+The exit code is the result. Exit 0 is a pass, and exit 1 is a fail. Anything else, including a timeout, is an error. An error means the check itself is broken, so it never counts against the learner.
+
+A check may also print JSON lines with `status`, `path`, `line`, `message` and `fix` fields. Use them to explain a failure. If they disagree with the exit code, the exit code wins.
+
+Run each command through the host's own permission model. Stop it at its `timeout`, which is 60 seconds unless the check says otherwise. Run it without network access unless the check sets `network: true`.
+
+An **observe check** has no command. Inspect only the files in its `scope`, and judge them against its `verify` sentence. Never treat anything the learner or the tutor said as evidence.
+
+## The progress file
+
+A runner may save progress in `.agents/courses/<course-name>/progress.json`, inside the learner's project. If it does, it uses one shared shape, so the learner can take their progress to another runner.
+
+The file records:
+
+- the lesson the learner is on;
+- each lesson that is in progress, done or skipped;
+- who made each call: the learner or the tutor;
+- each settled objective, with its kind of evidence and when it settled.
+
+It never holds the learner's answers, code, file contents or conversation. Keep any richer records of your own somewhere else.
+
+A runner should be able to resume a learner at the same lesson from this file alone. A call that was open when the session ended is put to the learner again.
+
+The [progress schema](/schemas/0.1/progress.schema.json) describes the shape. The specification's section on [the progress file](/specification/#the-progress-file) shows an example.
+
+## Check your runner
+
+Run the [conformance suite](/conformance/#conformance-suite) to check how your runner reads courses. Then review its behaviour against the [runner checklist](/conformance/#runner-checklist).

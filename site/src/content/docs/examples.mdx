@@ -1,0 +1,26 @@
+---
+title: Examples
+description: Three complete courses, from three files to a full course with phases and checks.
+---
+
+import Example from '../../components/Example.astro';
+
+Each example is a valid course with no warnings, and its check fixtures pass. This page reads them from the repository's [`examples/` folder](https://github.com/agentcourses/agentcourses/tree/main/examples) when the site is built. Each tree shows every file. The files below it leave out the check fixtures.
+
+## Minimal
+
+The smallest complete course. It has one `demonstrate` lesson with an explain-back and its rubric. It needs no code and no checks.
+
+<Example course="minimal" />
+
+## Build an agent
+
+A beginner course in plain Python, grouped into two phases. It shows command checks with fixtures, an optional observe check, learner calls, objectives and a quiz.
+
+<Example course="build-an-agent" />
+
+## Starter project
+
+A course about planning, not code. It offers two projects: a copy of its `starter/` folder, or the learner's own. Its first lesson adds `plan.md` to the project from the lesson's own `starter/` folder.
+
+<Example course="starter-project" />

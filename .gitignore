@@ -1,0 +1,18 @@
+# Local environments and editors
+.venv/
+__pycache__/
+.pytest_cache/
+.DS_Store
+.env*
+node_modules/
+
+# Agent worktrees
+.claude/worktrees/
+
+# Build output
+dist/
+.runtime/
+site/.astro/
+site/dist/
+site/public/schemas/
+site/public/examples/

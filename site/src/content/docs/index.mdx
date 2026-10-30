@@ -1,0 +1,72 @@
+---
+title: Agent Courses
+description: An open format for courses that an AI agent teaches in your own project.
+---
+
+import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import Example from '../../components/Example.astro';
+
+<p class="ac-thesis">Agent skills teach your agent. Agent courses teach you, through your agent.</p>
+
+A course is a folder of Markdown files. The author writes lessons, checks and rubrics. Any agent that supports the format can then tutor a learner through it. It builds with them, runs the checks and asks them to explain what they made.
+
+The agent may do the typing. The learner makes the decisions, and only evidence counts as progress.
+
+<Aside type="caution" title="Beta">
+Agent Courses is at version 0.1. The format may change in breaking ways before 1.0. Every change is listed in the [changelog](/changelog/).
+</Aside>
+
+## Why a course format
+
+An agent in your project can build things faster than you can follow. That helps you ship. It does not always help you learn.
+
+A course gives the agent a plan for teaching instead. It says what you should be able to do by the end. It marks the decisions that are yours to make. And it says how to tell that you have learned it: checks that look at your project, and an explanation in your own words.
+
+The format is open. An author writes a course once, and any agent that supports the format can teach it.
+
+## A complete course in three files
+
+<Example course="minimal" tree />
+
+`COURSE.md` names the course and lists its lessons:
+
+<Example course="minimal" file="COURSE.md" />
+
+`finish/LESSON.md` says what the learner can do by the end, and how they show it:
+
+<Example course="minimal" file="finish/LESSON.md" />
+
+`finish/tutor/rubric.md` is for the tutor only. It says what a passing explanation covers:
+
+<Example course="minimal" file="finish/tutor/rubric.md" />
+
+Bigger courses add phases, checks that run in the learner's project, learner calls, objectives, quizzes and starter files. The [examples](/examples/) show each of them.
+
+## How a lesson runs
+
+1. **Goal.** The tutor says what the learner will be able to do.
+2. **Build together.** The tutor and the learner make it in the learner's project. The tutor shows each change and says why.
+3. **Calls.** Decisions that belong to the learner are put to them. The tutor may recommend an answer, but never decides.
+4. **Checks.** Small scripts look at the project and say pass or fail.
+5. **Explain back.** The learner explains what they made, in their own words. The tutor judges the answer against a private rubric.
+
+## Skills and courses
+
+An [agent skill](https://agentskills.io) is a folder of instructions that gives your agent a new ability. When it runs, the agent does the task.
+
+An agent course is a folder that gives *you* a new ability. When it runs, the agent teaches you to do the task. You finish by showing that your work passes its checks and explaining how it works.
+
+Both are folders with one Markdown entry file: `SKILL.md` for a skill, `COURSE.md` for a course.
+
+## Where next
+
+<CardGrid>
+  <LinkCard title="Quickstart" href="/quickstart/" description="Write and validate your first course in about ten minutes." />
+  <LinkCard title="Specification" href="/specification/" description="The whole format, on one page." />
+  <LinkCard title="Adding course support" href="/runners/" description="Add course support to an agent host." />
+  <LinkCard title="Examples" href="/examples/" description="Three complete courses, from minimal to full." />
+  <LinkCard title="Runner showcase" href="/showcase/" description="Runners that can teach you a course." />
+  <LinkCard title="Conformance" href="/conformance/" description="Check that a runner reads courses correctly." />
+</CardGrid>
+
+Agent Courses is developed in the open on [GitHub](https://github.com/agentcourses/agentcourses). While it is in beta, feedback from real courses and real runners matters most.

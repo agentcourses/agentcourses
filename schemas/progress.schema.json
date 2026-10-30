@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentcourses.io/schemas/0.1/progress.schema.json",
+  "title": "Progress file",
+  "description": "A learner's progress through one course, kept at .agents/courses/<course-name>/progress.json. It never holds answers, code, file contents or conversation.",
+  "type": "object",
+  "required": ["spec", "course", "lessons"],
+  "additionalProperties": false,
+  "properties": {
+    "spec": { "const": "0.1" },
+    "course": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "$ref": "#/$defs/kebabId" },
+        "version": { "type": "string", "minLength": 1 }
+      }
+    },
+    "project": { "type": "string", "minLength": 1 },
+    "current": { "oneOf": [{ "$ref": "#/$defs/kebabId" }, { "type": "null" }] },
+    "lessons": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/kebabId" },
+      "additionalProperties": { "enum": ["in-progress", "done", "skipped"] }
+    },
+    "calls": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/kebabId" },
+      "additionalProperties": { "enum": ["learner", "tutor"] }
+    },
+    "objectives": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/kebabId" },
+      "additionalProperties": {
+        "type": "object",
+        "required": ["evidence", "at"],
+        "additionalProperties": false,
+        "properties": {
+          "evidence": { "enum": ["checked", "observed", "explained"] },
+          "at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "kebabId": { "type": "string", "maxLength": 64, "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" }
+  }
+}

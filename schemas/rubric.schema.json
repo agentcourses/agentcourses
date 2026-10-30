@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentcourses.io/schemas/0.1/rubric.schema.json",
+  "title": "tutor/rubric.md frontmatter",
+  "description": "K of N: the explain-back passes when at least K of the N listed criteria are met.",
+  "type": "object",
+  "required": ["pass"],
+  "properties": {
+    "pass": { "type": "string", "pattern": "^[1-9][0-9]* of [1-9][0-9]*$" }
+  }
+}

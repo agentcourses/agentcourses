@@ -1,0 +1,9 @@
+{
+  "course": "quiz-count",
+  "valid": true,
+  "lessons": [
+    {
+      "quiz": 2
+    }
+  ]
+}

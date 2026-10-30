@@ -1,0 +1,9 @@
+{
+  "course": "project-options",
+  "valid": true,
+  "project": [
+    "./starter",
+    "own",
+    "git+https://example.com/team/app@v1.2.0"
+  ]
+}

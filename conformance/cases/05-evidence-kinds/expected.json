@@ -1,0 +1,25 @@
+{
+  "course": "evidence-kinds",
+  "valid": true,
+  "lessons": [
+    {
+      "calls": [
+        "pick-name"
+      ],
+      "objectives": [
+        {
+          "id": "it-runs",
+          "evidence": "checked"
+        },
+        {
+          "id": "it-reads",
+          "evidence": "observed"
+        },
+        {
+          "id": "it-explained",
+          "evidence": "explained"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "course": "lesson-order",
+  "valid": true,
+  "lessons": [
+    {
+      "id": "zeta",
+      "title": "Zeta",
+      "stage": null
+    },
+    {
+      "id": "alpha"
+    },
+    {
+      "id": "finish"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "course": "minimal-course",
+  "valid": true,
+  "name": "minimal-course",
+  "spec": "0.1",
+  "project": [
+    "own"
+  ],
+  "phases": [],
+  "lessons": [
+    {
+      "id": "finish",
+      "title": "Finish",
+      "stage": "demonstrate",
+      "checks": [],
+      "calls": [],
+      "objectives": [],
+      "explain_back": true,
+      "quiz": 0
+    }
+  ]
+}

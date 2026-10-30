@@ -1,0 +1,30 @@
+{
+  "course": "check-defaults",
+  "valid": true,
+  "lessons": [
+    {
+      "checks": [
+        {
+          "id": "runs",
+          "kind": "command",
+          "run": "python check.py",
+          "scope": null,
+          "required": true,
+          "timeout": 60,
+          "network": false
+        },
+        {
+          "id": "looks-right",
+          "kind": "observe",
+          "run": null,
+          "scope": [
+            "app.py"
+          ],
+          "required": false,
+          "timeout": 10,
+          "network": true
+        }
+      ]
+    }
+  ]
+}

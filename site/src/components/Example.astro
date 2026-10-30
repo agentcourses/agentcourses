@@ -1,0 +1,66 @@
+---
+/**
+ * Shows an example course from the repository's `examples/` folder, read at build time.
+ * With `file`, it shows that one file. With `tree`, it shows the folder tree. With neither, it
+ * shows the tree, then every file except check fixtures, in teaching order.
+ */
+import { Code } from '@astrojs/starlight/components';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+
+interface Props {
+  /** The example's folder name, such as `minimal`. */
+  course: string;
+  /** One file to show, relative to the course folder. */
+  file?: string;
+  /** Show only the folder tree. */
+  tree?: boolean;
+}
+
+const { course, file, tree } = Astro.props;
+const dir = join(import.meta.env.REPO_ROOT, 'examples', course);
+const languages: Record<string, string> = { md: 'markdown', py: 'python', yaml: 'yaml', json: 'json' };
+
+const read = (path: string) => readFileSync(join(dir, path), 'utf8').trimEnd();
+const language = (path: string) => languages[path.split('.').pop() ?? ''] ?? 'text';
+
+/** A folder's entries: files first, then folders, each in name order. Hidden files are left out. */
+function entries(path: string) {
+  return readdirSync(path, { withFileTypes: true })
+    .filter((entry) => !entry.name.startsWith('.'))
+    .sort((a, b) => Number(a.isDirectory()) - Number(b.isDirectory()) || a.name.localeCompare(b.name));
+}
+
+/** Draws a folder as a text tree. */
+function drawTree(path: string, prefix = ''): string[] {
+  const list = entries(path);
+  return list.flatMap((entry, index) => {
+    const last = index === list.length - 1;
+    const line = `${prefix}${last ? '└── ' : '├── '}${entry.name}${entry.isDirectory() ? '/' : ''}`;
+    if (!entry.isDirectory()) return [line];
+    return [line, ...drawTree(join(path, entry.name), prefix + (last ? '    ' : '│   '))];
+  });
+}
+
+/** Every file in a folder, as paths relative to the course folder. */
+function allFiles(path: string, base = ''): string[] {
+  return entries(path).flatMap((entry) =>
+    entry.isDirectory() ? allFiles(join(path, entry.name), `${base}${entry.name}/`) : [`${base}${entry.name}`],
+  );
+}
+
+/** COURSE.md, then other course-level files, then each lesson's files in the order COURSE.md lists them. */
+function keyFiles(): string[] {
+  const lessons = [...read('COURSE.md').matchAll(/\]\(([^)]+)\/LESSON\.md\)/g)].map((match) => `${match[1]}/`);
+  const rank = (path: string) =>
+    path === 'COURSE.md' ? -2 : lessons.findIndex((lesson) => path.startsWith(lesson));
+  const lessonFirst = (path: string) => (path.endsWith('LESSON.md') ? 0 : 1);
+  return allFiles(dir)
+    .filter((path) => !path.includes('checks/fixtures/'))
+    .sort((a, b) => rank(a) - rank(b) || lessonFirst(a) - lessonFirst(b));
+}
+
+const files = file ? [file] : tree ? [] : keyFiles();
+---
+{!file && <Code code={`${course}/\n${drawTree(dir).join('\n')}`} lang="text" />}
+{files.map((path) => <Code code={read(path)} lang={language(path)} title={path} />)}

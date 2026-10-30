@@ -1,0 +1,4 @@
+- answer: 1
+  why: The agent reads the request and decides whether a tool would help.
+- answer: 0
+  why: A small, safe tool is easy to check and cannot do harm while the learner experiments.

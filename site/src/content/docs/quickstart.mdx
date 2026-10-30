@@ -1,0 +1,145 @@
+---
+title: Quickstart
+description: Write your first course in about ten minutes, check it, then grow it.
+---
+
+import Example from '../../components/Example.astro';
+
+This guide builds the [minimal example](/examples/#minimal) from nothing. Then it shows how a course grows, with a checked lesson and phases. Every file on this page is a real file from the repository's `examples/` folder.
+
+You need a text editor, and [uv](https://docs.astral.sh/uv/) to run the `agentcourses` command.
+
+## 1. Make the course folder
+
+A course is a folder with a `COURSE.md` file at its root. Each lesson is a folder with a `LESSON.md` file. The smallest complete course has three files:
+
+<Example course="minimal" tree />
+
+The folder's name is the course's name. It is a *kebab id*: lowercase letters and digits, joined by single hyphens.
+
+## 2. Write COURSE.md
+
+`COURSE.md` names the course and lists its lessons.
+
+<Example course="minimal" file="COURSE.md" />
+
+- `spec` is the version of the format, written as a string.
+- `name` matches the folder name.
+- `description` says what the learner builds and who it is for.
+- `## Outcome` says what the learner leaves with.
+- `## Lessons` is a list of links to lessons. List order is teaching order.
+
+The specification's [COURSE.md section](/specification/#coursemd) lists every field.
+
+## 3. Write the lesson
+
+<Example course="minimal" file="finish/LESSON.md" />
+
+A lesson's body is written to the tutor, not to the learner. The tutor teaches from it in its own words. The one exception is `## Goal`, which the runner says as written.
+
+`stage: demonstrate` marks a lesson where the learner shows what they can do. A course should end with one.
+
+`## Explain back` is the prompt the learner answers in their own words.
+
+## 4. Write the rubric
+
+An explain-back needs a rubric. It lives in the lesson's `tutor/` folder, which the learner never sees.
+
+<Example course="minimal" file="finish/tutor/rubric.md" />
+
+Each top-level list item is one criterion. `pass: 2 of 2` means the learner must meet both.
+
+## 5. Validate the course
+
+From the folder that holds `minimal/`, run:
+
+```bash
+uvx --from git+https://github.com/agentcourses/agentcourses agentcourses validate minimal
+```
+
+For the minimal example, it prints:
+
+```text
+minimal: valid, 0 errors, 0 warnings
+```
+
+An *error* means the course cannot run. A *warning* points at a likely mistake, and the course still runs. Add `--json` for a machine-readable report.
+
+That is a complete course. Any runner that supports Agent Courses 0.1 can teach it.
+
+## 6. Add a lesson with a check
+
+Most courses build something real. A `build` lesson has a `## Build` section and a check that looks at the learner's project. This lesson comes from the [build-an-agent example](/examples/#build-an-agent):
+
+<Example course="build-an-agent" file="basics/add-a-tool/LESSON.md" />
+
+The `checks` list declares one command check:
+
+- `id` names the check.
+- `run` is the command. It runs in the learner's project, so it names the course's script through `$AGENT_LESSON_DIR`.
+- `verify` says in one sentence what passing means.
+- `timeout` is in seconds.
+
+The `objectives` entry says what the lesson proves. Its `by` field names the check that proves it.
+
+The check itself is a small script. Exit code 0 means pass, and 1 means fail. Any other result means the check is broken, and never counts against the learner. The JSON line it prints is optional; runners show it to explain a failure.
+
+<Example course="build-an-agent" file="basics/add-a-tool/checks/tool_registered.py" />
+
+See [Checks](/specification/#checks) for every check field, including observe checks that need no script.
+
+## 7. Prove the check with fixtures
+
+Give each command check two tiny projects: one that should pass and one that should fail. They live in `checks/fixtures/<check-id>/pass/` and `checks/fixtures/<check-id>/fail/`.
+
+<Example course="build-an-agent/basics/add-a-tool" tree />
+
+<Example course="build-an-agent" file="basics/add-a-tool/checks/fixtures/tool-registered/pass/agent.py" />
+
+<Example course="build-an-agent" file="basics/add-a-tool/checks/fixtures/tool-registered/fail/agent.py" />
+
+`agentcourses test` runs every command check against both fixtures. Each fixture folder acts as the learner's project: the command runs inside a copy of it, with `$AGENT_LESSON_DIR` and the other course variables set.
+
+```bash
+uvx --from git+https://github.com/agentcourses/agentcourses agentcourses test build-an-agent
+```
+
+```text
+ok   add-a-tool/tool-registered fail: expected exit 1, got exit 1
+ok   add-a-tool/tool-registered pass: expected exit 0, got exit 0
+ok   finish/agent-answers fail: expected exit 1, got exit 1
+ok   finish/agent-answers pass: expected exit 0, got exit 0
+4 fixtures, 0 failed
+```
+
+This example's checks run `python`, so `python` must be on your `PATH`.
+
+## 8. Group lessons into phases
+
+A long course can group its lessons into phases. A phase is a `###` heading inside `## Lessons`. An optional paragraph under the heading introduces the phase.
+
+<Example course="build-an-agent" file="COURSE.md" />
+
+If a course uses phases, every lesson sits under one. Phases add no rules of their own. Putting lesson folders inside a matching phase folder, such as `basics/`, is a convention, not a requirement.
+
+## 9. Leave decisions to the learner
+
+A *call* is a decision only the learner may make. The tutor must ask it, using its `ask`, and wait for the answer before building anything that depends on it. Declare calls in the lesson's frontmatter:
+
+<Example course="build-an-agent" file="basics/meet-the-agent/LESSON.md" />
+
+Each call has an `id` and an `ask`. The `## Build` text can say when to put the call, but the frontmatter is what makes it binding. This lesson also has a quiz; its answers live in `tutor/quiz.yaml`, which the learner never sees.
+
+## 10. Prove understanding with an explain-back
+
+An objective can be proved by an explain-back instead of a check. Write `by: explain-back`, and give the lesson an `## Explain back` section and a rubric:
+
+<Example course="build-an-agent" file="finish/LESSON.md" />
+
+The objective `agent-works` is proved by a check, so it is *checked* evidence. `agent-explained` is proved by the explain-back, so it is *explained* evidence. A check of `kind: observe` asks the tutor to inspect files in its `scope`, and gives *observed* evidence.
+
+## Next steps
+
+- Catch misconceptions early with a [quiz](/specification/#quizzes).
+- Give the learner a project to start from with [projects and starter files](/specification/#projects-and-starter-files).
+- Read three complete courses on the [examples page](/examples/).

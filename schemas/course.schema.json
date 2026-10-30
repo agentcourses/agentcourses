@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentcourses.io/schemas/0.1/course.schema.json",
+  "title": "COURSE.md frontmatter",
+  "description": "Frontmatter of an Agent Courses 0.1 COURSE.md file. Unknown keys are allowed; validators warn about them.",
+  "type": "object",
+  "required": ["spec", "name", "description"],
+  "properties": {
+    "spec": {
+      "description": "The specification version the course was written for.",
+      "const": "0.1"
+    },
+    "name": {
+      "description": "A kebab id equal to the course folder name.",
+      "$ref": "#/$defs/kebabId"
+    },
+    "description": {
+      "description": "What the learner builds and who it is for.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "version": {
+      "description": "The course's own Semantic Versioning version.",
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$"
+    },
+    "license": {
+      "description": "An SPDX identifier, or the name of a licence file in the course.",
+      "type": "string",
+      "minLength": 1
+    },
+    "compatibility": {
+      "description": "The tools, accounts and costs the learner needs.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "project": {
+      "description": "Where the learner works: one option or a list of options. Omitted means own.",
+      "oneOf": [
+        { "$ref": "#/$defs/projectOption" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/$defs/projectOption" },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      ]
+    },
+    "metadata": {
+      "description": "language, author and homepage are strings. Any other key names a runner and holds that runner's settings.",
+      "type": "object",
+      "properties": {
+        "language": { "type": "string", "minLength": 1 },
+        "author": { "type": "string", "minLength": 1 },
+        "homepage": { "type": "string", "format": "uri" }
+      }
+    }
+  },
+  "$defs": {
+    "kebabId": {
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "not": { "const": "explain-back" }
+    },
+    "projectOption": {
+      "type": "string",
+      "anyOf": [
+        { "const": "own" },
+        {
+          "description": "A folder inside the course.",
+          "pattern": "^\\./[A-Za-z0-9._~+-]+(/[A-Za-z0-9._~+-]+)*$",
+          "not": { "pattern": "/\\.\\.?(/|$)" }
+        },
+        {
+          "description": "A Git repository at a tag or commit, with no credentials.",
+          "pattern": "^git\\+https://[A-Za-z0-9.-]+(:[0-9]{1,5})?/[A-Za-z0-9._~+-]+(/[A-Za-z0-9._~+-]+)*@[A-Za-z0-9._/-]+$"
+        }
+      ]
+    }
+  }
+}

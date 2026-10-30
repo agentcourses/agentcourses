@@ -1,0 +1,7 @@
+---
+title: Alpha
+---
+
+## Goal
+
+A.

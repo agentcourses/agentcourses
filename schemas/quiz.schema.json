@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentcourses.io/schemas/0.1/quiz.schema.json",
+  "title": "tutor/quiz.yaml",
+  "description": "One answer per question under the lesson's ## Quiz heading, in the same order.",
+  "type": "array",
+  "minItems": 1,
+  "items": {
+    "type": "object",
+    "required": ["answer", "why"],
+    "properties": {
+      "answer": { "description": "Zero-based position of the correct option.", "type": "integer", "minimum": 0, "maximum": 4 },
+      "why": { "type": "string", "minLength": 1 }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+---
+/** Starlight's page title, with the page description beneath it as a lead paragraph. */
+import Default from '@astrojs/starlight/components/PageTitle.astro';
+
+const { description } = Astro.locals.starlightRoute.entry.data;
+---
+<Default />
+{description && <p class="ac-page-description">{description}</p>}
