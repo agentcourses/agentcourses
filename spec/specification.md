@@ -1,6 +1,6 @@
-# Agent Courses 0.1 specification
+# Agent Courses 0.2 specification
 
-**Status: beta.** Version 0.1 may change in a breaking way before 1.0. Every change is listed in the [changelog](../CHANGELOG.md).
+**Status: beta.** Version 0.2 may change in a breaking way before 1.0. Every change is listed in the [changelog](../CHANGELOG.md).
 
 An agent course is a folder of Markdown files that an AI agent uses to teach someone in their own project. The author writes lessons, checks and rubrics. A *runner* (an agent host, or a tool inside one) reads the folder and tutors the learner through it.
 
@@ -66,7 +66,7 @@ build-an-agent/
 
 ```markdown
 ---
-spec: "0.1"
+spec: "0.2"
 name: build-an-agent
 description: Build a one-file agent with a tool, then explain it. For beginners.
 ---
@@ -88,7 +88,7 @@ description: Build a one-file agent with a tool, then explain it. For beginners.
 
 | Field | Required | Rule |
 | --- | --- | --- |
-| `spec` | Yes | The specification version, as a string: `"0.1"`. |
+| `spec` | Yes | The specification version, as a string: `"0.2"`. |
 | `name` | Yes | A kebab id equal to the folder name. |
 | `description` | Yes | 1 to 1,024 characters: what the learner builds and who it is for. |
 | `version` | No | The course's own version, as a [Semantic Versioning](https://semver.org) string. |
@@ -113,6 +113,7 @@ The body has these recognised headings:
 | `## Lessons` | Yes | The ordered list of lessons, optionally grouped into phases. |
 | `## Outcome` | Recommended | What the learner leaves with. |
 | `## Before you start` | No | Tools, accounts and costs to sort out first. |
+| `## Teaching` | No | Written to the tutor: how to teach every lesson, such as tone, pace and what to confirm before moving on. A lesson's own text wins where they differ. |
 
 Each heading appears at most once. Any other heading is ordinary text.
 
@@ -137,11 +138,11 @@ Set up the project and meet the agent loop.
 3. [Explain what you built](finish/LESSON.md)
 ```
 
-A course uses phases when `## Lessons` contains a level-three heading. Then every lesson MUST sit under one. Phases group lessons for the learner; they add no rules of their own. Placing lesson folders inside a matching phase folder is a convention, not a requirement.
+A course uses phases when `## Lessons` contains a level-three heading. Then every lesson MUST sit under one. Phases group lessons for the learner. Paragraphs after a phase's last lesson, up to the next level-three heading, are its *closing*. Leave a blank line after the list, or Markdown joins the text to the last lesson. The runner says the closing as written when every lesson in the phase is done. Placing lesson folders inside a matching phase folder is a convention, not a requirement.
 
 ## LESSON.md
 
-A lesson's body is written to the tutor, not to the learner. The tutor teaches from it in its own words. The only exception is `## Goal`, which the runner says as written.
+A lesson's body is written to the tutor, not to the learner. The tutor teaches from it in its own words. The exceptions are `## Goal`, said as written when the lesson starts, and `## Homework`, said as written once the lesson is done.
 
 ```markdown
 ---
@@ -196,6 +197,7 @@ The body has these recognised headings:
 | `## Hints` | No | A numbered list, revealed one item per request. |
 | `## Quiz` | No | Questions that catch misconceptions. See [quizzes](#quizzes). |
 | `## Explain back` | No | The prompt the learner answers in their own words. Needs `tutor/rubric.md`. |
+| `## Homework` | No | Something the learner does on their own after the lesson. It is never evidence and never blocks progress. |
 
 Each heading appears at most once. A lesson *has an explain-back* when it has an `## Explain back` section.
 
@@ -215,6 +217,15 @@ A course SHOULD end with a `demonstrate` lesson.
 ### Calls
 
 A *call* is a decision only the learner may make, such as which tool to build or which trade-off to accept. Each call has an `id` (a kebab id, unique across the course) and an `ask` (the question the tutor puts to the learner).
+
+A call MAY name a `preference`: a kebab id for a choice the learner may want to keep, such as `pace`. Calls that name the same preference, in any lesson or course, ask for the same kind of answer.
+
+```yaml
+calls:
+  - id: choose-pace
+    ask: How fast do you want to go?
+    preference: pace
+```
 
 ### Objectives
 
@@ -376,13 +387,26 @@ These rules protect the learner, whichever runner they use.
 
 17. A runner SHOULD be able to resume a learner at the same lesson from the progress file alone. A call that was open when the session ended is put to the learner again.
 
+### Teaching order
+
+18. A runner MUST say a lesson's `## Goal` before teaching anything else in it, and MUST NOT ask a quiz question before it has taught the lesson's `## Build`.
+19. A runner that offers a quiz MUST offer every question, in order, until the learner stops. After a wrong answer it SHOULD offer to go over the teaching again.
+20. A runner MUST give the tutor the course's `## Teaching` section with every lesson.
+21. A runner MUST NOT say a lesson's homework if the lesson was skipped, or a phase's closing unless every lesson in the phase is done.
+
+### Remembering choices
+
+22. A runner SHOULD give the tutor the learner's earlier answers to calls in the same course, and who made each call, so later lessons build on them.
+23. A runner MAY remember answers to calls that name a `preference`, including across courses, only if the learner agrees. It MUST let the learner see and clear what it remembers.
+24. When a call names a remembered preference, the runner MAY offer that answer as its recommendation. The call is the learner's only once they confirm it.
+
 ## The progress file
 
 A runner MAY record progress in `.agents/courses/<course-name>/progress.json` in the learner's project. If it does, it uses this shape, so the learner can take their progress to another runner:
 
 ```json
 {
-  "spec": "0.1",
+  "spec": "0.2",
   "course": { "name": "build-an-agent", "version": "0.1.0" },
   "project": "own",
   "current": "add-a-tool",
@@ -396,7 +420,7 @@ A runner MAY record progress in `.agents/courses/<course-name>/progress.json` in
 
 | Field | Rule |
 | --- | --- |
-| `spec` | `"0.1"`. |
+| `spec` | The course's specification version: `"0.1"` or `"0.2"`. |
 | `course` | The course `name`, and its `version` if it has one. |
 | `project` | The project option the learner chose. |
 | `current` | The id of the lesson the learner is on, or `null` when finished. |
@@ -413,7 +437,7 @@ A course is *valid* when it has no errors. Warnings point at likely mistakes, an
 | Errors | Warnings |
 | --- | --- |
 | `COURSE.md` missing, or frontmatter not a mapping | An unknown frontmatter key |
-| A required field missing or of the wrong type or value | No `## Outcome` section |
+| A required field missing, or a supplied field of the wrong type or value | No `## Outcome` section |
 | `name` differs from the folder name | A `practise` or `build` lesson without checks |
 | No `## Lessons` list, or a link that is not a lesson | An `understand` lesson with checks |
 | A lesson listed twice, or two lessons with the same id | A `demonstrate` lesson without an explain-back |
@@ -422,8 +446,8 @@ A course is *valid* when it has no errors. Warnings point at likely mistakes, an
 | A duplicate check, call or objective id | A command check without fixtures |
 | An objective whose `by` names nothing in its lesson | A rubric in a lesson without an explain-back |
 | An explain-back without a valid rubric | A command check without `verify` |
-| A quiz without a matching key | |
-| An invalid `project` option or missing folder | |
+| A quiz without a matching key | A 0.2 heading or `preference` key in a `spec: "0.1"` course |
+| An invalid `project` option or missing folder | A phase's last lesson item with a second line of text, the usual sign of a closing without a blank line |
 | A link that leaves the course, or exposes `tutor/` | |
 
 The JSON Schemas in [`schemas/`](../schemas/) describe each frontmatter shape. The `agentcourses validate` command checks a whole course.
@@ -431,3 +455,5 @@ The JSON Schemas in [`schemas/`](../schemas/) describe each frontmatter shape. T
 ## Versioning
 
 The specification uses [Semantic Versioning](https://semver.org). While it is below 1.0, each minor version (0.1, 0.2 and so on) may make breaking changes. A course names the version it was written for in `spec`. A runner MUST refuse a course whose `spec` version it does not support.
+
+Version 0.2 only adds to 0.1. A runner that supports 0.2 SHOULD also run 0.1 courses by 0.1's rules: there, `## Teaching` and `## Homework` are ordinary text, phases have no closing, and `preference` is an unknown key.

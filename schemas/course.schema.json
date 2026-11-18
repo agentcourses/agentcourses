@@ -1,14 +1,14 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://agentcourses.io/schemas/0.1/course.schema.json",
+  "$id": "https://agentcourses.io/schemas/0.2/course.schema.json",
   "title": "COURSE.md frontmatter",
-  "description": "Frontmatter of an Agent Courses 0.1 COURSE.md file. Unknown keys are allowed; validators warn about them.",
+  "description": "Frontmatter of an Agent Courses 0.2 COURSE.md file. Unknown keys are allowed; validators warn about them.",
   "type": "object",
   "required": ["spec", "name", "description"],
   "properties": {
     "spec": {
       "description": "The specification version the course was written for.",
-      "const": "0.1"
+      "enum": ["0.1", "0.2"]
     },
     "name": {
       "description": "A kebab id equal to the course folder name.",

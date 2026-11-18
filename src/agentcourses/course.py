@@ -14,10 +14,11 @@ from jsonschema import Draft202012Validator
 
 from agentcourses import markdown as md
 
-SPEC_VERSION = "0.1"
+SPEC_VERSION = "0.2"
+SUPPORTED_VERSIONS = {"0.1", SPEC_VERSION}
 KEBAB = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
-COURSE_HEADINGS = {"Lessons", "Outcome", "Before you start"}
-LESSON_HEADINGS = {"Goal", "Build", "Hints", "Quiz", "Explain back"}
+COURSE_HEADINGS = {"Lessons", "Outcome", "Before you start", "Teaching"}
+LESSON_HEADINGS = {"Goal", "Build", "Hints", "Quiz", "Explain back", "Homework"}
 EVIDENCE = {"command": "checked", "observe": "observed"}
 NOT_LESSONS = {"starter", "tutor", "fixtures", ".git", "node_modules"}
 
@@ -70,14 +71,18 @@ class Course:
     project: list[str]
     metadata: dict
     lessons: list[Lesson]
-    phases: list[dict] | None  # [{"title", "intro", "lessons": [ids]}], or None without phases
+    phases: list[dict] | None  # [{"title", "intro", "lessons": [ids], optional "closing"}]
+    teaching: bool = False
 
 
 @cache
-def schema(name: str) -> dict:
+def schema(name: str, version: str = SPEC_VERSION) -> dict:
     packaged = Path(__file__).parent / "schemas"
     folder = packaged if packaged.is_dir() else Path(__file__).parents[2] / "schemas"
-    return json.loads((folder / f"{name}.schema.json").read_text(encoding="utf-8"))
+    definition = json.loads((folder / f"{name}.schema.json").read_text(encoding="utf-8"))
+    if version == "0.1" and name == "lesson":
+        del definition["$defs"]["call"]["properties"]["preference"]
+    return definition
 
 
 def load(root: str | Path) -> tuple[Course | None, list[Diagnostic]]:
@@ -96,7 +101,11 @@ def describe(root: str | Path) -> dict:
         "name": course.name,
         "spec": course.spec,
         "project": course.project,
-        "phases": [{"title": p["title"], "lessons": p["lessons"]} for p in course.phases or []],
+        "teaching": course.teaching,
+        "phases": [
+            {"title": p["title"], "lessons": p["lessons"], "closing": bool(p.get("closing"))}
+            for p in course.phases or []
+        ],
         "lessons": [
             {
                 "id": lesson.id,
@@ -104,6 +113,8 @@ def describe(root: str | Path) -> dict:
                 "stage": lesson.stage,
                 "checks": [vars(check) for check in lesson.checks],
                 "calls": [call["id"] for call in lesson.calls],
+                "preferences": {call["id"]: call["preference"] for call in lesson.calls if "preference" in call},
+                "homework": "Homework" in lesson.headings,
                 "objectives": [{"id": o["id"], "evidence": _evidence(lesson, o["by"])} for o in lesson.objectives],
                 "explain_back": "Explain back" in lesson.headings,
                 "quiz": lesson.quiz,
@@ -122,6 +133,7 @@ def _evidence(lesson: Lesson, by: str) -> str:
 class _Reader:
     def __init__(self, root: Path):
         self.root = root.resolve()
+        self.spec = SPEC_VERSION
         self.diagnostics: list[Diagnostic] = []
         self.ids: dict[str, set[str]] = {"check": set(), "call": set(), "objective": set()}
 
@@ -150,9 +162,10 @@ class _Reader:
         if "spec" in data and not isinstance(data["spec"], str):
             self.error("bad-field", course_file, f'spec must be a quoted string, such as spec: "{SPEC_VERSION}"')
             return None, self.diagnostics
-        if "spec" in data and data["spec"] != SPEC_VERSION:
+        if "spec" in data and data["spec"] not in SUPPORTED_VERSIONS:
             self.error("unsupported-spec", course_file, f"spec {data['spec']!r} is not supported; this is {SPEC_VERSION!r}")
             return None, self.diagnostics
+        self.spec = data.get("spec", SPEC_VERSION)
         self.check_schema("course", data, course_file)
         name = data.get("name")
         if isinstance(name, str) and name != self.root.name:
@@ -160,7 +173,7 @@ class _Reader:
 
         blocks = md.parse(body, first)
         found, order = md.sections(blocks)
-        self.check_headings(order, COURSE_HEADINGS, course_file)
+        self.check_headings(order, COURSE_HEADINGS, course_file, addition="Teaching")
         if "Outcome" not in found:
             self.warn("missing-outcome", course_file, "the course has no ## Outcome section")
         project = self.read_project(data.get("project", "own"), course_file)
@@ -182,32 +195,36 @@ class _Reader:
         course = Course(
             root=self.root,
             name=name if isinstance(name, str) else self.root.name,
-            spec=SPEC_VERSION,
+            spec=self.spec,
             description=data.get("description", ""),
             version=data.get("version"),
             project=project,
             metadata=data.get("metadata") or {},
             lessons=lessons,
             phases=phases,
+            teaching=self.spec == "0.2" and "Teaching" in found,
         )
         return course, self.diagnostics
 
     def check_schema(self, name, data, path, where=""):
-        validator = Draft202012Validator(schema(name))
+        validator = Draft202012Validator(schema(name, self.spec))
         for problem in sorted(validator.iter_errors(data), key=lambda e: list(e.path)):
             location = ".".join(str(p) for p in problem.path)
             code = "bad-project" if location.startswith("project") else "bad-field"
             if name in ("rubric", "quiz"):
                 code = f"bad-{name}"
             self.error(code, path, f"{where}{location or 'frontmatter'}: {problem.message}")
-        known = schema(name).get("properties", {})
+        known = schema(name, self.spec).get("properties", {})
         if isinstance(data, dict):
             for key in data.keys() - known.keys():
                 self.warn("unknown-key", path, f"{where}unknown key {key!r} is ignored")
 
-    def check_headings(self, order, recognised, path):
+    def check_headings(self, order, recognised, path, addition=None):
         seen = set()
         for text, line in order:
+            if text == addition and self.spec == "0.1":
+                self.warn("unsupported-heading", path, f"## {text} is ordinary text in spec 0.1; use spec 0.2 to recognise it", line)
+                continue
             if text in recognised and text in seen:
                 self.error("duplicate-heading", path, f"## {text} appears more than once", line)
             seen.add(text)
@@ -228,13 +245,41 @@ class _Reader:
         phases: list[dict] = []
         entries: list[tuple[str, int]] = []
         phase = None
-        for block in section:
+        # Only paragraphs after the phase's final list are its closing.
+        last_lists = set()
+        seen_list = False
+        for index in range(len(section) - 1, -1, -1):
+            block = section[index]
+            if block.kind == "heading" and block.level == 3:
+                seen_list = False
+            elif block.kind == "list" and not seen_list:
+                last_lists.add(index)
+                seen_list = True
+        closing = False
+        warned_closing = False
+        for index, block in enumerate(section):
             if block.kind == "heading" and block.level == 3:
                 phase = {"title": block.text, "intro": "", "lessons": []}
+                if self.spec == "0.2":
+                    phase["closing"] = ""
                 phases.append(phase)
-            elif block.kind == "paragraph" and phase is not None and not phase["lessons"]:
-                phase["intro"] = (phase["intro"] + "\n\n" + block.text).strip()
+                closing = False
+                warned_closing = False
+            elif block.kind == "paragraph" and phase is not None:
+                if not phase["lessons"]:
+                    phase["intro"] = (phase["intro"] + "\n\n" + block.text).strip()
+                elif closing:
+                    if self.spec == "0.2":
+                        phase["closing"] = (phase["closing"] + "\n\n" + block.text).strip()
+                    elif not warned_closing:
+                        self.warn("unsupported-phase-closing", path, "a phase closing is ignored in spec 0.1; use spec 0.2 to recognise it", block.line)
+                        warned_closing = True
             elif block.kind == "list":
+                closing = index in last_lists
+                if phase is not None and closing and block.items:
+                    paragraphs = [b for b in block.items[-1] if b.kind == "paragraph"]
+                    if len(paragraphs) > 1 or any("\n" in b.text for b in paragraphs):
+                        self.warn("missing-phase-closing-break", path, "the phase's last lesson item has a second line of text; leave a blank line before a closing", block.items[-1][0].line)
                 for item in block.items:
                     hrefs = md.item_links(item)
                     line = item[0].line if item else block.line
@@ -272,14 +317,14 @@ class _Reader:
         self.check_schema("lesson", data, target)
         for key in ("checks", "calls", "objectives"):
             entries = data.get(key)
-            known = schema("lesson")["$defs"][key[:-1]]["properties"]
+            known = schema("lesson", self.spec)["$defs"][key[:-1]]["properties"]
             for index, entry in enumerate(entries if isinstance(entries, list) else []):
                 if isinstance(entry, dict):
                     for unknown in entry.keys() - known.keys():
                         self.warn("unknown-key", target, f"{key}[{index}]: unknown key {unknown!r} is ignored")
 
         found, order = md.sections(md.parse(body, first))
-        self.check_headings(order, LESSON_HEADINGS, target)
+        self.check_headings(order, LESSON_HEADINGS, target, addition="Homework")
         lesson = Lesson(
             id=lesson_id,
             path=folder,
@@ -287,9 +332,12 @@ class _Reader:
             stage=data.get("stage") if isinstance(data.get("stage"), str) else None,
             minutes=data.get("minutes") if isinstance(data.get("minutes"), int) else None,
             checks=[self.read_check(c, target) for c in _dicts(data.get("checks")) if isinstance(c.get("id"), str)],
-            calls=[c for c in _dicts(data.get("calls")) if isinstance(c.get("id"), str)],
+            calls=[
+                {key: value for key, value in c.items() if key != "preference" or self.spec == "0.2"}
+                for c in _dicts(data.get("calls")) if isinstance(c.get("id"), str)
+            ],
             objectives=[o for o in _dicts(data.get("objectives")) if isinstance(o.get("id"), str)],
-            headings={text for text, _ in order if text in LESSON_HEADINGS},
+            headings={text for text, _ in order if text in LESSON_HEADINGS and (text != "Homework" or self.spec == "0.2")},
         )
         if "Goal" not in lesson.headings:
             self.error("missing-goal", target, "the lesson has no ## Goal section")

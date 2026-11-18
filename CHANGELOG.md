@@ -2,6 +2,14 @@
 
 Agent Courses uses [Semantic Versioning](https://semver.org). Below 1.0, a minor version may make breaking changes.
 
+## 0.2.0 (unreleased)
+
+- Authors can add course-wide teaching guidance, phase closings and lesson homework.
+- Calls can name preferences that a runner may remember with the learner's agreement.
+- Runner rules cover teaching before quizzes, every quiz question, earlier choices and confirmed preferences.
+- The tools recognise 0.1 and 0.2 courses by their own rules. Published 0.1 schemas remain available.
+- Progress still contains no learner answers. Homework and quizzes never count as evidence.
+
 ## 0.1.0 (beta)
 
 The first public beta of Agent Courses: a simpler format, written as one specification page.
