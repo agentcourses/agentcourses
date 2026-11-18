@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://agentcourses.io/schemas/0.1/lesson.schema.json",
+  "$id": "https://agentcourses.io/schemas/0.2/lesson.schema.json",
   "title": "LESSON.md frontmatter",
-  "description": "Frontmatter of an Agent Courses 0.1 LESSON.md file. Unknown keys are allowed; validators warn about them.",
+  "description": "Frontmatter of an Agent Courses 0.2 LESSON.md file. Unknown keys are allowed; validators warn about them.",
   "type": "object",
   "required": ["title"],
   "properties": {
@@ -50,7 +50,8 @@
       "required": ["id", "ask"],
       "properties": {
         "id": { "$ref": "#/$defs/kebabId" },
-        "ask": { "type": "string", "minLength": 1 }
+        "ask": { "type": "string", "minLength": 1 },
+        "preference": { "$ref": "#/$defs/kebabId" }
       }
     },
     "objective": {

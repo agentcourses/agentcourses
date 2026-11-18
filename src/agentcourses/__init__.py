@@ -3,6 +3,6 @@
 from agentcourses.course import Course, Diagnostic, Lesson, describe, load
 
 __version__ = "0.1.0"
-SPEC_VERSION = "0.1"
+SPEC_VERSION = "0.2"
 
 __all__ = ["Course", "Diagnostic", "Lesson", "SPEC_VERSION", "describe", "load"]

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from agentcourses import load
+from agentcourses import describe, load
 
 COURSE = """---
 spec: "0.1"
@@ -146,7 +146,7 @@ def test_errors(course, name, rel, old, new, code):
 def test_unquoted_spec_gets_a_clear_message(course):
     edit(course, "COURSE.md", 'spec: "0.1"', "spec: 0.1")
     _, diagnostics = load(course)
-    assert [(d.code, d.message) for d in diagnostics] == [("bad-field", 'spec must be a quoted string, such as spec: "0.1"')]
+    assert [(d.code, d.message) for d in diagnostics] == [("bad-field", 'spec must be a quoted string, such as spec: "0.2"')]
 
 
 def test_missing_course_file(tmp_path):
@@ -222,3 +222,102 @@ def test_phases_are_read_in_order(course):
         {"title": "Start", "intro": "Begin here.", "lessons": ["make"]},
         {"title": "End", "intro": "", "lessons": ["finish"]},
     ]
+
+
+@pytest.fixture
+def additions(course):
+    edit(course, "COURSE.md", 'spec: "0.1"', 'spec: "0.2"')
+    edit(course, "COURSE.md", "## Lessons", "## Teaching\n\nLet the learner set the pace.\n\n## Lessons\n\n### Make a thing\n\nBegin here.")
+    edit(course, "COURSE.md", "2. [Finish]", "\nYou made the thing.\n\n### Explain it\n\n2. [Finish]")
+    edit(course, "make/LESSON.md", "    ask: What should it be called?", "    ask: What should it be called?\n    preference: project-name")
+    edit(course, "make/LESSON.md", "Build it together.", "Build it together.\n\n## Homework\n\nShow a friend.")
+    return course
+
+
+def test_0_2_recognises_every_addition(additions):
+    assert codes(additions, "error") == []
+    assert codes(additions, "warning") == []
+    reading = describe(additions)
+    assert reading["spec"] == "0.2"
+    assert reading["teaching"] is True
+    assert reading["phases"] == [
+        {"title": "Make a thing", "lessons": ["make"], "closing": True},
+        {"title": "Explain it", "lessons": ["finish"], "closing": False},
+    ]
+    assert reading["lessons"][0]["homework"] is True
+    assert reading["lessons"][0]["calls"] == ["pick-name"]
+    assert reading["lessons"][0]["preferences"] == {"pick-name": "project-name"}
+    assert reading["lessons"][1]["homework"] is False
+    assert reading["lessons"][1]["preferences"] == {}
+
+
+def test_0_1_leaves_additions_unrecognised_and_warns_once_each(additions):
+    edit(additions, "COURSE.md", 'spec: "0.2"', 'spec: "0.1"')
+    assert codes(additions, "error") == []
+    assert sorted(codes(additions, "warning")) == [
+        "unknown-key", "unsupported-heading", "unsupported-heading", "unsupported-phase-closing",
+    ]
+    reading = describe(additions)
+    assert reading["spec"] == "0.1"
+    assert reading["teaching"] is False
+    assert all(phase["closing"] is False for phase in reading["phases"])
+    assert all(lesson["homework"] is False for lesson in reading["lessons"])
+    assert all(lesson["preferences"] == {} for lesson in reading["lessons"])
+    assert reading["lessons"][0]["calls"] == ["pick-name"]
+    loaded, _ = load(additions)
+    assert "preference" not in loaded.lessons[0].calls[0]
+
+
+@pytest.mark.parametrize("preference", ['""', '"Too Fast"', '"explain-back"', '"' + 'a' * 65 + '"', 'null', '42', '[pace]', '{pace: fast}'])
+@pytest.mark.parametrize("version", ["0.1", "0.2"])
+def test_supplied_preference_is_checked_only_in_0_2(course, version, preference):
+    edit(course, "COURSE.md", 'spec: "0.1"', f'spec: "{version}"')
+    edit(course, "make/LESSON.md", "    ask: What should it be called?", f"    ask: What should it be called?\n    preference: {preference}")
+    assert codes(course, "error") == (["bad-field"] if version == "0.2" else [])
+    assert codes(course, "warning") == (["unknown-key"] if version == "0.1" else [])
+
+
+@pytest.mark.parametrize("version", ["0.1", "0.2"])
+def test_closing_without_blank_line_warns_and_is_not_read(additions, version):
+    edit(additions, "COURSE.md", 'spec: "0.2"', f'spec: "{version}"')
+    # Markdown folds this paragraph into the final list item's first paragraph.
+    edit(additions, "COURSE.md", "make/LESSON.md)\n\nYou", "make/LESSON.md)\nYou")
+    assert codes(additions, "error") == []
+    assert codes(additions, "warning").count("missing-phase-closing-break") == 1
+    assert all(phase["closing"] is False for phase in describe(additions)["phases"])
+
+
+def test_closing_uses_paragraphs_after_the_last_list_in_its_phase(additions):
+    edit(additions, "COURSE.md", "You made the thing.", "A note before the last list.\n\n2. [Finish](finish/LESSON.md)\n\nYou made the thing.\n\nKeep exploring.")
+    edit(additions, "COURSE.md", "### Explain it\n\n2. [Finish](finish/LESSON.md)", "### Later\n\nIntroduction only.")
+    loaded, diagnostics = load(additions)
+    assert diagnostics == []
+    assert loaded.phases[0]["intro"] == "Begin here."
+    assert loaded.phases[0]["closing"] == "You made the thing.\n\nKeep exploring."
+    assert describe(additions)["phases"][1]["closing"] is False
+
+
+@pytest.mark.parametrize("version", ["0.1", "0.2"])
+@pytest.mark.parametrize(("rel", "heading"), [("COURSE.md", "Teaching"), ("make/LESSON.md", "Homework")])
+def test_new_heading_duplicates_are_versioned(additions, version, rel, heading):
+    edit(additions, "COURSE.md", 'spec: "0.2"', f'spec: "{version}"')
+    edit(additions, rel, f"## {heading}", f"## {heading}\n\nAgain.\n\n## {heading}")
+    assert codes(additions, "error") == (["duplicate-heading"] if version == "0.2" else [])
+
+
+def test_addition_headings_inside_code_are_not_recognised(course):
+    edit(course, "COURSE.md", 'spec: "0.1"', 'spec: "0.2"')
+    edit(course, "COURSE.md", "## Outcome", "```md\n## Teaching\n```\n\n## Outcome")
+    edit(course, "make/LESSON.md", "## Build", "```md\n## Homework\n```\n\n## Build")
+    assert codes(course, "warning") == []
+    reading = describe(course)
+    assert reading["teaching"] is False
+    assert reading["lessons"][0]["homework"] is False
+
+
+def test_loading_versions_does_not_change_later_validation(additions):
+    assert codes(additions, "warning") == []
+    edit(additions, "COURSE.md", 'spec: "0.2"', 'spec: "0.1"')
+    assert codes(additions, "warning").count("unknown-key") == 1
+    edit(additions, "COURSE.md", 'spec: "0.1"', 'spec: "0.2"')
+    assert codes(additions, "warning") == []

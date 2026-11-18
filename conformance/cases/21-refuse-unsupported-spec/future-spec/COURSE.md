@@ -1,5 +1,5 @@
 ---
-spec: "0.2"
+spec: "0.3"
 name: future-spec
 description: A case.
 ---
