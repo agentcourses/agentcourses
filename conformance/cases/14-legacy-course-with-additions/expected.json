@@ -1,0 +1,26 @@
+{
+  "course": "legacy-additions",
+  "valid": true,
+  "spec": "0.1",
+  "teaching": false,
+  "phases": [
+    {
+      "title": "Choices",
+      "lessons": [
+        "finish"
+      ],
+      "closing": false
+    }
+  ],
+  "lessons": [
+    {
+      "id": "finish",
+      "calls": [
+        "choose-pace",
+        "choose-topic"
+      ],
+      "homework": false,
+      "preferences": {}
+    }
+  ]
+}

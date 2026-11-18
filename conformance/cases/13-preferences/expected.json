@@ -1,0 +1,20 @@
+{
+  "course": "preferences",
+  "valid": true,
+  "spec": "0.2",
+  "teaching": false,
+  "phases": [],
+  "lessons": [
+    {
+      "id": "finish",
+      "calls": [
+        "choose-pace",
+        "choose-topic"
+      ],
+      "homework": false,
+      "preferences": {
+        "choose-pace": "pace"
+      }
+    }
+  ]
+}
