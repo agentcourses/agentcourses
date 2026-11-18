@@ -3,6 +3,9 @@ title: Meet the agent
 stage: understand
 minutes: 10
 calls:
+  - id: choose-pace
+    ask: Would you like short steps with a pause, or a longer explanation before trying?
+    preference: pace
   - id: choose-tool
     ask: Which tool should your agent call first?
 ---
@@ -12,6 +15,8 @@ calls:
 You can say what an agent loop is, and which tool your agent will call first.
 
 ## Build
+
+Put the `choose-pace` call to the learner first and wait. Match the explanation to their choice.
 
 Explain the agent loop using the learner's own project. The agent reads a request, decides whether a tool would help, calls it, and uses the result.
 
@@ -32,3 +37,7 @@ Ask what small job the learner's agent could do with one tool. Put the `choose-t
    - Something small, safe and easy to check
    - Something that deletes files
    - Something that needs a paid account
+
+## Homework
+
+Think of one request your chosen tool should handle and one it should leave alone. Bring both to the next lesson.

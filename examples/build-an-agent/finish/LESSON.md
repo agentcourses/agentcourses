@@ -37,3 +37,7 @@ Put the `choose-failure` call to the learner. Help them add one line to `agent.p
 ## Explain back
 
 Ask the learner to explain, in their own words, how `answer` decides whether to call the tool, what it returns, and the failure they guarded against.
+
+## Homework
+
+Use your agent for one small job in your own project. Decide which failure you would guard against next.

@@ -31,3 +31,7 @@ Let the learner try a request that uses the tool and one that does not.
 
 1. `TOOLS = {"time": tell_time}` registers one tool called `time`.
 2. `answer` should return a string in both cases: with and without a tool.
+
+## Homework
+
+Try a new request with your tool. Note one result you expected and one that surprised you.
