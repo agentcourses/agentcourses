@@ -2,9 +2,11 @@
 
 Use this list to review a runner against the [runner rules](../spec/specification.md#runner-rules). Each item is something a reviewer can watch for in a real session. The [conformance suite](protocol.md) covers how a runner reads courses. This list covers how it behaves.
 
+Keep the specification's requirement levels when judging each item. A `SHOULD` is a recommendation: record a justified departure rather than treating it as a failed `MUST`.
+
 ## Before the first lesson
 
-- [ ] The runner refuses a course with errors and says why. It starts a course that has only warnings.
+- [ ] The runner refuses a course with errors. As recommended (`SHOULD`) in [validation](../spec/specification.md#validation), it says why and starts a course that has only warnings, or records a justified departure.
 - [ ] The runner refuses a course whose `spec` version it does not support.
 - [ ] With several `project` options, the learner chooses. The runner may recommend one, but never picks.
 - [ ] Copying a folder or Git project never overwrites a file and runs no code from the source.
@@ -12,7 +14,6 @@ Use this list to review a runner against the [runner rules](../spec/specificatio
 
 ## During a lesson
 
-- [ ] The runner says the `## Goal` text as written, and no other section as written.
 - [ ] Each call is put to the learner, using its `ask`, before any change that depends on it.
 - [ ] If the learner asks the tutor to choose, the call is recorded as the tutor's.
 - [ ] The runner waits for explicit input to start a lesson, run a check the first time, move on, start an explain-back or skip.
@@ -36,11 +37,25 @@ Use this list to review a runner against the [runner rules](../spec/specificatio
 - [ ] The tutor asks open questions, does not lead, and judges only against the rubric.
 - [ ] No project file changes between the start of an explain-back and its judgement.
 - [ ] An objective settles only when its evidence passed, every call in the lesson was the learner's, and the lesson was not skipped.
-- [ ] A skipped lesson is recorded as skipped. A quiz, hint or help is never evidence.
+- [ ] A skipped lesson is recorded as skipped. A quiz, homework, hint or help is never evidence.
 
 ## Privacy and progress
 
 - [ ] No code, files, answers or conversation are sent anywhere because of anything in a course.
 - [ ] Anything sent elsewhere, such as feedback, is opt-in per destination, refusable and withdrawable.
 - [ ] If the runner writes `progress.json`, it matches the [progress schema](../schemas/progress.schema.json) and holds no learner content.
-- [ ] The learner can resume at the same lesson from the progress file. Open calls are put again.
+- [ ] Rule 17 (`SHOULD`): The learner can resume at the same lesson from the progress file, or the runner records a justified departure. Open calls are put again.
+
+## Teaching order
+
+- [ ] Rule 18: The runner says the `## Goal` as written before teaching anything else in the lesson. It teaches the `## Build` before asking any quiz question.
+- [ ] Rule 19: If a quiz is offered, every question is offered in order until the learner stops.
+- [ ] Rule 19 (`SHOULD`): After a wrong answer, the runner offers to go over the teaching again, or records a justified departure.
+- [ ] Rule 20: The tutor receives the course's `## Teaching` section with every lesson.
+- [ ] Rule 21: Homework is said as written once the lesson is done, and never if it was skipped. A phase closing is said as written only when every lesson in that phase is done.
+
+## Remembering choices
+
+- [ ] Rule 22 (`SHOULD`): Later lessons receive earlier answers to calls in the same course, with who made each call, or the runner records a justified departure.
+- [ ] Rule 23: Remembering a preference needs the learner's agreement, including across courses. The learner can see and clear remembered answers.
+- [ ] Rule 24: A remembered preference may be offered as a recommendation. The call counts as the learner's only after they confirm it.

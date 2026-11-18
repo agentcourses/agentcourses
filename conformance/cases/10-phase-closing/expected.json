@@ -1,0 +1,23 @@
+{
+  "course": "phase-closing",
+  "valid": true,
+  "spec": "0.2",
+  "teaching": false,
+  "phases": [
+    {
+      "title": "Choices",
+      "lessons": [
+        "finish"
+      ],
+      "closing": true
+    }
+  ],
+  "lessons": [
+    {
+      "id": "finish",
+      "calls": [],
+      "homework": false,
+      "preferences": {}
+    }
+  ]
+}

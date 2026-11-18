@@ -17,6 +17,14 @@ ROOT = Path(__file__).parents[1]
 EXAMPLES = sorted(p for p in (ROOT / "examples").iterdir() if p.is_dir())
 SPEC = (ROOT / "spec/specification.md").read_text(encoding="utf-8")
 AGENTCOURSES = Path(sys.executable).with_name("agentcourses")
+ADDITIONS_CASES = {
+    "09-teaching-guidance",
+    "10-phase-closing",
+    "11-phase-closing-without-blank-line",
+    "12-homework",
+    "13-preferences",
+    "14-legacy-course-with-additions",
+}
 
 
 @pytest.mark.parametrize("example", EXAMPLES, ids=[p.name for p in EXAMPLES])
@@ -36,6 +44,7 @@ def test_example_fixtures_pass(example, monkeypatch):
 def test_reference_reading_passes_every_case():
     outcomes = run_suite(f"{AGENTCOURSES} describe")
     assert [(o.case, o.detail) for o in outcomes if not o.ok] == []
+    assert ADDITIONS_CASES <= {o.case for o in outcomes}
     assert len(outcomes) >= 15
 
 
@@ -43,6 +52,7 @@ def test_faulty_reading_is_caught():
     adapter = f"{sys.executable} {ROOT / 'tests/faulty_adapter.py'}"
     failed = {o.case for o in run_suite(adapter) if not o.ok}
     assert "03-phases" in failed
+    assert ADDITIONS_CASES <= failed
     assert {case for case in failed if case.startswith("2")} == {
         p.name for p in (ROOT / "conformance/cases").iterdir() if p.name.startswith("2")
     }

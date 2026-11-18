@@ -41,7 +41,9 @@ def run_suite(adapter: str, cases: Path | None = None) -> list[Outcome]:
 
 
 def mismatch(expected, actual, where: str) -> str | None:
-    """Every key in expected must match. Keys the runner adds are ignored; lists must match in full."""
+    """Match listed fields; lists and preference maps must match in full."""
+    if where.endswith(".preferences") and expected != actual:
+        return f"{where}: expected {json.dumps(expected)}, got {json.dumps(actual)}"
     if isinstance(expected, dict):
         if not isinstance(actual, dict):
             return f"{where or 'reading'}: expected an object"

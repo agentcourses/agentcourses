@@ -1,0 +1,15 @@
+{
+  "course": "homework",
+  "valid": true,
+  "spec": "0.2",
+  "teaching": false,
+  "phases": [],
+  "lessons": [
+    {
+      "id": "finish",
+      "calls": [],
+      "homework": true,
+      "preferences": {}
+    }
+  ]
+}

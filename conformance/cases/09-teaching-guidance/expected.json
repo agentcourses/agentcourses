@@ -1,0 +1,15 @@
+{
+  "course": "teaching-guidance",
+  "valid": true,
+  "spec": "0.2",
+  "teaching": true,
+  "phases": [],
+  "lessons": [
+    {
+      "id": "finish",
+      "calls": [],
+      "homework": false,
+      "preferences": {}
+    }
+  ]
+}
