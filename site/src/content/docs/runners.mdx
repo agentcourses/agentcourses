@@ -29,16 +29,24 @@ Ignore frontmatter keys you do not know, and `metadata` keys that belong to othe
 
 Each lesson follows the same loop.
 
-1. **Goal.** Say the lesson's `## Goal` as written. It is the only section a runner says word for word.
+1. **Goal.** Say the lesson's `## Goal` as written. See [teaching order](/specification/#teaching-order) for sequencing and authored text.
 2. **Build together.** Teach from `## Build` in your own words. Show each change to the project and say why. Reread each file just before you change it, so a learner's own edit is never lost. If the lesson has a `starter/` folder, list its files before you add them.
 3. **Calls.** Before any change that depends on a call, put its `ask` to the learner and wait. You may recommend an answer, but you may not decide. If the learner asks you to choose, record the call as the tutor's.
 4. **Checks.** Run the lesson's checks, as described in [running checks](#running-checks). Show each command before its first run, and let the learner decline.
-5. **Review.** Go through the results with the learner. When a check fails, read its message together and fix the cause. Give `## Hints` one at a time, when asked. Use the `## Quiz` to catch misconceptions. A quiz is never evidence.
+5. **Review.** Go through the results with the learner. When a check fails, read its message together and fix the cause. Give `## Hints` one at a time, when asked. Use the `## Quiz` to catch misconceptions. See [teaching order](/specification/#teaching-order) for question order and coverage. A quiz is never evidence.
 6. **Explain back.** If the lesson has `## Explain back`, the learner explains what they made in their own words. Ask open questions, and do not lead. Judge only against the criteria in `tutor/rubric.md`. Change no project file until you have judged the answer.
 
 Wait for the learner's explicit go-ahead before you start a lesson, run a check for the first time, start an explain-back, move on or skip. Silence is not a go-ahead.
 
 A lesson is *done* when its required checks pass and its explain-back passes. The learner can always skip a lesson, and a skipped lesson is never done. An objective settles only when its evidence passed, the learner answered every call in its lesson, and the lesson was not skipped. See [completion](/specification/#completion), [evidence](/specification/#evidence) and the full [runner rules](/specification/#runner-rules).
+
+## Teaching guidance, closings and choices in 0.2
+
+Read `## Teaching` as course-wide tutor guidance. Keep phase closings and lesson homework distinct from teaching and evidence. The [course body](/specification/#body), [phases](/specification/#phases) and [lesson body](/specification/#body-1) define those additions. [Teaching order](/specification/#teaching-order) sets their delivery conditions.
+
+The reference reading adds `teaching` on the course, `closing` on each phase, and `homework` and `preferences` on each lesson. See the [conformance protocol](/conformance/#what-the-adapter-prints) for their shapes. [Versioning](/specification/#versioning) explains how 0.1 content retains its earlier meaning.
+
+For earlier answers and optional preference memory, follow [remembering choices](/specification/#remembering-choices). Memory is separate from portable progress.
 
 ## Running checks
 
@@ -75,7 +83,7 @@ It never holds the learner's answers, code, file contents or conversation. Keep 
 
 A runner should be able to resume a learner at the same lesson from this file alone. A call that was open when the session ended is put to the learner again.
 
-The [progress schema](/schemas/0.1/progress.schema.json) describes the shape. The specification's section on [the progress file](/specification/#the-progress-file) shows an example.
+The [0.2 progress schema](/schemas/0.2/progress.schema.json) describes the shape. The specification's section on [the progress file](/specification/#the-progress-file) shows an example.
 
 ## Check your runner
 

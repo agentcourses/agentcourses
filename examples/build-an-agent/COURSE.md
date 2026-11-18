@@ -1,8 +1,8 @@
 ---
-spec: "0.1"
+spec: "0.2"
 name: build-an-agent
 description: Build a one-file Python agent with a tool, then explain it. For beginners.
-version: 0.1.0
+version: 0.2.0
 license: Apache-2.0
 compatibility: Python 3.11 or later. No accounts or paid services.
 metadata:
@@ -21,6 +21,11 @@ You build a small agent in plain Python: a function that decides when to call a 
 
 You need Python 3.11 or later, and a project folder to work in.
 
+## Teaching
+
+Teach one idea at a time using the learner's project. Match the pace they choose in the first lesson.
+Explain each change before asking them to try it. Use their earlier choices in later examples.
+
 ## Lessons
 
 ### Basics
@@ -30,6 +35,10 @@ Meet the agent loop, then give your agent its first tool.
 1. [Meet the agent](basics/meet-the-agent/LESSON.md)
 2. [Add a tool](basics/add-a-tool/LESSON.md)
 
+You have an agent loop and a tool of your own. You can see when a request calls that tool.
+
 ### Finish
 
 3. [Explain what you built](finish/LESSON.md)
+
+You built a working agent and explained the choices behind it. Keep one failure in mind when you extend it.

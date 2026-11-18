@@ -35,7 +35,7 @@ The specification's [COURSE.md section](/specification/#coursemd) lists every fi
 
 <Example course="minimal" file="finish/LESSON.md" />
 
-A lesson's body is written to the tutor, not to the learner. The tutor teaches from it in its own words. The one exception is `## Goal`, which the runner says as written.
+A lesson's body is written to the tutor, not to the learner. The tutor teaches from it in its own words. This minimal course uses 0.1, where `## Goal` is said as written. For 0.2 homework, see the [lesson body](/specification/#body-1).
 
 `stage: demonstrate` marks a lesson where the learner shows what they can do. A course should end with one.
 
@@ -120,7 +120,7 @@ A long course can group its lessons into phases. A phase is a `###` heading insi
 
 <Example course="build-an-agent" file="COURSE.md" />
 
-If a course uses phases, every lesson sits under one. Phases add no rules of their own. Putting lesson folders inside a matching phase folder, such as `basics/`, is a convention, not a requirement.
+The 0.2 example has a closing after each phase list, separated by a blank line. See [phases](/specification/#phases) for how it is read and when it is said. Lesson folders use matching phase folders here for clarity.
 
 ## 9. Leave decisions to the learner
 
@@ -137,6 +137,14 @@ An objective can be proved by an explain-back instead of a check. Write `by: exp
 <Example course="build-an-agent" file="finish/LESSON.md" />
 
 The objective `agent-works` is proved by a check, so it is *checked* evidence. `agent-explained` is proved by the explain-back, so it is *explained* evidence. A check of `kind: observe` asks the tutor to inspect files in its `scope`, and gives *observed* evidence.
+
+## 11. Add teaching guidance and follow-up work
+
+The `build-an-agent` example uses `spec: "0.2"`. Its `## Teaching` section gives the tutor guidance for the whole course. Its lessons add `## Homework` for work after the lesson. See [COURSE.md](/specification/#coursemd) and [LESSON.md](/specification/#lessonmd) for the recognised sections.
+
+The first lesson's `choose-pace` call names `preference: pace`. A runner with agreed memory can offer that choice in another course. See [calls](/specification/#calls) and [remembering choices](/specification/#remembering-choices) for the format and learner confirmation rules.
+
+Older examples stay on 0.1. A runner's supported versions determine which courses it can open; see [versioning](/specification/#versioning).
 
 ## Next steps
 
